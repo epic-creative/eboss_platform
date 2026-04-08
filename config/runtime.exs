@@ -1,26 +1,5 @@
 import Config
 
-token_signing_secret =
-  System.get_env("TOKEN_SIGNING_SECRET") ||
-    if config_env() == :prod do
-      raise """
-      environment variable TOKEN_SIGNING_SECRET is missing.
-      Generate one with: mix phx.gen.secret
-      """
-    else
-      "dev-token-signing-secret"
-    end
-
-public_port = System.get_env("PORT", if(config_env() == :test, do: "4002", else: "4000"))
-
-public_url =
-  System.get_env("PUBLIC_URL") ||
-    "http://localhost:#{public_port}"
-
-config :eboss_core,
-  public_url: public_url,
-  token_signing_secret: token_signing_secret
-
 if Code.ensure_loaded?(Dotenvy) do
   dotenv_path = Path.expand("../.env", __DIR__)
 
@@ -34,6 +13,199 @@ if Code.ensure_loaded?(Dotenvy) do
   System.put_env(dotenv_vars)
 end
 
+deployment_env =
+  System.get_env("EBOSS_ENV") ||
+    case config_env() do
+      :prod -> "prod"
+      :test -> "test"
+      _ -> "local"
+    end
+
+listen_port =
+  System.get_env("PORT") ||
+    if config_env() == :test do
+      "4002"
+    else
+      "4000"
+    end
+
+public_scheme =
+  System.get_env("PUBLIC_SCHEME") ||
+    case deployment_env do
+      "local" ->
+        "http"
+
+      "test" ->
+        "http"
+
+      "stage" ->
+        "https"
+
+      "prod" ->
+        "https"
+
+      other ->
+        raise "Unsupported EBOSS_ENV=#{inspect(other)}. Expected local, stage, prod, or test."
+    end
+
+public_host =
+  System.get_env("PUBLIC_HOST") ||
+    case deployment_env do
+      "local" ->
+        "local.eboss.ai"
+
+      "stage" ->
+        "stage.eboss.ai"
+
+      "prod" ->
+        "eboss.ai"
+
+      "test" ->
+        "localhost"
+
+      other ->
+        raise "Unsupported EBOSS_ENV=#{inspect(other)}. Expected local, stage, prod, or test."
+    end
+
+vite_scheme =
+  System.get_env("VITE_SCHEME") ||
+    if deployment_env == "prod" do
+      public_scheme
+    else
+      "http"
+    end
+
+vite_host = System.get_env("VITE_HOST") || public_host
+vite_port = System.get_env("VITE_PORT") || "5173"
+
+canonical_host_enabled =
+  case System.get_env("CANONICAL_HOST_ENABLED") do
+    nil ->
+      config_env() != :test
+
+    value when value in ["1", "true", "TRUE", "yes", "YES", "on", "ON"] ->
+      true
+
+    value when value in ["0", "false", "FALSE", "no", "NO", "off", "OFF"] ->
+      false
+
+    value ->
+      raise """
+      Unsupported CANONICAL_HOST_ENABLED=#{inspect(value)}.
+      Expected one of: 1, true, yes, on, 0, false, no, off.
+      """
+  end
+
+canonical_host =
+  System.get_env("CANONICAL_HOST") ||
+    if canonical_host_enabled do
+      public_host
+    end
+
+canonical_host_passthrough_hosts =
+  "CANONICAL_HOST_PASSTHROUGH_HOSTS"
+  |> System.get_env("")
+  |> String.split(",", trim: true)
+  |> Enum.map(&String.trim/1)
+  |> Enum.reject(&(&1 == ""))
+
+public_port =
+  System.get_env("PUBLIC_PORT") ||
+    case deployment_env do
+      "local" -> listen_port
+      "test" -> listen_port
+      _ when public_scheme == "https" -> "443"
+      _ -> "80"
+    end
+
+default_public_url =
+  case {public_scheme, public_port} do
+    {"https", "443"} -> "https://#{public_host}"
+    {"http", "80"} -> "http://#{public_host}"
+    {scheme, port} -> "#{scheme}://#{public_host}:#{port}"
+  end
+
+public_url = System.get_env("PUBLIC_URL") || default_public_url
+
+default_vite_url =
+  case {vite_scheme, vite_port} do
+    {"https", "443"} -> "https://#{vite_host}"
+    {"http", "80"} -> "http://#{vite_host}"
+    {scheme, port} -> "#{scheme}://#{vite_host}:#{port}"
+  end
+
+vite_url = System.get_env("VITE_URL") || default_vite_url
+
+endpoint_url =
+  [host: public_host, scheme: public_scheme]
+  |> then(fn url ->
+    case {public_scheme, public_port} do
+      {"https", "443"} -> url
+      {"http", "80"} -> url
+      {_scheme, port} -> Keyword.put(url, :port, String.to_integer(port))
+    end
+  end)
+
+static_url =
+  case config_env() do
+    env when env in [:dev, :test] ->
+      [host: vite_host, scheme: vite_scheme]
+      |> then(fn url ->
+        case {vite_scheme, vite_port} do
+          {"https", "443"} -> url
+          {"http", "80"} -> url
+          {_scheme, port} -> Keyword.put(url, :port, String.to_integer(port))
+        end
+      end)
+
+    _ ->
+      endpoint_url
+  end
+
+check_origin =
+  case deployment_env do
+    env when env in ["local", "test"] ->
+      [
+        public_url,
+        "#{public_scheme}://#{public_host}",
+        "#{public_scheme}://localhost",
+        "#{public_scheme}://127.0.0.1",
+        "//#{public_host}",
+        "//localhost",
+        "//127.0.0.1"
+      ]
+      |> Enum.uniq()
+
+    _ ->
+      [public_url, "//#{public_host}"]
+  end
+
+token_signing_secret =
+  System.get_env("TOKEN_SIGNING_SECRET") ||
+    if config_env() == :prod do
+      raise """
+      environment variable TOKEN_SIGNING_SECRET is missing.
+      Generate one with: mix phx.gen.secret
+      """
+    else
+      "dev-token-signing-secret"
+    end
+
+config :eboss_core,
+  environment: deployment_env,
+  public_host: public_host,
+  public_port: public_port,
+  public_scheme: public_scheme,
+  public_url: public_url,
+  token_signing_secret: token_signing_secret
+
+config :live_vue,
+  vite_host:
+    if(config_env() in [:dev, :test],
+      do: vite_url,
+      else: nil
+    )
+
 # config/runtime.exs is executed for all environments, including
 # during releases. It is executed after compilation and before the
 # system starts, so it is typically used to load production configuration
@@ -42,7 +214,13 @@ end
 # The block below contains prod specific runtime configuration.
 
 config :eboss_web, EBossWeb.Endpoint,
-  http: [port: String.to_integer(System.get_env("PORT", "4000"))]
+  canonical_host: canonical_host,
+  canonical_host_enabled: canonical_host_enabled,
+  canonical_host_passthrough_hosts: canonical_host_passthrough_hosts,
+  check_origin: check_origin,
+  http: [port: String.to_integer(listen_port)],
+  static_url: static_url,
+  url: endpoint_url
 
 if config_env() == :prod do
   database_url =

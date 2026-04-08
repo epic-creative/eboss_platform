@@ -20,13 +20,11 @@ config :eboss_web, EBossWeb.Endpoint,
   # Binding to loopback ipv4 address prevents access from other machines.
   # Change to `ip: {0, 0, 0, 0}` to allow access from other machines.
   http: [ip: {127, 0, 0, 1}],
-  check_origin: false,
   code_reloader: true,
   debug_errors: true,
   secret_key_base: "2qTH9paVhpagjAHUAD3RTjOBsgIFP4txaR/JQ4Yrdqr2tbxd2T06ykx+/ltRmQl2",
   watchers: [
-    esbuild: {Esbuild, :install_and_run, [:eboss_web, ~w(--sourcemap=inline --watch)]},
-    tailwind: {Tailwind, :install_and_run, [:eboss_web, ~w(--watch)]}
+    vite: {PhoenixVite.Npm, :run, [:vite, ~w(dev)]}
   ]
 
 # ## SSL Support
@@ -57,8 +55,6 @@ config :eboss_web, EBossWeb.Endpoint,
   live_reload: [
     web_console_logger: true,
     patterns: [
-      # Static assets, except user uploads
-      ~r"priv/static/(?!uploads/).*\.(js|css|png|jpeg|jpg|gif|svg)$"E,
       # Gettext translations
       ~r"priv/gettext/.*\.po$"E,
       # Router, Controllers, LiveViews and LiveComponents

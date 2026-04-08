@@ -7,9 +7,14 @@
     <.live_title default="EBoss" suffix=" · Phoenix Framework">
       {assigns[:page_title]}
     </.live_title>
-    <link phx-track-static rel="stylesheet" href={~p"/assets/css/app.css"} />
-    <script defer phx-track-static type="text/javascript" src={~p"/assets/js/app.js"}>
-    </script>
+    <PhoenixVite.Components.assets
+      names={["js/app.js", "css/app.css"]}
+      manifest={{:eboss_web, "priv/static/assets/.vite/manifest.json"}}
+      dev_server={
+        PhoenixVite.Components.has_vite_watcher?(EBossWeb.Endpoint) || Mix.env() == :test
+      }
+      to_url={fn path -> static_url(@conn, path) end}
+    />
     <script>
       (() => {
         const setTheme = (theme) => {

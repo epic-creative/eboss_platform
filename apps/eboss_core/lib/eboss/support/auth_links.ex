@@ -10,7 +10,7 @@ defmodule EBoss.AuthLinks do
   defp build(path) do
     base =
       :eboss_core
-      |> Application.get_env(:public_url, "http://localhost:4000")
+      |> Application.get_env(:public_url, "http://local.eboss.ai:4000")
       |> String.trim_trailing("/")
 
     base <> path

@@ -65,6 +65,7 @@ defmodule EBossWeb.Router do
       pipe_through :browser
 
       live_dashboard "/dashboard", metrics: EBossWeb.Telemetry
+      live "/live_vue", EBossWeb.LiveVueDemoLive
       forward "/mailbox", Plug.Swoosh.MailboxPreview
     end
   end

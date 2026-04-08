@@ -40,7 +40,7 @@ config :eboss_web,
 
 # Configures the endpoint
 config :eboss_web, EBossWeb.Endpoint,
-  url: [host: "localhost"],
+  url: [host: "local.eboss.ai"],
   adapter: Bandit.PhoenixAdapter,
   render_errors: [
     formats: [html: EBossWeb.ErrorHTML, json: EBossWeb.ErrorJSON],
@@ -49,25 +49,27 @@ config :eboss_web, EBossWeb.Endpoint,
   pubsub_server: EBoss.PubSub,
   live_view: [signing_salt: "K622cRXx"]
 
-# Configure esbuild (the version is required)
-config :esbuild,
-  version: "0.25.4",
-  eboss_web: [
-    args:
-      ~w(js/app.js --bundle --target=es2022 --outdir=../priv/static/assets/js --external:/fonts/* --external:/images/* --alias:@=.),
-    cd: Path.expand("../apps/eboss_web/assets", __DIR__),
-    env: %{"NODE_PATH" => [Path.expand("../deps", __DIR__), Mix.Project.build_path()]}
-  ]
+config :live_vue,
+  ssr: false,
+  ssr_module: nil
 
-# Configure tailwind (the version is required)
-config :tailwind,
-  version: "4.1.12",
-  eboss_web: [
-    args: ~w(
-      --input=assets/css/app.css
-      --output=priv/static/assets/css/app.css
-    ),
-    cd: Path.expand("../apps/eboss_web", __DIR__)
+config :phoenix_vite, PhoenixVite.Npm,
+  assets: [
+    args: [],
+    cd: Path.expand("../apps/eboss_web/assets", __DIR__)
+  ],
+  vite: [
+    args: ~w(exec -- vite),
+    cd: Path.expand("../apps/eboss_web/assets", __DIR__),
+    env: %{
+      "MIX_BUILD_PATH" => Mix.Project.build_path(),
+      "PUBLIC_HOST" => System.get_env("PUBLIC_HOST", "local.eboss.ai"),
+      "VITE_ALLOWED_HOSTS" =>
+        System.get_env("VITE_ALLOWED_HOSTS", ".eboss.ai,localhost,127.0.0.1"),
+      "VITE_HOST" => System.get_env("VITE_HOST", System.get_env("PUBLIC_HOST", "local.eboss.ai")),
+      "VITE_PORT" => System.get_env("VITE_PORT", "5173"),
+      "VITE_SCHEME" => System.get_env("VITE_SCHEME", "http")
+    }
   ]
 
 # Configure Elixir's Logger

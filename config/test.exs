@@ -1,5 +1,7 @@
 import Config
 
+test_port = String.to_integer(System.get_env("PORT", "4002"))
+
 # Configure your database
 #
 # The MIX_TEST_PARTITION environment variable can be used
@@ -16,7 +18,7 @@ config :eboss_core, EBoss.Repo,
 # We don't run a server during test. If one is required,
 # you can enable the server option below.
 config :eboss_web, EBossWeb.Endpoint,
-  http: [ip: {127, 0, 0, 1}, port: 4002],
+  http: [ip: {127, 0, 0, 1}, port: test_port],
   secret_key_base: "WPxzg/hNfFvjVE7q+WUuFmmcSghpmN1vrRSkx4Ap1oWUQB4SyaY1CkAUCe93xh9W",
   server: false
 
@@ -35,6 +37,11 @@ config :phoenix, :plug_init_mode, :runtime
 # Enable helpful, but potentially expensive runtime checks
 config :phoenix_live_view,
   enable_expensive_runtime_checks: true
+
+config :live_vue,
+  enable_props_diff: false,
+  ssr: false,
+  ssr_module: nil
 
 # Sort query params output of verified routes for robust url comparisons
 config :phoenix,

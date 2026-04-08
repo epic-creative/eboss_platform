@@ -82,6 +82,10 @@ defmodule EBossWeb do
       # Translation
       use Gettext, backend: EBossWeb.Gettext
 
+      # Vue component support
+      use LiveVue
+      use LiveVue.Components, vue_root: ["./assets/vue", "./lib/eboss_web"]
+
       # HTML escaping functionality
       import Phoenix.HTML
       # Core UI components
