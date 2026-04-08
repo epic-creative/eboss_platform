@@ -5,15 +5,17 @@ defmodule EBoss.Organizations.Invitation.Changes.AcceptInvitation do
   def change(changeset, _opts, context) do
     with {:ok, token} <- get_token_from_args(changeset),
          {:ok, accepting_user_id} <- get_accepting_user_id_from_args(changeset),
-         {:ok, invitation} <- get_invitation_by_token(changeset, token),
-         :ok <- validate_invitation(invitation),
-         :ok <- validate_email_match(invitation, accepting_user_id),
-         :ok <- validate_not_already_member(changeset, invitation, accepting_user_id) do
+         {:ok, matched_invitation} <- get_invitation_by_token(changeset, token),
+         :ok <- validate_invitation(matched_invitation),
+         :ok <- validate_email_match(matched_invitation, accepting_user_id),
+         :ok <- validate_not_already_member(changeset, matched_invitation, accepting_user_id) do
       changeset = Ash.Changeset.change_attribute(changeset, :accepted_at, DateTime.utc_now())
 
-      Ash.Changeset.after_action(changeset, fn changeset, invitation ->
-        create_membership(changeset, invitation, accepting_user_id, context)
-        {:ok, invitation}
+      Ash.Changeset.after_action(changeset, fn changeset, accepted_invitation ->
+        case create_membership(changeset, matched_invitation, accepting_user_id, context) do
+          {:ok, _membership} -> {:ok, accepted_invitation}
+          {:error, error} -> {:error, error}
+        end
       end)
     else
       {:error, reason} ->

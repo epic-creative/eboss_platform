@@ -13,7 +13,6 @@ defmodule EBoss.Logs.Log do
   end
 
   code_interface do
-    define :create, action: :create
     define :by_filters, action: :by_filters
     define :read, action: :read
   end

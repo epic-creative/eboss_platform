@@ -72,15 +72,23 @@ defmodule EBoss.OrganizationsTest do
       |> Ash.update!()
 
     assert transferred_org.owner_id == new_owner.id
-    assert membership_for!(organization.id, new_owner.id).role == :owner
-    assert membership_for!(organization.id, original_owner.id).role == :member
+    current_owner_membership = membership_for!(organization.id, new_owner.id)
+    former_owner_membership = membership_for!(organization.id, original_owner.id)
+
+    assert current_owner_membership.role == :owner
+    assert former_owner_membership.role == :member
 
     assert {:error, destroy_error} =
-             owner_membership
-             |> Ash.Changeset.for_destroy(:destroy, %{}, actor: original_owner)
+             current_owner_membership
+             |> Ash.Changeset.for_destroy(:destroy, %{}, actor: new_owner)
              |> Ash.destroy()
 
     assert Exception.message(destroy_error) =~ "owner membership is system-managed"
+
+    assert :ok =
+             owner_membership
+             |> Ash.Changeset.for_destroy(:destroy, %{}, actor: new_owner)
+             |> Ash.destroy()
   end
 
   test "invitations can be created, resent, deduplicated, and accepted" do
@@ -146,6 +154,55 @@ defmodule EBoss.OrganizationsTest do
 
     assert length(memberships) == 1
     assert hd(memberships).role == :member
+  end
+
+  test "accepting an invitation rolls back when membership creation fails" do
+    owner = register_user()
+    invitee = register_user(%{email: "rollback-invitee@example.com"})
+    organization = create_organization(owner, %{name: "Rollback Invite Org"})
+    flush_emails()
+
+    invitation =
+      EBoss.Organizations.Invitation
+      |> Ash.Changeset.for_create(
+        :create,
+        %{
+          email: invitee.email,
+          role: :member,
+          organization_id: organization.id,
+          invited_by_id: owner.id
+        },
+        actor: owner
+      )
+      |> Ash.create!()
+
+    {1, nil} =
+      from(i in "invitations",
+        where: field(i, :id) == type(^invitation.id, Ecto.UUID)
+      )
+      |> Repo.update_all(set: [role: "owner"])
+
+    assert {:error, error} =
+             invitation
+             |> Ash.Changeset.for_update(:accept, %{
+               token: invitation.token,
+               accepting_user_id: invitee.id
+             })
+             |> Ash.update(authorize?: false)
+
+    assert Exception.message(error) =~ "owner role is system-managed"
+
+    reloaded_invitation =
+      Ash.get!(EBoss.Organizations.Invitation, invitation.id, authorize?: false)
+
+    assert is_nil(reloaded_invitation.accepted_at)
+
+    memberships =
+      EBoss.Organizations.Membership
+      |> Ash.Query.filter(expr(user_id == ^invitee.id and organization_id == ^organization.id))
+      |> Ash.read!(authorize?: false)
+
+    assert memberships == []
   end
 
   defp register_user(overrides \\ %{}) do

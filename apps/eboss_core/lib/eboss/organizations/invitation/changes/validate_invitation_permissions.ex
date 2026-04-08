@@ -1,6 +1,8 @@
 defmodule EBoss.Organizations.Invitation.Changes.ValidateInvitationPermissions do
   use Ash.Resource.Change
 
+  alias EBoss.Organizations.Authorization
+
   @impl true
   def change(changeset, _opts, context) do
     authorize? = Map.get(context, :authorize?, true)
@@ -48,36 +50,10 @@ defmodule EBoss.Organizations.Invitation.Changes.ValidateInvitationPermissions d
   end
 
   defp validate_permissions(changeset, organization_id, actor_id) do
-    domain = changeset.domain
-
-    EBoss.Organizations.Organization
-    |> Ash.Query.filter(id == ^organization_id and owner_id == ^actor_id)
-    |> Ash.read_one(domain: domain, authorize?: false)
-    |> case do
-      {:ok, %{}} ->
-        :ok
-
-      {:ok, nil} ->
-        EBoss.Organizations.Membership
-        |> Ash.Query.filter(
-          organization_id == ^organization_id and
-            user_id == ^actor_id and
-            role == :admin
-        )
-        |> Ash.read_one(domain: domain, authorize?: false)
-        |> case do
-          {:ok, %{}} ->
-            :ok
-
-          {:ok, nil} ->
-            {:error, "User does not have permission to invite others to this organization"}
-
-          {:error, _} ->
-            {:error, "Failed to check permissions"}
-        end
-
-      {:error, _} ->
-        {:error, "Failed to check organization ownership"}
+    if Authorization.owner_or_admin?(actor_id, organization_id, domain: changeset.domain) do
+      :ok
+    else
+      {:error, "User does not have permission to invite others to this organization"}
     end
   end
 end

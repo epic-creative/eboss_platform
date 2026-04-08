@@ -43,6 +43,7 @@ defmodule EBoss.Organizations.Membership do
       change set_attribute(:user_id, arg(:user_id))
       change set_attribute(:organization_id, arg(:organization_id))
       change set_attribute(:joined_at, &DateTime.utc_now/0)
+      validate EBoss.Organizations.Membership.Validations.RestrictOwnerRole
     end
 
     update :update_role do

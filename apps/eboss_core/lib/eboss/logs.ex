@@ -6,11 +6,14 @@ defmodule EBoss.Logs do
   end
 
   def log(attrs, opts \\ []) do
-    opts = Keyword.put_new(opts, :authorize?, false)
+    opts =
+      opts
+      |> Keyword.put_new(:authorize?, false)
+      |> Keyword.put_new(:domain, __MODULE__)
 
-    attrs
-    |> build_attrs()
-    |> EBoss.Logs.Log.create(opts)
+    EBoss.Logs.Log
+    |> Ash.Changeset.for_create(:create, build_attrs(attrs))
+    |> Ash.create(opts)
   end
 
   def log_async(attrs, opts \\ []) do
