@@ -8,16 +8,25 @@ defmodule EBoss.Organizations.Membership.Changes.ProtectOwnerMembership do
   alias EBoss.Organizations.Membership
 
   @impl true
-  def change(changeset, _opts, _context) do
-    if owner_membership?(changeset) do
-      Ash.Changeset.add_error(
-        changeset,
-        field: :role,
-        message: "owner membership is system-managed; transfer organization ownership instead"
-      )
-    else
-      changeset
+  def change(changeset, _opts, context) do
+    cond do
+      archival_change?(changeset, context) ->
+        changeset
+
+      owner_membership?(changeset) ->
+        Ash.Changeset.add_error(
+          changeset,
+          field: :role,
+          message: "owner membership is system-managed; transfer organization ownership instead"
+        )
+
+      true ->
+        changeset
     end
+  end
+
+  defp archival_change?(changeset, context) do
+    Map.get(context || %{}, :ash_archival) || Map.get(changeset.context || %{}, :ash_archival)
   end
 
   defp owner_membership?(changeset) do

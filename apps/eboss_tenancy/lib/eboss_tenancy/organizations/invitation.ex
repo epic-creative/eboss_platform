@@ -3,13 +3,23 @@ defmodule EBoss.Organizations.Invitation do
     otp_app: :eboss_tenancy,
     domain: EBoss.Organizations,
     data_layer: AshPostgres.DataLayer,
-    authorizers: [Ash.Policy.Authorizer]
+    authorizers: [Ash.Policy.Authorizer],
+    extensions: [AshArchival.Resource]
+
+  resource do
+    base_filter(expr(is_nil(archived_at)))
+  end
 
   postgres do
     table("invitations")
     repo(EBoss.Repo)
+    base_filter_sql("(archived_at IS NULL)")
 
     skip_unique_indexes([:unique_pending_invitation])
+  end
+
+  archive do
+    base_filter?(true)
   end
 
   actions do
@@ -45,7 +55,9 @@ defmodule EBoss.Organizations.Invitation do
       change({EBoss.Organizations.Invitation.Changes.SetExpiration, []})
     end
 
-    destroy(:destroy)
+    destroy :destroy do
+      primary?(true)
+    end
 
     read :by_token do
       get?(true)

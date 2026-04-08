@@ -4,14 +4,24 @@ defmodule EBoss.Workspaces.WorkspaceMembership do
   """
 
   use Ash.Resource,
-    otp_app: :eboss_tenancy,
+    otp_app: :eboss_workspaces,
     domain: EBoss.Workspaces,
     data_layer: AshPostgres.DataLayer,
-    authorizers: [Ash.Policy.Authorizer]
+    authorizers: [Ash.Policy.Authorizer],
+    extensions: [AshArchival.Resource]
+
+  resource do
+    base_filter(expr(is_nil(archived_at)))
+  end
 
   postgres do
     table("workspace_memberships")
     repo(EBoss.Repo)
+    base_filter_sql("(archived_at IS NULL)")
+  end
+
+  archive do
+    base_filter?(true)
   end
 
   actions do

@@ -103,6 +103,56 @@ defmodule EBoss.WorkspacesTest do
     assert Enum.map(visible_workspaces, & &1.id) == [workspace.id]
   end
 
+  test "workspaces encrypt settings and archive related memberships on destroy" do
+    owner = register_user()
+    member = register_user()
+
+    workspace =
+      create_workspace(owner, %{
+        name: "Private Studio",
+        owner_type: :user,
+        owner_id: owner.id
+      })
+
+    updated_workspace =
+      workspace
+      |> Ash.Changeset.for_update(
+        :update,
+        %{settings: %{theme: "focus"}},
+        actor: owner
+      )
+      |> Ash.update!()
+
+    membership =
+      EBoss.Workspaces.WorkspaceMembership
+      |> Ash.Changeset.for_create(
+        :create,
+        %{
+          workspace_id: workspace.id,
+          user_id: member.id,
+          role: :member
+        },
+        actor: owner
+      )
+      |> Ash.create!()
+
+    assert updated_workspace.settings == %{theme: "focus"}
+
+    updated_workspace
+    |> Ash.Changeset.for_destroy(:destroy, %{}, actor: owner)
+    |> Ash.destroy!()
+
+    assert workspace_archived?(workspace.id)
+    assert archived_membership?(membership.id)
+
+    visible_workspaces =
+      EBoss.Workspaces.Workspace
+      |> Ash.Query.for_read(:for_owner, %{owner_type: :user, owner_id: owner.id})
+      |> Ash.read!(actor: owner)
+
+    assert visible_workspaces == []
+  end
+
   defp register_user(overrides \\ %{}) do
     params =
       Map.merge(
@@ -131,5 +181,31 @@ defmodule EBoss.WorkspacesTest do
     EBoss.Workspaces.Workspace
     |> Ash.Changeset.for_create(:create, attrs, actor: actor)
     |> Ash.create!()
+  end
+
+  defp workspace_archived?(id) do
+    id = Ecto.UUID.dump!(id)
+
+    [[archived_at, encrypted_settings]] =
+      Ecto.Adapters.SQL.query!(
+        Repo,
+        "SELECT archived_at, encrypted_settings FROM workspaces WHERE id = $1",
+        [id]
+      ).rows
+
+    not is_nil(archived_at) and is_binary(encrypted_settings)
+  end
+
+  defp archived_membership?(id) do
+    id = Ecto.UUID.dump!(id)
+
+    [[archived_at]] =
+      Ecto.Adapters.SQL.query!(
+        Repo,
+        "SELECT archived_at FROM workspace_memberships WHERE id = $1",
+        [id]
+      ).rows
+
+    not is_nil(archived_at)
   end
 end

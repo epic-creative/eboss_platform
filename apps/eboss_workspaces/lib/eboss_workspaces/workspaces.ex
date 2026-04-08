@@ -3,7 +3,7 @@ defmodule EBoss.Workspaces do
   The Workspaces domain for managing user and organization workspaces.
   """
 
-  use Ash.Domain, otp_app: :eboss_tenancy
+  use Ash.Domain, otp_app: :eboss_workspaces
 
   resources do
     resource(EBoss.Workspaces.Workspace)

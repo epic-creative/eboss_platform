@@ -34,6 +34,7 @@ defmodule EBossFolio.MixProject do
       {:eboss_accounts, in_umbrella: true},
       {:eboss_data, in_umbrella: true},
       {:eboss_tenancy, in_umbrella: true},
+      {:eboss_workspaces, in_umbrella: true},
       {:jason, "~> 1.2"}
     ]
   end

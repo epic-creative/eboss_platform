@@ -103,10 +103,26 @@ token_signing_secret =
       "dev-token-signing-secret"
     end
 
+cloak_key =
+  System.get_env("EBOSS_CLOAK_KEY") ||
+    if config_env() == :prod do
+      raise """
+      environment variable EBOSS_CLOAK_KEY is missing.
+      Generate one with: openssl rand -base64 32
+      """
+    else
+      "bHz2DYuujq3Nk0pUFziPIEuzw7PCkQ1jlkBzLUhKcx4="
+    end
+
 config :eboss_accounts,
   environment: deployment_env,
   public_url: public_url,
   token_signing_secret: token_signing_secret
+
+config :eboss_data, EBoss.Vault,
+  ciphers: [
+    default: {Cloak.Ciphers.AES.GCM, tag: "AES.GCM.V1", key: Base.decode64!(cloak_key)}
+  ]
 
 config :live_vue,
   vite_host:

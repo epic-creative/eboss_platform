@@ -29,7 +29,7 @@ defmodule EBoss.AccountsTest do
              |> Ash.Changeset.set_context(%{private: %{ash_authentication?: true}})
              |> Ash.create(authorize?: false)
 
-    assert Exception.message(error) =~ "already taken"
+    assert Exception.message(error) =~ "has already been taken"
   end
 
   test "requesting a magic link sends an email and the token signs the user in" do
@@ -69,6 +69,35 @@ defmodule EBoss.AccountsTest do
     assert_received {:email, email}
     assert email.subject == "Reset your password"
     assert email.html_body =~ "/reset/"
+  end
+
+  test "users can change their own password" do
+    user = register_user()
+    new_password = "an-even-better-secret123"
+
+    changed_user =
+      user
+      |> Ash.Changeset.for_update(
+        :change_password,
+        %{
+          current_password: password(),
+          password: new_password,
+          password_confirmation: new_password
+        },
+        actor: user
+      )
+      |> Ash.update!()
+
+    signed_in_user =
+      EBoss.Accounts.User
+      |> Ash.Query.for_read(:sign_in_with_password, %{
+        email: user.email,
+        password: new_password
+      })
+      |> Ash.read_one!(authorize?: false)
+
+    assert changed_user.id == user.id
+    assert signed_in_user.id == user.id
   end
 
   test "api keys can be created and used to authenticate" do

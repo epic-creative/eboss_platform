@@ -26,6 +26,7 @@ defmodule EBossData.MixProject do
   defp deps do
     [
       {:ash_postgres, "~> 2.8"},
+      {:cloak, "~> 1.1"},
       {:dns_cluster, "~> 0.2.0"},
       {:ecto_sql, "~> 3.13"},
       {:phoenix_pubsub, "~> 2.1"},

@@ -205,6 +205,62 @@ defmodule EBoss.OrganizationsTest do
     assert memberships == []
   end
 
+  test "organizations encrypt settings and archive related records on destroy" do
+    owner = register_user()
+    member = register_user()
+    invitee_email = "pending-invitee@example.com"
+
+    organization =
+      create_organization(owner, %{
+        name: "Secure Org",
+        settings: %{timezone: "UTC"}
+      })
+
+    membership =
+      EBoss.Organizations.Membership
+      |> Ash.Changeset.for_create(
+        :create,
+        %{
+          user_id: member.id,
+          organization_id: organization.id,
+          role: :member
+        },
+        actor: owner
+      )
+      |> Ash.create!()
+
+    invitation =
+      EBoss.Organizations.Invitation
+      |> Ash.Changeset.for_create(
+        :create,
+        %{
+          email: invitee_email,
+          role: :member,
+          organization_id: organization.id,
+          invited_by_id: owner.id
+        },
+        actor: owner
+      )
+      |> Ash.create!()
+
+    assert organization.settings == %{timezone: "UTC"}
+
+    organization
+    |> Ash.Changeset.for_destroy(:destroy, %{}, actor: owner)
+    |> Ash.destroy!()
+
+    assert organization_archived?(organization.id)
+    assert archived?(membership.id, "memberships")
+    assert archived?(invitation.id, "invitations")
+
+    visible_orgs =
+      EBoss.Organizations.Organization
+      |> Ash.Query.filter(expr(id == ^organization.id))
+      |> Ash.read!(actor: owner)
+
+    assert visible_orgs == []
+  end
+
   defp register_user(overrides \\ %{}) do
     params =
       Map.merge(
@@ -241,5 +297,31 @@ defmodule EBoss.OrganizationsTest do
     EBoss.Organizations.Membership
     |> Ash.Query.filter(expr(organization_id == ^organization_id and user_id == ^user_id))
     |> Ash.read_one!(authorize?: false)
+  end
+
+  defp organization_archived?(id) do
+    id = Ecto.UUID.dump!(id)
+
+    [[archived_at, encrypted_settings]] =
+      Ecto.Adapters.SQL.query!(
+        Repo,
+        "SELECT archived_at, encrypted_settings FROM organizations WHERE id = $1",
+        [id]
+      ).rows
+
+    not is_nil(archived_at) and is_binary(encrypted_settings)
+  end
+
+  defp archived?(id, table) do
+    id = Ecto.UUID.dump!(id)
+
+    [[archived_at]] =
+      Ecto.Adapters.SQL.query!(
+        Repo,
+        "SELECT archived_at FROM #{table} WHERE id = $1",
+        [id]
+      ).rows
+
+    not is_nil(archived_at)
   end
 end

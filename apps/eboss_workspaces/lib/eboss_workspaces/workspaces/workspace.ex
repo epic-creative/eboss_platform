@@ -4,14 +4,34 @@ defmodule EBoss.Workspaces.Workspace do
   """
 
   use Ash.Resource,
-    otp_app: :eboss_tenancy,
+    otp_app: :eboss_workspaces,
     domain: EBoss.Workspaces,
     data_layer: AshPostgres.DataLayer,
-    authorizers: [Ash.Policy.Authorizer]
+    authorizers: [Ash.Policy.Authorizer],
+    extensions: [AshArchival.Resource, AshCloak, AshSlug]
+
+  resource do
+    base_filter(expr(is_nil(archived_at)))
+  end
 
   postgres do
     table("workspaces")
     repo(EBoss.Repo)
+    base_filter_sql("(archived_at IS NULL)")
+
+    references do
+      reference(:organization, ignore?: true)
+    end
+  end
+
+  archive do
+    base_filter?(true)
+  end
+
+  cloak do
+    vault(EBoss.Vault)
+    attributes([:settings])
+    decrypt_by_default([:settings])
   end
 
   actions do
@@ -42,7 +62,8 @@ defmodule EBoss.Workspaces.Workspace do
       change(set_attribute(:description, arg(:description)))
       change(set_attribute(:owner_type, arg(:owner_type)))
       change(set_attribute(:owner_id, arg(:owner_id)))
-      change(EBoss.Workspaces.Workspace.Changes.GenerateSlug)
+      change(slugify(:name, into: :slug))
+      change(EBoss.Workspaces.Workspace.Changes.EnsureUniqueSlug)
       change(EBoss.Workspaces.Workspace.Changes.ValidateOwner)
     end
 
@@ -51,11 +72,14 @@ defmodule EBoss.Workspaces.Workspace do
       accept([:name, :description, :settings])
       require_atomic?(false)
 
-      change(EBoss.Workspaces.Workspace.Changes.GenerateSlug)
+      change(slugify(:name, into: :slug))
+      change(EBoss.Workspaces.Workspace.Changes.EnsureUniqueSlug)
     end
 
     destroy :destroy do
       primary?(true)
+      require_atomic?(false)
+      change(EBoss.Workspaces.Workspace.Changes.ArchiveMemberships)
     end
 
     read :by_slug do

@@ -1,9 +1,9 @@
-defmodule EBossAccounts.MixProject do
+defmodule EBossWorkspaces.MixProject do
   use Mix.Project
 
   def project do
     [
-      app: :eboss_accounts,
+      app: :eboss_workspaces,
       version: "0.1.0",
       build_path: "../../_build",
       config_path: "../../config/config.exs",
@@ -19,7 +19,7 @@ defmodule EBossAccounts.MixProject do
 
   def application do
     [
-      mod: {EBossAccounts.Application, []},
+      mod: {EBossWorkspaces.Application, []},
       extra_applications: [:logger, :runtime_tools]
     ]
   end
@@ -31,16 +31,13 @@ defmodule EBossAccounts.MixProject do
     [
       {:ash, "~> 3.23"},
       {:ash_archival, "~> 2.0"},
-      {:ash_authentication, "~> 4.3"},
-      {:ash_cloak, "~> 0.2.0"},
       {:ash_postgres, "~> 2.8"},
-      {:bcrypt_elixir, "~> 3.0"},
+      {:ash_slug, "~> 0.2.1"},
+      {:eboss_accounts, in_umbrella: true},
       {:eboss_data, in_umbrella: true},
+      {:eboss_tenancy, in_umbrella: true},
       {:jason, "~> 1.2"},
-      {:picosat_elixir, "~> 0.2"},
-      {:req, "~> 0.5"},
-      {:sourceror, "~> 1.8", only: [:dev, :test]},
-      {:swoosh, "~> 1.16"}
+      {:picosat_elixir, "~> 0.2"}
     ]
   end
 

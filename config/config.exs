@@ -36,9 +36,13 @@ config :eboss_tenancy,
   ecto_repos: [EBoss.Repo],
   ash_domains: [
     EBoss.Organizations,
-    EBoss.Workspaces,
     EBoss.Logs
   ]
+
+config :eboss_workspaces,
+  namespace: EBoss,
+  ecto_repos: [EBoss.Repo],
+  ash_domains: [EBoss.Workspaces]
 
 config :eboss_folio,
   ecto_repos: [EBoss.Repo],

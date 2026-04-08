@@ -3,11 +3,21 @@ defmodule EBoss.Organizations.Membership do
     otp_app: :eboss_tenancy,
     domain: EBoss.Organizations,
     data_layer: AshPostgres.DataLayer,
-    authorizers: [Ash.Policy.Authorizer]
+    authorizers: [Ash.Policy.Authorizer],
+    extensions: [AshArchival.Resource]
+
+  resource do
+    base_filter(expr(is_nil(archived_at)))
+  end
 
   postgres do
     table("memberships")
     repo(EBoss.Repo)
+    base_filter_sql("(archived_at IS NULL)")
+  end
+
+  archive do
+    base_filter?(true)
   end
 
   actions do

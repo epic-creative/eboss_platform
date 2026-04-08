@@ -67,6 +67,7 @@ defmodule EBoss.Accounts.User do
   end
 
   code_interface do
+    define(:change_password, action: :change_password)
     define(:list_users, action: :admin_index)
     define(:suspend_user, action: :suspend)
     define(:undo_suspend_user, action: :undo_suspend)
@@ -213,7 +214,6 @@ defmodule EBoss.Accounts.User do
       change(set_attribute(:email, arg(:email)))
       change(set_attribute(:username, arg(:username)))
       change(EBoss.Accounts.User.Changes.NormalizeUsername)
-      change(EBoss.Accounts.User.Changes.EnsureUniqueUsername)
       validate(EBoss.Accounts.User.Validations.ValidateSlug)
       change(AshAuthentication.Strategy.Password.HashPasswordChange)
       change(AshAuthentication.GenerateTokenChange)
@@ -337,7 +337,12 @@ defmodule EBoss.Accounts.User do
       authorize_if(expr(^actor(:role) == :admin))
     end
 
-    policy action_type(:update) do
+    policy action(:change_password) do
+      authorize_if(expr(id == ^actor(:id)))
+      authorize_if(expr(^actor(:role) == :admin))
+    end
+
+    policy action([:suspend, :undo_suspend, :soft_delete, :undo_delete, :admin_update]) do
       authorize_if(expr(^actor(:role) == :admin))
     end
   end

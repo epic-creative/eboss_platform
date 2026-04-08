@@ -4,11 +4,17 @@ defmodule EBoss.Accounts.Token do
     domain: EBoss.Accounts,
     data_layer: AshPostgres.DataLayer,
     authorizers: [Ash.Policy.Authorizer],
-    extensions: [AshAuthentication.TokenResource]
+    extensions: [AshAuthentication.TokenResource, AshCloak]
 
   postgres do
     table("tokens")
     repo(EBoss.Repo)
+  end
+
+  cloak do
+    vault(EBoss.Vault)
+    attributes([:extra_data])
+    decrypt_by_default([:extra_data])
   end
 
   actions do

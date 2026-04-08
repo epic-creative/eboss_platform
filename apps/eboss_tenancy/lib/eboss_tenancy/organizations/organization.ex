@@ -3,11 +3,27 @@ defmodule EBoss.Organizations.Organization do
     otp_app: :eboss_tenancy,
     domain: EBoss.Organizations,
     data_layer: AshPostgres.DataLayer,
-    authorizers: [Ash.Policy.Authorizer]
+    authorizers: [Ash.Policy.Authorizer],
+    extensions: [AshArchival.Resource, AshCloak, AshSlug]
+
+  resource do
+    base_filter(expr(is_nil(archived_at)))
+  end
 
   postgres do
     table("organizations")
     repo(EBoss.Repo)
+    base_filter_sql("(archived_at IS NULL)")
+  end
+
+  archive do
+    base_filter?(true)
+  end
+
+  cloak do
+    vault(EBoss.Vault)
+    attributes([:settings])
+    decrypt_by_default([:settings])
   end
 
   actions do
@@ -17,7 +33,8 @@ defmodule EBoss.Organizations.Organization do
       accept([:name, :description, :settings])
 
       change(relate_actor(:owner))
-      change({EBoss.Organizations.Organization.Changes.GenerateSlug, []})
+      change(slugify(:name, into: :slug))
+      change(EBoss.Organizations.Organization.Changes.EnsureUniqueSlug)
       change(EBoss.Organizations.Organization.Changes.SyncOwnerMembership)
       validate(EBoss.Organizations.Organization.Validations.ValidateSlug)
     end
@@ -25,7 +42,8 @@ defmodule EBoss.Organizations.Organization do
     update :update do
       accept([:name, :description, :settings])
       require_atomic?(false)
-      change({EBoss.Organizations.Organization.Changes.GenerateSlug, []})
+      change(slugify(:name, into: :slug))
+      change(EBoss.Organizations.Organization.Changes.EnsureUniqueSlug)
       validate(EBoss.Organizations.Organization.Validations.ValidateSlug)
     end
 
@@ -39,7 +57,7 @@ defmodule EBoss.Organizations.Organization do
 
     destroy :destroy do
       require_atomic?(false)
-      change(EBoss.Organizations.Organization.Changes.CleanupDependencies)
+      change(EBoss.Organizations.Organization.Changes.ArchiveDependents)
     end
 
     read :admin_index do
@@ -54,7 +72,8 @@ defmodule EBoss.Organizations.Organization do
       accept([:name, :description, :settings])
       argument(:owner_id, :uuid, allow_nil?: false)
       change(set_attribute(:owner_id, arg(:owner_id)))
-      change({EBoss.Organizations.Organization.Changes.GenerateSlug, []})
+      change(slugify(:name, into: :slug))
+      change(EBoss.Organizations.Organization.Changes.EnsureUniqueSlug)
       change(EBoss.Organizations.Organization.Changes.SyncOwnerMembership)
       validate(EBoss.Organizations.Organization.Validations.ValidateSlug)
     end
@@ -68,7 +87,8 @@ defmodule EBoss.Organizations.Organization do
       )
 
       require_atomic?(false)
-      change({EBoss.Organizations.Organization.Changes.GenerateSlug, []})
+      change(slugify(:name, into: :slug))
+      change(EBoss.Organizations.Organization.Changes.EnsureUniqueSlug)
       change(EBoss.Organizations.Organization.Changes.SyncOwnerMembership)
       validate(EBoss.Organizations.Organization.Validations.ValidateSlug)
     end
@@ -138,6 +158,10 @@ defmodule EBoss.Organizations.Organization do
     end
 
     has_many :memberships, EBoss.Organizations.Membership do
+      public?(true)
+    end
+
+    has_many :invitations, EBoss.Organizations.Invitation do
       public?(true)
     end
 
