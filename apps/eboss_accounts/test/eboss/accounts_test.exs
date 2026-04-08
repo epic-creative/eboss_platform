@@ -33,7 +33,13 @@ defmodule EBoss.AccountsTest do
   end
 
   test "requesting a magic link sends an email and the token signs the user in" do
-    magic_email = unique_email()
+    user =
+      register_user(%{
+        email: unique_email(),
+        username: "magic#{System.unique_integer([:positive])}"
+      })
+
+    magic_email = to_string(user.email)
     flush_emails()
 
     EBoss.Accounts.User
@@ -46,15 +52,12 @@ defmodule EBoss.AccountsTest do
 
     signed_in_user =
       EBoss.Accounts.User
-      |> Ash.Changeset.for_create(:sign_in_with_magic_link, %{
-        token: token,
-        username: "magic_user_#{System.unique_integer([:positive])}"
-      })
-      |> Ash.Changeset.set_context(%{private: %{ash_authentication?: true}})
-      |> Ash.create!(authorize?: false)
+      |> Ash.Query.for_read(:sign_in_with_magic_link, %{token: token})
+      |> Ash.Query.set_context(%{private: %{ash_authentication?: true}})
+      |> Ash.read_one!(authorize?: false)
 
     assert to_string(signed_in_user.email) == magic_email
-    assert signed_in_user.confirmed_at
+    assert is_binary(signed_in_user.__metadata__.token)
   end
 
   test "requesting a password reset sends a reset email" do

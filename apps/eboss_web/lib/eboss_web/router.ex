@@ -11,7 +11,7 @@ defmodule EBossWeb.Router do
     plug :put_root_layout, html: {EBossWeb.Layouts, :root}
     plug :protect_from_forgery
     plug :put_secure_browser_headers
-    plug :load_from_session
+    plug :load_from_session, otp_app: :eboss_accounts
   end
 
   pipeline :api do
@@ -21,30 +21,39 @@ defmodule EBossWeb.Router do
       resource: EBoss.Accounts.User,
       required?: false
 
-    plug :load_from_bearer
+    plug :load_from_bearer, otp_app: :eboss_accounts
     plug :set_actor, :user
   end
 
   scope "/", EBossWeb do
     pipe_through :browser
 
-    get "/", PageController, :home
-
     sign_out_route(AuthController, "/logout")
 
-    reset_route(auth_routes_prefix: "/auth", path: "/reset")
-
-    confirm_route(EBoss.Accounts.User, :confirm_new_user,
-      path: "/confirm",
-      auth_routes_prefix: "/auth"
-    )
-
-    magic_sign_in_route(EBoss.Accounts.User, :magic_link,
-      path: "/magic_link",
-      auth_routes_prefix: "/auth"
-    )
-
     auth_routes(AuthController, EBoss.Accounts.User, path: "/auth")
+
+    ash_authentication_live_session :public_routes,
+      otp_app: :eboss_accounts,
+      on_mount: {EBossWeb.LiveUserAuth, :live_user_optional} do
+      live "/", HomeLive
+      live "/reset/:token", Auth.ResetPasswordLive
+      live "/confirm/:token", Auth.ConfirmLive
+      live "/magic_link/:token", Auth.MagicLinkLive
+    end
+
+    ash_authentication_live_session :anonymous_routes,
+      otp_app: :eboss_accounts,
+      on_mount: {EBossWeb.LiveUserAuth, :live_no_user} do
+      live "/sign-in", Auth.SignInLive
+      live "/register", Auth.RegisterLive
+      live "/forgot-password", Auth.ForgotPasswordLive
+    end
+
+    ash_authentication_live_session :authenticated_routes,
+      otp_app: :eboss_accounts,
+      on_mount: {EBossWeb.LiveUserAuth, :live_user_required} do
+      live "/dashboard", DashboardLive
+    end
   end
 
   # Other scopes may use custom stacks.

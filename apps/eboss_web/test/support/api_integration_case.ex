@@ -3,8 +3,6 @@ defmodule EBossWeb.ApiIntegrationCase do
 
   use ExUnit.CaseTemplate
 
-  @port 4002
-
   using do
     quote do
       use EBoss.DataCase, async: false
@@ -18,9 +16,14 @@ defmodule EBossWeb.ApiIntegrationCase do
   end
 
   setup_all do
-    start_supervised!({Bandit, plug: EBossWeb.Endpoint, scheme: :http, port: @port})
-    wait_for_server(@port)
-    {:ok, base_url: "http://localhost:#{@port}"}
+    port = allocate_port()
+
+    start_supervised!(
+      {Bandit, plug: EBossWeb.Endpoint, scheme: :http, ip: {127, 0, 0, 1}, port: port}
+    )
+
+    wait_for_server(port)
+    {:ok, base_url: "http://127.0.0.1:#{port}"}
   end
 
   setup %{base_url: base_url} do
@@ -92,7 +95,7 @@ defmodule EBossWeb.ApiIntegrationCase do
   end
 
   defp wait_for_server(port, attempts) do
-    case :gen_tcp.connect(~c"localhost", port, [:binary, active: false], 200) do
+    case :gen_tcp.connect({127, 0, 0, 1}, port, [:binary, active: false], 200) do
       {:ok, socket} ->
         :ok = :gen_tcp.close(socket)
 
@@ -100,5 +103,12 @@ defmodule EBossWeb.ApiIntegrationCase do
         Process.sleep(50)
         wait_for_server(port, attempts - 1)
     end
+  end
+
+  defp allocate_port do
+    {:ok, socket} = :gen_tcp.listen(0, [:binary, active: false, ip: {127, 0, 0, 1}])
+    {:ok, port} = :inet.port(socket)
+    :ok = :gen_tcp.close(socket)
+    port
   end
 end

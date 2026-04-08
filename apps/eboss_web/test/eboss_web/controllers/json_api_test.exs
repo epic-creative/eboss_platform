@@ -1,7 +1,6 @@
 defmodule EBossWeb.JsonApiTest do
   use EBossWeb.ConnCase, async: false
 
-  alias EBoss.Accounts
   alias EBoss.Workspaces
   alias EBoss.Organizations
 
@@ -138,21 +137,6 @@ defmodule EBossWeb.JsonApiTest do
     assert payload["data"]["id"] == workspace.id
     assert payload["data"]["attributes"]["slug"] == workspace.slug
     assert payload["data"]["attributes"]["owner_type"] == "organization"
-  end
-
-  defp register_user(overrides \\ %{}) do
-    params =
-      Map.merge(
-        %{
-          email: "user#{System.unique_integer([:positive])}@example.com",
-          username: "user#{System.unique_integer([:positive])}",
-          password: "supersecret123",
-          password_confirmation: "supersecret123"
-        },
-        overrides
-      )
-
-    Accounts.register_with_password!(params, authorize?: false)
   end
 
   defp create_api_key(user) do

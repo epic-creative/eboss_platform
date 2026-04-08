@@ -49,7 +49,7 @@ defmodule EBoss.Accounts.User do
 
       magic_link do
         identity_field(:email)
-        registration_enabled?(true)
+        registration_enabled?(false)
         require_interaction?(true)
         sender(EBoss.Accounts.User.Senders.SendMagicLinkEmail)
       end
@@ -285,29 +285,22 @@ defmodule EBoss.Accounts.User do
       validate(AshAuthentication.Strategy.Password.PasswordConfirmationValidation)
       change(AshAuthentication.Strategy.Password.HashPasswordChange)
       change(AshAuthentication.GenerateTokenChange)
+
+      metadata :token, :string do
+        allow_nil?(false)
+      end
     end
 
-    create :sign_in_with_magic_link do
-      description("Sign in or register a user with magic link.")
+    read :sign_in_with_magic_link do
+      description("Sign in a user with magic link.")
+      get?(true)
 
       argument :token, :string do
         description("The token from the magic link that was sent to the user")
         allow_nil?(false)
       end
 
-      argument :username, :string do
-        description("Username for new user registration (required for new users only)")
-        allow_nil?(true)
-      end
-
-      upsert?(true)
-      upsert_identity(:unique_email)
-      upsert_fields([:email])
-
-      change(AshAuthentication.Strategy.MagicLink.SignInChange)
-      change(set_attribute(:username, arg(:username)))
-      change(EBoss.Accounts.User.Changes.NormalizeUsername)
-      validate(EBoss.Accounts.User.Validations.ValidateSlug)
+      prepare(AshAuthentication.Strategy.MagicLink.SignInPreparation)
 
       metadata :token, :string do
         allow_nil?(false)

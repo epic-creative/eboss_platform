@@ -31,44 +31,82 @@ defmodule EBossWeb.Layouts do
     default: nil,
     doc: "the current [scope](https://hexdocs.pm/phoenix/scopes.html)"
 
+  attr :current_user, :map,
+    default: nil,
+    doc: "the authenticated user when present"
+
   slot :inner_block, required: true
 
   def app(assigns) do
     ~H"""
-    <header class="navbar px-4 sm:px-6 lg:px-8">
-      <div class="flex-1">
-        <a href="/" class="flex-1 flex w-fit items-center gap-2">
-          <img src={~p"/images/logo.svg"} width="36" />
-          <span class="text-sm font-semibold">v{Application.spec(:phoenix, :vsn)}</span>
-        </a>
-      </div>
-      <div class="flex-none">
-        <ul class="flex flex-column px-1 space-x-4 items-center">
-          <li>
-            <a href="https://phoenixframework.org/" class="btn btn-ghost">Website</a>
-          </li>
-          <li>
-            <a href="https://github.com/phoenixframework/phoenix" class="btn btn-ghost">GitHub</a>
-          </li>
-          <li>
-            <.theme_toggle />
-          </li>
-          <li>
-            <a href="https://hexdocs.pm/phoenix/overview.html" class="btn btn-primary">
-              Get Started <span aria-hidden="true">&rarr;</span>
+    <div class="relative min-h-screen overflow-hidden bg-stone-950 text-stone-900">
+      <div class="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(251,191,36,0.16),_transparent_32%),radial-gradient(circle_at_bottom_right,_rgba(14,165,233,0.16),_transparent_26%),linear-gradient(180deg,_#f8fafc_0%,_#f5f5f4_46%,_#f8fafc_100%)]" />
+      <div class="absolute inset-x-0 top-0 h-px bg-white/70" />
+
+      <div class="relative">
+        <header class="border-b border-stone-200/70 bg-white/70 backdrop-blur">
+          <div class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
+            <a href={~p"/"} class="flex items-center gap-3">
+              <div class="flex size-11 items-center justify-center rounded-2xl bg-stone-950 text-sm font-semibold text-white shadow-sm">
+                EB
+              </div>
+              <div class="space-y-1">
+                <p class="text-[0.7rem] font-semibold uppercase tracking-[0.28em] text-amber-600">
+                  EBoss Platform
+                </p>
+                <p class="text-sm font-medium text-stone-600">Operations calm for a growing system</p>
+              </div>
             </a>
-          </li>
-        </ul>
-      </div>
-    </header>
 
-    <main class="px-4 py-20 sm:px-6 lg:px-8">
-      <div class="mx-auto max-w-2xl space-y-4">
-        {render_slot(@inner_block)}
-      </div>
-    </main>
+            <nav class="flex items-center gap-3 text-sm">
+              <.theme_toggle />
 
-    <.flash_group flash={@flash} />
+              <%= if @current_user do %>
+                <a
+                  href={~p"/dashboard"}
+                  class="rounded-full border border-stone-300 bg-white px-4 py-2 font-medium text-stone-700 transition hover:border-stone-400 hover:text-stone-950"
+                >
+                  Dashboard
+                </a>
+                <div class="hidden rounded-full border border-stone-200 bg-stone-100 px-4 py-2 text-stone-600 sm:block">
+                  @{Map.get(@current_user, :username)}
+                </div>
+                <form action={~p"/logout"} method="post">
+                  <input type="hidden" name="_method" value="delete" />
+                  <button
+                    type="submit"
+                    class="rounded-full bg-stone-950 px-4 py-2 font-medium text-white transition hover:bg-stone-800"
+                  >
+                    Sign out
+                  </button>
+                </form>
+              <% else %>
+                <a
+                  href={~p"/sign-in"}
+                  class="rounded-full border border-stone-300 bg-white px-4 py-2 font-medium text-stone-700 transition hover:border-stone-400 hover:text-stone-950"
+                >
+                  Sign in
+                </a>
+                <a
+                  href={~p"/register"}
+                  class="rounded-full bg-stone-950 px-4 py-2 font-medium text-white transition hover:bg-stone-800"
+                >
+                  Create account
+                </a>
+              <% end %>
+            </nav>
+          </div>
+        </header>
+
+        <main class="px-4 py-10 sm:px-6 lg:px-8">
+          <div class="mx-auto max-w-7xl">
+            {render_slot(@inner_block)}
+          </div>
+        </main>
+
+        <.flash_group flash={@flash} />
+      </div>
+    </div>
     """
   end
 
@@ -122,31 +160,31 @@ defmodule EBossWeb.Layouts do
   """
   def theme_toggle(assigns) do
     ~H"""
-    <div class="card relative flex flex-row items-center border-2 border-base-300 bg-base-300 rounded-full">
-      <div class="absolute w-1/3 h-full rounded-full border-1 border-base-200 bg-base-100 brightness-200 left-0 [[data-theme=light]_&]:left-1/3 [[data-theme=dark]_&]:left-2/3 transition-[left]" />
+    <div class="relative flex flex-row items-center rounded-full border border-stone-300 bg-white p-1 shadow-sm">
+      <div class="absolute left-1 h-9 w-9 rounded-full bg-stone-950/6 transition-[left] [[data-theme=light]_&]:left-10 [[data-theme=dark]_&]:left-[4.75rem]" />
 
       <button
-        class="flex p-2 cursor-pointer w-1/3"
+        class="relative z-10 flex h-9 w-9 items-center justify-center rounded-full text-stone-500 transition hover:text-stone-950"
         phx-click={JS.dispatch("phx:set-theme")}
         data-phx-theme="system"
       >
-        <.icon name="hero-computer-desktop-micro" class="size-4 opacity-75 hover:opacity-100" />
+        <.icon name="hero-computer-desktop-micro" class="size-4" />
       </button>
 
       <button
-        class="flex p-2 cursor-pointer w-1/3"
+        class="relative z-10 flex h-9 w-9 items-center justify-center rounded-full text-stone-500 transition hover:text-stone-950"
         phx-click={JS.dispatch("phx:set-theme")}
         data-phx-theme="light"
       >
-        <.icon name="hero-sun-micro" class="size-4 opacity-75 hover:opacity-100" />
+        <.icon name="hero-sun-micro" class="size-4" />
       </button>
 
       <button
-        class="flex p-2 cursor-pointer w-1/3"
+        class="relative z-10 flex h-9 w-9 items-center justify-center rounded-full text-stone-500 transition hover:text-stone-950"
         phx-click={JS.dispatch("phx:set-theme")}
         data-phx-theme="dark"
       >
-        <.icon name="hero-moon-micro" class="size-4 opacity-75 hover:opacity-100" />
+        <.icon name="hero-moon-micro" class="size-4" />
       </button>
     </div>
     """

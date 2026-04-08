@@ -16,7 +16,7 @@ defmodule EBossWeb.ConnCase do
   """
 
   use ExUnit.CaseTemplate
-
+  @endpoint EBossWeb.Endpoint
   using do
     quote do
       # The default endpoint for testing
@@ -27,6 +27,7 @@ defmodule EBossWeb.ConnCase do
       # Import conveniences for testing with connections
       import Plug.Conn
       import Phoenix.ConnTest
+      import Phoenix.LiveViewTest
       import EBossWeb.ConnCase
     end
   end
@@ -34,5 +35,57 @@ defmodule EBossWeb.ConnCase do
   setup tags do
     EBoss.DataCase.setup_sandbox(tags)
     {:ok, conn: Phoenix.ConnTest.build_conn()}
+  end
+
+  def register_user(overrides \\ %{}) do
+    params =
+      Map.merge(
+        %{
+          email: "user#{System.unique_integer([:positive])}@example.com",
+          username: "user#{System.unique_integer([:positive])}",
+          password: "supersecret123",
+          password_confirmation: "supersecret123"
+        },
+        overrides
+      )
+
+    EBoss.Accounts.register_with_password!(params, authorize?: false)
+  end
+
+  def log_in_user(%{conn: conn} = context, user) do
+    conn =
+      conn
+      |> Phoenix.ConnTest.init_test_session(%{})
+      |> Phoenix.ConnTest.dispatch(
+        @endpoint,
+        :get,
+        "/auth/user/password/sign_in_with_token",
+        %{token: user.__metadata__.token}
+      )
+      |> Phoenix.ConnTest.recycle()
+
+    Map.put(context, :conn, conn)
+  end
+
+  def register_and_log_in_user(context, overrides \\ %{}) do
+    strategy = AshAuthentication.Info.strategy!(EBoss.Accounts.User, :password)
+
+    params =
+      Map.merge(
+        %{
+          email: "user#{System.unique_integer([:positive])}@example.com",
+          username: "user#{System.unique_integer([:positive])}",
+          password: "supersecret123",
+          password_confirmation: "supersecret123"
+        },
+        overrides
+      )
+
+    {:ok, user} =
+      AshAuthentication.Strategy.action(strategy, :register, params,
+        context: %{token_type: :sign_in, private: %{ash_authentication?: true}}
+      )
+
+    Map.put(log_in_user(context, user), :current_user, user)
   end
 end

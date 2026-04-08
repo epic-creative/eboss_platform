@@ -67,6 +67,7 @@ defmodule EBoss.Umbrella.MixProject do
     [
       # run `mix setup` in all child apps
       setup: ["cmd mix setup"],
+      seed: ["run apps/eboss_data/priv/repo/seeds.exs"],
       precommit: [
         "cmd env MIX_ENV=test mix compile --warnings-as-errors",
         &unlock_unused_dev/1,

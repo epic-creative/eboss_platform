@@ -2,8 +2,10 @@ defmodule EBossWeb.AuthController do
   use EBossWeb, :controller
   use AshAuthentication.Phoenix.Controller
 
-  def success(conn, activity, user, _token) do
-    return_to = get_session(conn, :return_to) || ~p"/"
+  alias AshAuthentication.Info
+
+  def success(conn, activity, user, token) do
+    return_to = get_session(conn, :return_to) || ~p"/dashboard"
 
     message =
       case activity do
@@ -14,7 +16,7 @@ defmodule EBossWeb.AuthController do
 
     conn
     |> delete_session(:return_to)
-    |> store_in_session(user)
+    |> store_authenticated_session(user, token)
     |> assign(:current_user, user)
     |> put_flash(:info, message)
     |> redirect(to: return_to)
@@ -35,56 +37,47 @@ defmodule EBossWeb.AuthController do
           """
 
         _ ->
-          "Incorrect email or password"
+          failure_message(activity)
       end
 
     conn
     |> put_flash(:error, message)
-    |> redirect(to: ~p"/")
+    |> redirect(to: failure_path(activity))
   end
 
   def sign_out(conn, _params) do
-    return_to = get_session(conn, :return_to) || ~p"/"
-
     conn
     |> clear_session(:eboss_accounts)
     |> put_flash(:info, "You are now signed out")
-    |> redirect(to: return_to)
+    |> redirect(to: ~p"/")
   end
 
-  def sign_in_with_token(conn, %{"token" => token}) do
-    case EBoss.Accounts.sign_in_with_token(token) do
-      {:ok, user} ->
-        conn
-        |> store_in_session(user)
-        |> assign(:current_user, user)
-        |> put_flash(:info, "Welcome back!")
-        |> redirect(to: ~p"/")
+  defp failure_path({:password, :register}), do: ~p"/register"
+  defp failure_path({:password, :reset_request}), do: ~p"/forgot-password"
+  defp failure_path({:password, :reset}), do: ~p"/forgot-password"
+  defp failure_path({:confirm_new_user, :confirm}), do: ~p"/sign-in"
+  defp failure_path({:magic_link, :request}), do: ~p"/sign-in"
+  defp failure_path({:magic_link, :sign_in}), do: ~p"/sign-in"
+  defp failure_path(_activity), do: ~p"/sign-in"
 
-      {:error, _error} ->
-        conn
-        |> put_flash(:error, "Invalid or expired sign-in token")
-        |> redirect(to: ~p"/")
-    end
-  end
+  defp failure_message({:password, :register}), do: "We could not create your account"
+  defp failure_message({:password, :reset_request}), do: "We could not send reset instructions"
+  defp failure_message({:password, :reset}), do: "We could not reset your password"
 
-  def password_sign_in(conn, %{"user" => user_params}) do
-    case EBoss.Accounts.sign_in_with_password(user_params) do
-      {:ok, user} ->
-        success(conn, {:password, :sign_in}, user, nil)
+  defp failure_message({:confirm_new_user, :confirm}),
+    do: "That confirmation link is invalid or expired"
 
-      {:error, error} ->
-        failure(conn, {:password, :sign_in}, error)
-    end
-  end
+  defp failure_message({:magic_link, :request}), do: "We could not send that magic link"
+  defp failure_message({:magic_link, :sign_in}), do: "That magic link is invalid or expired"
+  defp failure_message(_activity), do: "Incorrect email or password"
 
-  def password_register(conn, %{"user" => user_params}) do
-    case EBoss.Accounts.register_with_password(user_params) do
-      {:ok, user} ->
-        success(conn, {:password, :register}, user, nil)
-
-      {:error, error} ->
-        failure(conn, {:password, :register}, error)
+  defp store_authenticated_session(conn, user, token) do
+    if token &&
+         Info.authentication_tokens_require_token_presence_for_authentication?(user.__struct__) do
+      subject_name = Info.authentication_subject_name!(user.__struct__)
+      put_session(conn, "#{subject_name}_token", token)
+    else
+      store_in_session(conn, user)
     end
   end
 end

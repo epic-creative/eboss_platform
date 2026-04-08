@@ -15,3 +15,20 @@ Canonical-host redirects follow the same host model by default:
 * `local` accepts both `local.eboss.ai` and `localhost`
 * `stage` redirects to `stage.eboss.ai`
 * `prod` redirects to `eboss.ai`
+
+## Demo Data
+
+Run deterministic local demo seeds from the umbrella root:
+
+```bash
+mix seed
+```
+
+Optional:
+
+```bash
+EBOSS_SEED_PASSWORD=supersecret123 mix seed
+```
+
+The seed script creates example users, an organization, user and org workspaces,
+and a small Folio graph for local auth and API testing.

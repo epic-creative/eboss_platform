@@ -49,7 +49,8 @@ defmodule EBoss.AccountsBoundaryTest do
     assert reset_email.subject == "Reset your password"
     assert reset_email.html_body =~ "/reset/"
 
-    magic_email = unique_email()
+    magic_link_user = register_user()
+    magic_email = to_string(magic_link_user.email)
     flush_emails()
 
     assert :ok = Accounts.request_magic_link!(%{email: magic_email})
