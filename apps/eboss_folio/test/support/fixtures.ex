@@ -1,8 +1,6 @@
 defmodule EBossFolio.TestSupport do
   @moduledoc false
 
-  alias EBoss.Workspaces.Workspace
-
   def register_user(overrides \\ %{}) do
     params =
       Map.merge(
@@ -15,10 +13,7 @@ defmodule EBossFolio.TestSupport do
         overrides
       )
 
-    EBoss.Accounts.User
-    |> Ash.Changeset.for_create(:register_with_password, params)
-    |> Ash.Changeset.set_context(%{private: %{ash_authentication?: true}})
-    |> Ash.create!(authorize?: false)
+    EBoss.Accounts.register_with_password!(params, authorize?: false)
   end
 
   def create_user_workspace(owner, attrs \\ %{}) do
@@ -32,9 +27,7 @@ defmodule EBossFolio.TestSupport do
         attrs
       )
 
-    Workspace
-    |> Ash.Changeset.for_create(:create, workspace_attrs, actor: owner)
-    |> Ash.create!()
+    EBoss.Workspaces.create_workspace!(workspace_attrs, actor: owner)
   end
 
   def create_organization(owner, attrs \\ %{}) do
@@ -44,9 +37,7 @@ defmodule EBossFolio.TestSupport do
         attrs
       )
 
-    EBoss.Organizations.Organization
-    |> Ash.Changeset.for_create(:create, organization_attrs, actor: owner)
-    |> Ash.create!()
+    EBoss.Organizations.create_organization!(organization_attrs, actor: owner)
   end
 
   def create_org_workspace(owner, attrs \\ %{}) do

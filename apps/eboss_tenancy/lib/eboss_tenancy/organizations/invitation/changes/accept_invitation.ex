@@ -70,10 +70,7 @@ defmodule EBoss.Organizations.Invitation.Changes.AcceptInvitation do
   end
 
   defp validate_email_match(invitation, accepting_user_id) do
-    case Ash.get(EBoss.Accounts.User, accepting_user_id,
-           domain: EBoss.Accounts,
-           authorize?: false
-         ) do
+    case EBoss.Accounts.get_user(accepting_user_id, authorize?: false) do
       {:ok, user} ->
         if user.email == invitation.email do
           :ok

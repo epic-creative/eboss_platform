@@ -1,7 +1,7 @@
 defmodule EBoss.Workspaces.Workspace.Checks.CanCreateWorkspace do
   use Ash.Policy.SimpleCheck
 
-  alias EBoss.Organizations.Authorization
+  alias EBoss.Organizations
 
   def describe(_opts), do: "user can create workspace for themselves or organizations they admin"
 
@@ -16,7 +16,7 @@ defmodule EBoss.Workspaces.Workspace.Checks.CanCreateWorkspace do
         owner_id == actor.id
 
       :organization ->
-        Authorization.owner_or_admin?(actor.id, owner_id)
+        Organizations.owner_or_admin?(actor.id, owner_id)
 
       _ ->
         false

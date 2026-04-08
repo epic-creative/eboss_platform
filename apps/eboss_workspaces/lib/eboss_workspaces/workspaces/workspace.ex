@@ -19,6 +19,10 @@ defmodule EBoss.Workspaces.Workspace do
     repo(EBoss.Repo)
     base_filter_sql("(archived_at IS NULL)")
 
+    custom_indexes do
+      index([:owner_type, :owner_id], name: "workspaces_owner_lookup_index")
+    end
+
     references do
       reference(:organization, ignore?: true)
     end
@@ -65,6 +69,7 @@ defmodule EBoss.Workspaces.Workspace do
       change(slugify(:name, into: :slug))
       change(EBoss.Workspaces.Workspace.Changes.EnsureUniqueSlug)
       change(EBoss.Workspaces.Workspace.Changes.ValidateOwner)
+      change(EBoss.Workspaces.Workspace.Changes.SetOwnerSnapshot)
     end
 
     update :update do
@@ -169,6 +174,14 @@ defmodule EBoss.Workspaces.Workspace do
     attribute :owner_id, :uuid do
       allow_nil?(false)
       public?(true)
+    end
+
+    attribute :owner_handle, :string do
+      allow_nil?(false)
+    end
+
+    attribute :owner_display_name, :string do
+      allow_nil?(false)
     end
 
     attribute :settings, :map do

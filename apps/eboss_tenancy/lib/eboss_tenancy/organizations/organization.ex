@@ -45,6 +45,7 @@ defmodule EBoss.Organizations.Organization do
       change(slugify(:name, into: :slug))
       change(EBoss.Organizations.Organization.Changes.EnsureUniqueSlug)
       validate(EBoss.Organizations.Organization.Validations.ValidateSlug)
+      change(EBoss.Organizations.Organization.Changes.SyncWorkspaceOwnerSnapshots)
     end
 
     update :transfer_ownership do
@@ -91,6 +92,7 @@ defmodule EBoss.Organizations.Organization do
       change(EBoss.Organizations.Organization.Changes.EnsureUniqueSlug)
       change(EBoss.Organizations.Organization.Changes.SyncOwnerMembership)
       validate(EBoss.Organizations.Organization.Validations.ValidateSlug)
+      change(EBoss.Organizations.Organization.Changes.SyncWorkspaceOwnerSnapshots)
     end
   end
 

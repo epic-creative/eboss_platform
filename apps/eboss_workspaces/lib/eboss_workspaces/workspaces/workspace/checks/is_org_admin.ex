@@ -1,7 +1,7 @@
 defmodule EBoss.Workspaces.Workspace.Checks.IsOrgAdmin do
   use Ash.Policy.SimpleCheck
 
-  alias EBoss.Organizations.Authorization
+  alias EBoss.Organizations
 
   def describe(_opts), do: "user is the owner or an admin of the workspace's organization"
 
@@ -17,7 +17,7 @@ defmodule EBoss.Workspaces.Workspace.Checks.IsOrgAdmin do
   def match?(_, _, _), do: false
 
   defp check_org_admin(actor, organization_id) when not is_nil(actor) do
-    Authorization.owner_or_admin?(actor.id, organization_id)
+    Organizations.owner_or_admin?(actor.id, organization_id)
   end
 
   defp check_org_admin(_, _), do: false

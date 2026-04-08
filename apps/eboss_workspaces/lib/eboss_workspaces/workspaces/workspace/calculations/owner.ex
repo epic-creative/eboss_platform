@@ -1,29 +1,17 @@
 defmodule EBoss.Workspaces.Workspace.Calculations.Owner do
   use Ash.Resource.Calculation
 
+  alias EBoss.Workspaces.Workspace.OwnerSnapshot
+
+  @impl true
   def init(opts), do: {:ok, opts}
 
-  def calculate(records, _opts, %{domain: _domain}) do
-    Enum.map(records, fn record ->
-      case record.owner_type do
-        :user ->
-          case Ash.get(EBoss.Accounts.User, record.owner_id,
-                 domain: EBoss.Accounts,
-                 authorize?: false
-               ) do
-            {:ok, user} -> Map.take(user, [:id, :email, :username])
-            {:error, _error} -> nil
-          end
+  @impl true
+  def load(_query, _opts, _context),
+    do: [:owner_type, :owner_id, :owner_handle, :owner_display_name]
 
-        :organization ->
-          case Ash.get(EBoss.Organizations.Organization, record.owner_id,
-                 domain: EBoss.Organizations,
-                 authorize?: false
-               ) do
-            {:ok, organization} -> Map.take(organization, [:id, :name, :slug])
-            {:error, _error} -> nil
-          end
-      end
-    end)
+  @impl true
+  def calculate(records, _opts, _context) do
+    Enum.map(records, &OwnerSnapshot.owner_summary/1)
   end
 end

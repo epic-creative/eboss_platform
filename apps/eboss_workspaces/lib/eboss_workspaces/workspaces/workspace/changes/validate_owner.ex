@@ -1,6 +1,8 @@
 defmodule EBoss.Workspaces.Workspace.Changes.ValidateOwner do
   use Ash.Resource.Change
 
+  alias EBoss.Workspaces.Workspace.OwnerSnapshot
+
   def init(opts), do: {:ok, opts}
 
   def change(changeset, _opts, _context) do
@@ -15,8 +17,8 @@ defmodule EBoss.Workspaces.Workspace.Changes.ValidateOwner do
   end
 
   defp validate_owner_exists(changeset, :user, owner_id) do
-    case Ash.get(EBoss.Accounts.User, owner_id, domain: EBoss.Accounts, authorize?: false) do
-      {:ok, _user} ->
+    case OwnerSnapshot.fetch(:user, owner_id) do
+      {:ok, _snapshot} ->
         changeset
 
       {:error, _error} ->
@@ -25,11 +27,8 @@ defmodule EBoss.Workspaces.Workspace.Changes.ValidateOwner do
   end
 
   defp validate_owner_exists(changeset, :organization, owner_id) do
-    case Ash.get(EBoss.Organizations.Organization, owner_id,
-           domain: EBoss.Organizations,
-           authorize?: false
-         ) do
-      {:ok, _organization} ->
+    case OwnerSnapshot.fetch(:organization, owner_id) do
+      {:ok, _snapshot} ->
         changeset
 
       {:error, _error} ->

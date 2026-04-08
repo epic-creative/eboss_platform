@@ -1,7 +1,7 @@
 defmodule EBoss.Organizations.Invitation.Changes.ValidateInvitationPermissions do
   use Ash.Resource.Change
 
-  alias EBoss.Organizations.Authorization
+  alias EBoss.Organizations
 
   @impl true
   def change(changeset, _opts, context) do
@@ -50,7 +50,7 @@ defmodule EBoss.Organizations.Invitation.Changes.ValidateInvitationPermissions d
   end
 
   defp validate_permissions(changeset, organization_id, actor_id) do
-    if Authorization.owner_or_admin?(actor_id, organization_id, domain: changeset.domain) do
+    if Organizations.owner_or_admin?(actor_id, organization_id, domain: changeset.domain) do
       :ok
     else
       {:error, "User does not have permission to invite others to this organization"}

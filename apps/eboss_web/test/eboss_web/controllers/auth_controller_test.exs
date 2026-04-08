@@ -41,17 +41,11 @@ defmodule EBossWeb.AuthControllerTest do
     user = register_user()
     confirm_token = extract_token_from_latest_email("confirm")
 
-    EBoss.Accounts.User
-    |> Ash.ActionInput.for_action(:request_password_reset_token, %{email: user.email})
-    |> Ash.ActionInput.set_context(%{private: %{ash_authentication?: true}})
-    |> Ash.run_action!(authorize?: false)
+    EBoss.Accounts.request_password_reset_token!(%{email: user.email}, authorize?: false)
 
     reset_token = extract_token_from_latest_email("reset")
 
-    EBoss.Accounts.User
-    |> Ash.ActionInput.for_action(:request_magic_link, %{email: user.email})
-    |> Ash.ActionInput.set_context(%{private: %{ash_authentication?: true}})
-    |> Ash.run_action!(authorize?: false)
+    EBoss.Accounts.request_magic_link!(%{email: user.email}, authorize?: false)
 
     magic_link_token = extract_token_from_latest_email("magic_link")
 
@@ -77,10 +71,7 @@ defmodule EBossWeb.AuthControllerTest do
         overrides
       )
 
-    EBoss.Accounts.User
-    |> Ash.Changeset.for_create(:register_with_password, params)
-    |> Ash.Changeset.set_context(%{private: %{ash_authentication?: true}})
-    |> Ash.create!(authorize?: false)
+    EBoss.Accounts.register_with_password!(params, authorize?: false)
   end
 
   defp extract_token_from_latest_email(path) do

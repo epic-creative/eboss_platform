@@ -53,10 +53,7 @@ defmodule EBossWeb.AuthController do
   end
 
   def sign_in_with_token(conn, %{"token" => token}) do
-    EBoss.Accounts.User
-    |> Ash.Changeset.for_action(:sign_in_with_token, %{token: token})
-    |> Ash.read_one()
-    |> case do
+    case EBoss.Accounts.sign_in_with_token(token) do
       {:ok, user} ->
         conn
         |> store_in_session(user)
@@ -72,11 +69,7 @@ defmodule EBossWeb.AuthController do
   end
 
   def password_sign_in(conn, %{"user" => user_params}) do
-    EBoss.Accounts.User
-    |> Ash.Query.for_read(:sign_in_with_password, user_params)
-    |> Ash.Query.set_context(%{private: %{ash_authentication?: true}})
-    |> Ash.read_one()
-    |> case do
+    case EBoss.Accounts.sign_in_with_password(user_params) do
       {:ok, user} ->
         success(conn, {:password, :sign_in}, user, nil)
 
@@ -86,11 +79,7 @@ defmodule EBossWeb.AuthController do
   end
 
   def password_register(conn, %{"user" => user_params}) do
-    EBoss.Accounts.User
-    |> Ash.Changeset.for_create(:register_with_password, user_params)
-    |> Ash.Changeset.set_context(%{private: %{ash_authentication?: true}})
-    |> Ash.create()
-    |> case do
+    case EBoss.Accounts.register_with_password(user_params) do
       {:ok, user} ->
         success(conn, {:password, :register}, user, nil)
 

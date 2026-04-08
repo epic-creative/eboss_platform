@@ -114,6 +114,7 @@ defmodule EBoss.Accounts.User do
       require_atomic?(false)
       change(EBoss.Accounts.User.Changes.NormalizeUsername)
       validate(EBoss.Accounts.User.Validations.ValidateSlug)
+      change(EBoss.Accounts.User.Changes.SyncWorkspaceOwnerSnapshots)
     end
 
     read :get_by_subject do
