@@ -1,5 +1,18 @@
 import Config
 
+if Code.ensure_loaded?(Dotenvy) do
+  dotenv_path = Path.expand("../.env", __DIR__)
+
+  dotenv_vars =
+    Dotenvy.source!([
+      System.get_env(),
+      dotenv_path,
+      System.get_env()
+    ])
+
+  System.put_env(dotenv_vars)
+end
+
 # config/runtime.exs is executed for all environments, including
 # during releases. It is executed after compilation and before the
 # system starts, so it is typically used to load production configuration

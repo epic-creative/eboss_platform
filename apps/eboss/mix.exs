@@ -36,6 +36,9 @@ defmodule EBoss.MixProject do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
+      {:ash, "~> 3.23"},
+      {:ash_postgres, "~> 2.8"},
+      {:ash_authentication, "~> 4.3"},
       {:dns_cluster, "~> 0.2.0"},
       {:phoenix_pubsub, "~> 2.1"},
       {:ecto_sql, "~> 3.13"},

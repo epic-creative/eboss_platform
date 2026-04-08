@@ -8,7 +8,8 @@ defmodule EBoss.Umbrella.MixProject do
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       aliases: aliases(),
-      listeners: [Phoenix.CodeReloader]
+      listeners: [Phoenix.CodeReloader],
+      usage_rules: usage_rules()
     ]
   end
 
@@ -30,8 +31,23 @@ defmodule EBoss.Umbrella.MixProject do
   #
   # Dependencies listed here are available only for this project
   # and cannot be accessed from applications inside the apps/ folder.
+  defp usage_rules do
+    [
+      file: "AGENTS.md",
+      usage_rules: [
+        :ash,
+        "ash:all",
+        ~r/^ash_/,
+        "phoenix:all"
+      ]
+    ]
+  end
+
   defp deps do
     [
+      {:igniter, "~> 0.6", only: [:dev, :test]},
+      {:usage_rules, "~> 1.1", only: :dev},
+      {:dotenvy, "~> 1.1"},
       # Required to run "mix format" on ~H/.heex files from the umbrella root
       {:phoenix_live_view, ">= 0.0.0"}
     ]
@@ -50,7 +66,12 @@ defmodule EBoss.Umbrella.MixProject do
     [
       # run `mix setup` in all child apps
       setup: ["cmd mix setup"],
-      precommit: ["compile --warnings-as-errors", "deps.unlock --unused", "format", "test"]
+      precommit: [
+        "cmd env MIX_ENV=test mix compile --warnings-as-errors",
+        "deps.unlock --unused",
+        "format",
+        "cmd env MIX_ENV=test mix test"
+      ]
     ]
   end
 end
