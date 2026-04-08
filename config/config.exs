@@ -20,6 +20,10 @@ config :eboss_core,
     EBoss.Logs
   ]
 
+config :eboss_folio,
+  ecto_repos: [EBoss.Repo],
+  ash_domains: [EBossFolio]
+
 # Configure the mailer
 #
 # By default it uses the "Local" adapter which stores the emails
