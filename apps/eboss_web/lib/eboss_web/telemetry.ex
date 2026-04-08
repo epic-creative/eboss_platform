@@ -53,23 +53,23 @@ defmodule EBossWeb.Telemetry do
       ),
 
       # Database Metrics
-      summary("eboss_core.repo.query.total_time",
+      summary("eboss_data.repo.query.total_time",
         unit: {:native, :millisecond},
         description: "The sum of the other measurements"
       ),
-      summary("eboss_core.repo.query.decode_time",
+      summary("eboss_data.repo.query.decode_time",
         unit: {:native, :millisecond},
         description: "The time spent decoding the data received from the database"
       ),
-      summary("eboss_core.repo.query.query_time",
+      summary("eboss_data.repo.query.query_time",
         unit: {:native, :millisecond},
         description: "The time spent executing the query"
       ),
-      summary("eboss_core.repo.query.queue_time",
+      summary("eboss_data.repo.query.queue_time",
         unit: {:native, :millisecond},
         description: "The time spent waiting for a database connection"
       ),
-      summary("eboss_core.repo.query.idle_time",
+      summary("eboss_data.repo.query.idle_time",
         unit: {:native, :millisecond},
         description:
           "The time the connection spent waiting before being checked out for the query"

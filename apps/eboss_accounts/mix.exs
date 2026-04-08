@@ -1,9 +1,9 @@
-defmodule EBossFolio.MixProject do
+defmodule EBossAccounts.MixProject do
   use Mix.Project
 
   def project do
     [
-      app: :eboss_folio,
+      app: :eboss_accounts,
       version: "0.1.0",
       build_path: "../../_build",
       config_path: "../../config/config.exs",
@@ -19,22 +19,25 @@ defmodule EBossFolio.MixProject do
 
   def application do
     [
-      mod: {EBossFolio.Application, []},
+      mod: {EBossAccounts.Application, []},
       extra_applications: [:logger, :runtime_tools]
     ]
   end
 
-  defp elixirc_paths(:test), do: ["lib", "test/support"]
+  defp elixirc_paths(:test), do: ["lib", "test"]
   defp elixirc_paths(_), do: ["lib"]
 
   defp deps do
     [
       {:ash, "~> 3.23"},
+      {:ash_authentication, "~> 4.3"},
       {:ash_postgres, "~> 2.8"},
-      {:eboss_accounts, in_umbrella: true},
+      {:bcrypt_elixir, "~> 3.0"},
       {:eboss_data, in_umbrella: true},
-      {:eboss_tenancy, in_umbrella: true},
-      {:jason, "~> 1.2"}
+      {:jason, "~> 1.2"},
+      {:req, "~> 0.5"},
+      {:sourceror, "~> 1.8", only: [:dev, :test]},
+      {:swoosh, "~> 1.16"}
     ]
   end
 

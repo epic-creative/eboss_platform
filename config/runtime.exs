@@ -103,7 +103,7 @@ token_signing_secret =
       "dev-token-signing-secret"
     end
 
-config :eboss_core,
+config :eboss_accounts,
   environment: deployment_env,
   public_url: public_url,
   token_signing_secret: token_signing_secret
@@ -139,7 +139,7 @@ if config_env() == :prod do
 
   maybe_ipv6 = if System.get_env("ECTO_IPV6") in ~w(true 1), do: [:inet6], else: []
 
-  config :eboss_core, EBoss.Repo,
+  config :eboss_data, EBoss.Repo,
     # ssl: true,
     url: database_url,
     pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10"),
@@ -214,7 +214,7 @@ if config_env() == :prod do
   # In production you need to configure the mailer to use a different adapter.
   # Here is an example configuration for Mailgun:
   #
-  #     config :eboss_core, EBoss.Mailer,
+  #     config :eboss_accounts, EBoss.Mailer,
   #       adapter: Swoosh.Adapters.Mailgun,
   #       api_key: System.get_env("MAILGUN_API_KEY"),
   #       domain: System.get_env("MAILGUN_DOMAIN")
@@ -227,5 +227,5 @@ if config_env() == :prod do
   #
   # See https://hexdocs.pm/swoosh/Swoosh.html#module-installation for details.
 
-  config :eboss_core, :dns_cluster_query, System.get_env("DNS_CLUSTER_QUERY")
+  config :eboss_data, :dns_cluster_query, System.get_env("DNS_CLUSTER_QUERY")
 end

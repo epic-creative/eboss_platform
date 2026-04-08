@@ -47,7 +47,7 @@ defmodule EBossWeb.AuthController do
     return_to = get_session(conn, :return_to) || ~p"/"
 
     conn
-    |> clear_session(:eboss_core)
+    |> clear_session(:eboss_accounts)
     |> put_flash(:info, "You are now signed out")
     |> redirect(to: return_to)
   end

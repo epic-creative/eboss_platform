@@ -5,7 +5,7 @@ import Config
 # The MIX_TEST_PARTITION environment variable can be used
 # to provide built-in test partitioning in CI environment.
 # Run `mix help test` for more information.
-config :eboss_core, EBoss.Repo,
+config :eboss_data, EBoss.Repo,
   username: "postgres",
   password: "postgres",
   hostname: "localhost",
@@ -24,7 +24,7 @@ config :eboss_web, EBossWeb.Endpoint,
 config :logger, level: :warning
 
 # In test we don't send emails
-config :eboss_core, EBoss.Mailer, adapter: Swoosh.Adapters.Test
+config :eboss_accounts, EBoss.Mailer, adapter: Swoosh.Adapters.Test
 
 # Disable swoosh api client as it is only required for production adapters
 config :swoosh, :api_client, false

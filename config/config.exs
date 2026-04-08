@@ -23,11 +23,18 @@ if Code.ensure_loaded?(Dotenvy) do
 end
 
 # Configure Mix tasks and generators
-config :eboss_core,
+config :eboss_data,
+  ecto_repos: [EBoss.Repo]
+
+config :eboss_accounts,
+  namespace: EBoss,
+  ecto_repos: [EBoss.Repo],
+  ash_domains: [EBoss.Accounts]
+
+config :eboss_tenancy,
   namespace: EBoss,
   ecto_repos: [EBoss.Repo],
   ash_domains: [
-    EBoss.Accounts,
     EBoss.Organizations,
     EBoss.Workspaces,
     EBoss.Logs
@@ -44,12 +51,12 @@ config :eboss_folio,
 #
 # For production it's recommended to configure a different adapter
 # at the `config/runtime.exs`.
-config :eboss_core, EBoss.Mailer, adapter: Swoosh.Adapters.Local
+config :eboss_accounts, EBoss.Mailer, adapter: Swoosh.Adapters.Local
 
 config :eboss_web,
   namespace: EBossWeb,
   ecto_repos: [EBoss.Repo],
-  generators: [context_app: :eboss_core, binary_id: true]
+  generators: [binary_id: true]
 
 # Configures the endpoint
 config :eboss_web, EBossWeb.Endpoint,
