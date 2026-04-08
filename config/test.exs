@@ -1,7 +1,5 @@
 import Config
 
-test_port = String.to_integer(System.get_env("PORT", "4002"))
-
 # Configure your database
 #
 # The MIX_TEST_PARTITION environment variable can be used
@@ -18,7 +16,7 @@ config :eboss_core, EBoss.Repo,
 # We don't run a server during test. If one is required,
 # you can enable the server option below.
 config :eboss_web, EBossWeb.Endpoint,
-  http: [ip: {127, 0, 0, 1}, port: test_port],
+  http: [ip: {127, 0, 0, 1}],
   secret_key_base: "WPxzg/hNfFvjVE7q+WUuFmmcSghpmN1vrRSkx4Ap1oWUQB4SyaY1CkAUCe93xh9W",
   server: false
 

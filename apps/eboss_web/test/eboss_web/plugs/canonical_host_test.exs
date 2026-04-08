@@ -16,22 +16,17 @@ defmodule EBossWeb.Plugs.CanonicalHostTest do
     :ok
   end
 
-  test "redirects localhost to the local canonical host" do
-    put_endpoint_config(canonical_host: "local.eboss.ai")
+  test "skips redirects when canonical host is not configured" do
+    put_endpoint_config(canonical_host: nil)
 
     conn =
       :get
-      |> conn("/dev/live_vue?debug=1")
+      |> conn("/")
       |> Map.put(:host, "localhost")
-      |> Map.put(:port, 4000)
       |> CanonicalHost.call([])
 
-    assert conn.status == 301
-    assert conn.halted
-
-    assert get_resp_header(conn, "location") == [
-             "http://local.eboss.ai:4000/dev/live_vue?debug=1"
-           ]
+    refute conn.halted
+    assert conn.status in [nil, 200]
   end
 
   test "redirects to the stage canonical host behind a proxy" do
@@ -66,29 +61,13 @@ defmodule EBossWeb.Plugs.CanonicalHostTest do
     assert get_resp_header(conn, "location") == ["https://eboss.ai/status"]
   end
 
-  test "skips redirects when canonical host is disabled" do
-    put_endpoint_config(canonical_host_enabled: false, canonical_host: "local.eboss.ai")
+  test "skips redirects when request already uses the canonical host" do
+    put_endpoint_config(canonical_host: "stage.eboss.ai")
 
     conn =
       :get
       |> conn("/")
-      |> Map.put(:host, "localhost")
-      |> CanonicalHost.call([])
-
-    refute conn.halted
-    assert conn.status in [nil, 200]
-  end
-
-  test "skips redirects for passthrough hosts" do
-    put_endpoint_config(
-      canonical_host: "local.eboss.ai",
-      canonical_host_passthrough_hosts: ["preview.eboss.ai"]
-    )
-
-    conn =
-      :get
-      |> conn("/")
-      |> Map.put(:host, "preview.eboss.ai")
+      |> Map.put(:host, "stage.eboss.ai")
       |> CanonicalHost.call([])
 
     refute conn.halted
@@ -98,7 +77,6 @@ defmodule EBossWeb.Plugs.CanonicalHostTest do
   defp put_endpoint_config(overrides) do
     endpoint_config =
       Application.fetch_env!(:eboss_web, EBossWeb.Endpoint)
-      |> Keyword.merge(canonical_host_enabled: true, canonical_host_passthrough_hosts: [])
       |> Keyword.merge(overrides)
 
     Application.put_env(:eboss_web, EBossWeb.Endpoint, endpoint_config)

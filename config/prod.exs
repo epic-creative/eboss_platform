@@ -8,7 +8,7 @@ config :eboss_web, EBossWeb.Endpoint,
     rewrite_on: [:x_forwarded_proto],
     exclude: [
       # paths: ["/health"],
-      hosts: ["localhost", "127.0.0.1", "local.eboss.ai"]
+      hosts: ["localhost", "127.0.0.1"]
     ]
   ]
 

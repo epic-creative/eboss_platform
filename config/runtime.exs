@@ -1,18 +1,5 @@
 import Config
 
-if Code.ensure_loaded?(Dotenvy) do
-  dotenv_path = Path.expand("../.env", __DIR__)
-
-  dotenv_vars =
-    Dotenvy.source!([
-      System.get_env(),
-      dotenv_path,
-      System.get_env()
-    ])
-
-  System.put_env(dotenv_vars)
-end
-
 deployment_env =
   System.get_env("EBOSS_ENV") ||
     case config_env() do
@@ -29,155 +16,80 @@ listen_port =
       "4000"
     end
 
-public_scheme =
-  System.get_env("PUBLIC_SCHEME") ||
-    case deployment_env do
-      "local" ->
-        "http"
+host_defaults =
+  case deployment_env do
+    "local" ->
+      %{canonical_host: nil, host: "local.eboss.ai", scheme: "http"}
 
-      "test" ->
-        "http"
+    "stage" ->
+      %{canonical_host: "stage.eboss.ai", host: "stage.eboss.ai", scheme: "https"}
 
-      "stage" ->
-        "https"
+    "prod" ->
+      %{canonical_host: "eboss.ai", host: "eboss.ai", scheme: "https"}
 
-      "prod" ->
-        "https"
+    "test" ->
+      %{canonical_host: nil, host: "localhost", scheme: "http"}
 
-      other ->
-        raise "Unsupported EBOSS_ENV=#{inspect(other)}. Expected local, stage, prod, or test."
-    end
-
-public_host =
-  System.get_env("PUBLIC_HOST") ||
-    case deployment_env do
-      "local" ->
-        "local.eboss.ai"
-
-      "stage" ->
-        "stage.eboss.ai"
-
-      "prod" ->
-        "eboss.ai"
-
-      "test" ->
-        "localhost"
-
-      other ->
-        raise "Unsupported EBOSS_ENV=#{inspect(other)}. Expected local, stage, prod, or test."
-    end
-
-vite_scheme =
-  System.get_env("VITE_SCHEME") ||
-    if deployment_env == "prod" do
-      public_scheme
-    else
-      "http"
-    end
-
-vite_host = System.get_env("VITE_HOST") || public_host
-vite_port = System.get_env("VITE_PORT") || "5173"
-
-canonical_host_enabled =
-  case System.get_env("CANONICAL_HOST_ENABLED") do
-    nil ->
-      config_env() != :test
-
-    value when value in ["1", "true", "TRUE", "yes", "YES", "on", "ON"] ->
-      true
-
-    value when value in ["0", "false", "FALSE", "no", "NO", "off", "OFF"] ->
-      false
-
-    value ->
-      raise """
-      Unsupported CANONICAL_HOST_ENABLED=#{inspect(value)}.
-      Expected one of: 1, true, yes, on, 0, false, no, off.
-      """
+    other ->
+      raise "Unsupported EBOSS_ENV=#{inspect(other)}. Expected local, stage, prod, or test."
   end
+
+phx_host = System.get_env("PHX_HOST") || host_defaults.host
+public_scheme = host_defaults.scheme
 
 canonical_host =
-  System.get_env("CANONICAL_HOST") ||
-    if canonical_host_enabled do
-      public_host
-    end
+  if deployment_env in ["stage", "prod"], do: phx_host, else: host_defaults.canonical_host
 
-canonical_host_passthrough_hosts =
-  "CANONICAL_HOST_PASSTHROUGH_HOSTS"
-  |> System.get_env("")
-  |> String.split(",", trim: true)
-  |> Enum.map(&String.trim/1)
-  |> Enum.reject(&(&1 == ""))
+vite_port = System.get_env("VITE_PORT") || "5173"
 
-public_port =
-  System.get_env("PUBLIC_PORT") ||
-    case deployment_env do
-      "local" -> listen_port
-      "test" -> listen_port
-      _ when public_scheme == "https" -> "443"
-      _ -> "80"
-    end
-
-default_public_url =
-  case {public_scheme, public_port} do
-    {"https", "443"} -> "https://#{public_host}"
-    {"http", "80"} -> "http://#{public_host}"
-    {scheme, port} -> "#{scheme}://#{public_host}:#{port}"
+public_url =
+  case deployment_env do
+    env when env in ["local", "test"] -> "http://#{phx_host}:#{listen_port}"
+    _ -> "#{public_scheme}://#{phx_host}"
   end
 
-public_url = System.get_env("PUBLIC_URL") || default_public_url
-
-default_vite_url =
-  case {vite_scheme, vite_port} do
-    {"https", "443"} -> "https://#{vite_host}"
-    {"http", "80"} -> "http://#{vite_host}"
-    {scheme, port} -> "#{scheme}://#{vite_host}:#{port}"
-  end
-
-vite_url = System.get_env("VITE_URL") || default_vite_url
+vite_url = "http://#{phx_host}:#{vite_port}"
 
 endpoint_url =
-  [host: public_host, scheme: public_scheme]
+  [host: phx_host, scheme: public_scheme]
   |> then(fn url ->
-    case {public_scheme, public_port} do
-      {"https", "443"} -> url
-      {"http", "80"} -> url
-      {_scheme, port} -> Keyword.put(url, :port, String.to_integer(port))
+    case deployment_env do
+      env when env in ["local", "test"] ->
+        Keyword.put(url, :port, String.to_integer(listen_port))
+
+      _ ->
+        url
     end
   end)
 
 static_url =
-  case config_env() do
-    env when env in [:dev, :test] ->
-      [host: vite_host, scheme: vite_scheme]
-      |> then(fn url ->
-        case {vite_scheme, vite_port} do
-          {"https", "443"} -> url
-          {"http", "80"} -> url
-          {_scheme, port} -> Keyword.put(url, :port, String.to_integer(port))
-        end
-      end)
-
-    _ ->
-      endpoint_url
+  if config_env() in [:dev, :test] do
+    [host: phx_host, scheme: "http", port: String.to_integer(vite_port)]
+  else
+    endpoint_url
   end
+
+local_check_origins =
+  [
+    "http://#{phx_host}",
+    "http://#{phx_host}:#{listen_port}",
+    "http://local.eboss.ai",
+    "http://local.eboss.ai:#{listen_port}",
+    "http://localhost",
+    "http://localhost:#{listen_port}",
+    "http://127.0.0.1",
+    "http://127.0.0.1:#{listen_port}",
+    "//#{phx_host}",
+    "//local.eboss.ai",
+    "//localhost",
+    "//127.0.0.1"
+  ]
+  |> Enum.uniq()
 
 check_origin =
   case deployment_env do
-    env when env in ["local", "test"] ->
-      [
-        public_url,
-        "#{public_scheme}://#{public_host}",
-        "#{public_scheme}://localhost",
-        "#{public_scheme}://127.0.0.1",
-        "//#{public_host}",
-        "//localhost",
-        "//127.0.0.1"
-      ]
-      |> Enum.uniq()
-
-    _ ->
-      [public_url, "//#{public_host}"]
+    env when env in ["local", "test"] -> local_check_origins
+    _ -> [public_url, "//#{phx_host}"]
   end
 
 token_signing_secret =
@@ -193,9 +105,6 @@ token_signing_secret =
 
 config :eboss_core,
   environment: deployment_env,
-  public_host: public_host,
-  public_port: public_port,
-  public_scheme: public_scheme,
   public_url: public_url,
   token_signing_secret: token_signing_secret
 
@@ -215,8 +124,6 @@ config :live_vue,
 
 config :eboss_web, EBossWeb.Endpoint,
   canonical_host: canonical_host,
-  canonical_host_enabled: canonical_host_enabled,
-  canonical_host_passthrough_hosts: canonical_host_passthrough_hosts,
   check_origin: check_origin,
   http: [port: String.to_integer(listen_port)],
   static_url: static_url,

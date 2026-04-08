@@ -18,12 +18,9 @@ Environment host defaults:
 Port and host overrides:
 
 * `PORT` controls the Phoenix listener in all environments.
-* `PUBLIC_HOST`, `PUBLIC_SCHEME`, `PUBLIC_PORT`, and `PUBLIC_URL` control the externally advertised app URL.
-* `CANONICAL_HOST_ENABLED` toggles Phoenix-side canonical-host redirects. It defaults to `true` outside tests.
-* `CANONICAL_HOST` overrides the redirect target host. By default it follows `PUBLIC_HOST`.
-* `CANONICAL_HOST_PASSTHROUGH_HOSTS` allows a comma-separated list of hosts to skip canonical redirects.
-* `VITE_HOST`, `VITE_SCHEME`, and `VITE_PORT` control the LiveVue/Vite dev-server URL.
-* `VITE_ALLOWED_HOSTS` can be used when the dev server should accept additional host headers.
+* `PHX_HOST` controls the app hostname used in generated URLs and, for stage/prod, the canonical redirect target.
+* `VITE_PORT` controls the LiveVue/Vite dev-server port.
+* In `local`, both `local.eboss.ai` and `localhost` are accepted. Set `PHX_HOST=localhost` if you want generated asset and auth URLs to stay on localhost.
 
 Ready to run in production? Please [check our deployment guides](https://hexdocs.pm/phoenix/deployment.html).
 

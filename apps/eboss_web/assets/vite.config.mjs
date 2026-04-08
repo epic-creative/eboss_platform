@@ -4,13 +4,12 @@ import tailwindcss from "@tailwindcss/vite"
 import vue from "@vitejs/plugin-vue"
 import liveVuePlugin from "live_vue/vitePlugin"
 
-const publicHost = process.env.PUBLIC_HOST ?? "local.eboss.ai"
-const viteHost = process.env.VITE_HOST ?? publicHost
+const ebossEnv = process.env.EBOSS_ENV ?? "local"
+const defaultHost = ebossEnv === "test" ? "localhost" : "local.eboss.ai"
+const phxHost = process.env.PHX_HOST ?? defaultHost
 const vitePort = Number(process.env.VITE_PORT ?? 5173)
-const viteScheme = process.env.VITE_SCHEME ?? "http"
-const allowedHosts = (process.env.VITE_ALLOWED_HOSTS ?? `.eboss.ai,${publicHost},${viteHost},localhost,127.0.0.1`)
-  .split(",")
-  .map(host => host.trim())
+const allowedHosts = [".eboss.ai", phxHost, "localhost", "127.0.0.1"]
+  .map((host) => host.trim())
   .filter(Boolean)
 
 export default defineConfig({
@@ -22,8 +21,8 @@ export default defineConfig({
     cors: true,
     hmr: {
       clientPort: vitePort,
-      host: viteHost,
-      protocol: viteScheme === "https" ? "wss" : "ws",
+      host: phxHost,
+      protocol: "ws",
     },
   },
   optimizeDeps: {

@@ -6,14 +6,12 @@ Runtime host defaults are environment-aware:
 * `stage` -> `https://stage.eboss.ai`
 * `prod` -> `https://eboss.ai`
 
-Use `EBOSS_ENV` plus `PUBLIC_HOST`, `PUBLIC_SCHEME`, `PUBLIC_PORT`, or `PUBLIC_URL` to override the defaults.
+Use `EBOSS_ENV` to pick the default environment host, `PHX_HOST` to override the public hostname, and `PORT` to override the Phoenix listener.
 
-`PORT` controls the Phoenix listener, and `VITE_HOST` / `VITE_SCHEME` / `VITE_PORT` control the LiveVue dev server in development.
+`VITE_PORT` controls the LiveVue dev server in development.
 
 Canonical-host redirects follow the same host model by default:
 
-* `local` redirects to `local.eboss.ai`
+* `local` accepts both `local.eboss.ai` and `localhost`
 * `stage` redirects to `stage.eboss.ai`
 * `prod` redirects to `eboss.ai`
-
-Use `CANONICAL_HOST_ENABLED`, `CANONICAL_HOST`, or `CANONICAL_HOST_PASSTHROUGH_HOSTS` to override that behavior.
