@@ -10,9 +10,15 @@
 import Config
 
 # Configure Mix tasks and generators
-config :eboss,
+config :eboss_core,
   namespace: EBoss,
-  ecto_repos: [EBoss.Repo]
+  ecto_repos: [EBoss.Repo],
+  ash_domains: [
+    EBoss.Accounts,
+    EBoss.Organizations,
+    EBoss.Workspaces,
+    EBoss.Logs
+  ]
 
 # Configure the mailer
 #
@@ -21,12 +27,12 @@ config :eboss,
 #
 # For production it's recommended to configure a different adapter
 # at the `config/runtime.exs`.
-config :eboss, EBoss.Mailer, adapter: Swoosh.Adapters.Local
+config :eboss_core, EBoss.Mailer, adapter: Swoosh.Adapters.Local
 
 config :eboss_web,
   namespace: EBossWeb,
   ecto_repos: [EBoss.Repo],
-  generators: [context_app: :eboss, binary_id: true]
+  generators: [context_app: :eboss_core, binary_id: true]
 
 # Configures the endpoint
 config :eboss_web, EBossWeb.Endpoint,

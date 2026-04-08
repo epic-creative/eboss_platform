@@ -48,6 +48,7 @@ defmodule EBoss.Umbrella.MixProject do
       {:igniter, "~> 0.6", only: [:dev, :test]},
       {:usage_rules, "~> 1.1", only: :dev},
       {:dotenvy, "~> 1.1"},
+      {:sourceror, "~> 1.8", only: [:dev, :test]},
       # Required to run "mix format" on ~H/.heex files from the umbrella root
       {:phoenix_live_view, ">= 0.0.0"}
     ]
@@ -68,10 +69,33 @@ defmodule EBoss.Umbrella.MixProject do
       setup: ["cmd mix setup"],
       precommit: [
         "cmd env MIX_ENV=test mix compile --warnings-as-errors",
-        "deps.unlock --unused",
-        "format",
+        &unlock_unused_dev/1,
+        &format_dev/1,
         "cmd env MIX_ENV=test mix test"
       ]
     ]
+  end
+
+  defp unlock_unused_dev(_args) do
+    run_root_mix("dev", ["deps.unlock", "--unused"])
+  end
+
+  defp format_dev(_args) do
+    run_root_mix("dev", ["format"])
+  end
+
+  defp run_root_mix(env, args) do
+    mix = System.find_executable("mix") || Mix.raise("Unable to locate the mix executable")
+
+    {_, status} =
+      System.cmd(mix, args,
+        env: [{"MIX_ENV", env}],
+        into: IO.stream(:stdio, :line),
+        stderr_to_stdout: true
+      )
+
+    if status != 0 do
+      Mix.raise("Command failed: MIX_ENV=#{env} mix #{Enum.join(args, " ")}")
+    end
   end
 end

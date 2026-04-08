@@ -1,5 +1,26 @@
 import Config
 
+token_signing_secret =
+  System.get_env("TOKEN_SIGNING_SECRET") ||
+    if config_env() == :prod do
+      raise """
+      environment variable TOKEN_SIGNING_SECRET is missing.
+      Generate one with: mix phx.gen.secret
+      """
+    else
+      "dev-token-signing-secret"
+    end
+
+public_port = System.get_env("PORT", if(config_env() == :test, do: "4002", else: "4000"))
+
+public_url =
+  System.get_env("PUBLIC_URL") ||
+    "http://localhost:#{public_port}"
+
+config :eboss_core,
+  public_url: public_url,
+  token_signing_secret: token_signing_secret
+
 if Code.ensure_loaded?(Dotenvy) do
   dotenv_path = Path.expand("../.env", __DIR__)
 
@@ -33,7 +54,7 @@ if config_env() == :prod do
 
   maybe_ipv6 = if System.get_env("ECTO_IPV6") in ~w(true 1), do: [:inet6], else: []
 
-  config :eboss, EBoss.Repo,
+  config :eboss_core, EBoss.Repo,
     # ssl: true,
     url: database_url,
     pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10"),
@@ -108,7 +129,7 @@ if config_env() == :prod do
   # In production you need to configure the mailer to use a different adapter.
   # Here is an example configuration for Mailgun:
   #
-  #     config :eboss, EBoss.Mailer,
+  #     config :eboss_core, EBoss.Mailer,
   #       adapter: Swoosh.Adapters.Mailgun,
   #       api_key: System.get_env("MAILGUN_API_KEY"),
   #       domain: System.get_env("MAILGUN_DOMAIN")
@@ -121,5 +142,5 @@ if config_env() == :prod do
   #
   # See https://hexdocs.pm/swoosh/Swoosh.html#module-installation for details.
 
-  config :eboss, :dns_cluster_query, System.get_env("DNS_CLUSTER_QUERY")
+  config :eboss_core, :dns_cluster_query, System.get_env("DNS_CLUSTER_QUERY")
 end

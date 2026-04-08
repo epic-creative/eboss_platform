@@ -59,7 +59,7 @@ defmodule EBossWeb.MixProject do
       {:gettext, "~> 1.0"},
       {:ash_authentication_phoenix, "~> 2.16"},
       {:ash_phoenix, "~> 2.3"},
-      {:eboss, in_umbrella: true},
+      {:eboss_core, in_umbrella: true},
       {:jason, "~> 1.2"},
       {:bandit, "~> 1.5"}
     ]

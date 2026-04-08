@@ -1,7 +1,7 @@
 import Config
 
 # Configure your database
-config :eboss, EBoss.Repo,
+config :eboss_core, EBoss.Repo,
   username: "postgres",
   password: "postgres",
   hostname: "localhost",

@@ -1,3 +1,0 @@
-# EBoss
-
-**TODO: Add description**
