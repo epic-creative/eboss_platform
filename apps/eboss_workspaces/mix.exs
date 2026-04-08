@@ -32,6 +32,7 @@ defmodule EBossWorkspaces.MixProject do
     [
       {:ash, "~> 3.23"},
       {:ash_archival, "~> 2.0"},
+      {:ash_json_api, "~> 1.6"},
       {:ash_postgres, "~> 2.8"},
       {:ash_slug, "~> 0.2.1"},
       {:eboss_accounts, in_umbrella: true},

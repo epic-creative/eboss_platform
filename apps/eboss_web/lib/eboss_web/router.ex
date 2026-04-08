@@ -15,7 +15,7 @@ defmodule EBossWeb.Router do
   end
 
   pipeline :api do
-    plug :accepts, ["json"]
+    plug :accepts, ["json", "json-api"]
 
     plug AshAuthentication.Strategy.ApiKey.Plug,
       resource: EBoss.Accounts.User,
@@ -48,9 +48,20 @@ defmodule EBossWeb.Router do
   end
 
   # Other scopes may use custom stacks.
-  # scope "/api", EBossWeb do
-  #   pipe_through :api
-  # end
+  scope "/api/v1" do
+    pipe_through :browser
+
+    forward "/swaggerui", OpenApiSpex.Plug.SwaggerUI,
+      path: "/api/v1/open_api",
+      default_model_expand_depth: 4
+  end
+
+  scope "/api/v1", EBossWeb do
+    pipe_through :api
+
+    get "/open_api", OpenApiController, :show
+    forward "/", JsonApiRouter
+  end
 
   # Enable LiveDashboard and Swoosh mailbox preview in development
   if Application.compile_env(:eboss_web, :dev_routes) do

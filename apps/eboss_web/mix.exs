@@ -58,12 +58,16 @@ defmodule EBossWeb.MixProject do
       {:telemetry_metrics, "~> 1.0"},
       {:telemetry_poller, "~> 1.0"},
       {:gettext, "~> 1.0"},
+      {:req, "~> 0.5"},
       {:ash_authentication_phoenix, "~> 2.16"},
+      {:ash_json_api, "~> 1.6"},
       {:ash_phoenix, "~> 2.3"},
       {:eboss_accounts, in_umbrella: true},
       {:eboss_data, in_umbrella: true},
+      {:eboss_workspaces, in_umbrella: true},
       {:jason, "~> 1.2"},
-      {:bandit, "~> 1.5"}
+      {:bandit, "~> 1.5"},
+      {:open_api_spex, "~> 3.22"}
     ]
   end
 

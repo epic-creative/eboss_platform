@@ -8,7 +8,7 @@ defmodule EBoss.Workspaces.Workspace do
     domain: EBoss.Workspaces,
     data_layer: AshPostgres.DataLayer,
     authorizers: [Ash.Policy.Authorizer],
-    extensions: [AshArchival.Resource, AshCloak, AshSlug]
+    extensions: [AshArchival.Resource, AshCloak, AshJsonApi.Resource, AshSlug]
 
   resource do
     base_filter(expr(is_nil(archived_at)))
@@ -30,6 +30,10 @@ defmodule EBoss.Workspaces.Workspace do
 
   archive do
     base_filter?(true)
+  end
+
+  json_api do
+    type("workspace")
   end
 
   cloak do
@@ -107,6 +111,66 @@ defmodule EBoss.Workspaces.Workspace do
         expr(
           owner_type == ^arg(:owner_type) and
             owner_id == ^arg(:owner_id) and
+            slug == ^arg(:slug)
+        )
+      )
+    end
+
+    read :by_owner_handle_and_slug do
+      description("Get a workspace by owner handle and workspace slug")
+
+      argument :owner_type, :atom do
+        allow_nil?(false)
+        constraints(one_of: [:user, :organization])
+      end
+
+      argument :owner_handle, :string do
+        allow_nil?(false)
+      end
+
+      argument :slug, :string do
+        allow_nil?(false)
+      end
+
+      filter(
+        expr(
+          owner_type == ^arg(:owner_type) and
+            owner_handle == ^arg(:owner_handle) and
+            slug == ^arg(:slug)
+        )
+      )
+    end
+
+    read :by_user_handle_and_slug do
+      description("Get a user-owned workspace by owner handle and workspace slug")
+
+      argument :owner_handle, :string do
+        allow_nil?(false)
+      end
+
+      argument :slug, :string do
+        allow_nil?(false)
+      end
+
+      filter(
+        expr(owner_type == :user and owner_handle == ^arg(:owner_handle) and slug == ^arg(:slug))
+      )
+    end
+
+    read :by_org_handle_and_slug do
+      description("Get an organization-owned workspace by owner handle and workspace slug")
+
+      argument :owner_handle, :string do
+        allow_nil?(false)
+      end
+
+      argument :slug, :string do
+        allow_nil?(false)
+      end
+
+      filter(
+        expr(
+          owner_type == :organization and owner_handle == ^arg(:owner_handle) and
             slug == ^arg(:slug)
         )
       )

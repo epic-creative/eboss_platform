@@ -9,6 +9,16 @@
 # move said applications out of the umbrella.
 import Config
 
+config :mime,
+  extensions: %{
+    "jsonapi" => "application/vnd.api+json"
+  },
+  types: %{
+    "application/vnd.api+json" => ["json-api", "jsonapi"]
+  }
+
+config :ash_json_api, use_deep_object_for_filter_type?: false
+
 if Code.ensure_loaded?(Dotenvy) do
   dotenv_path = Path.expand("../.env", __DIR__)
 

@@ -3,7 +3,30 @@ defmodule EBoss.Workspaces do
   The Workspaces domain for managing user and organization workspaces.
   """
 
-  use Ash.Domain, otp_app: :eboss_workspaces
+  use Ash.Domain, otp_app: :eboss_workspaces, extensions: [AshJsonApi.Domain]
+
+  json_api do
+    routes do
+      base_route "/workspaces", EBoss.Workspaces.Workspace do
+        index :read
+        get(:read)
+      end
+
+      base_route "/users/:owner_handle/workspaces", EBoss.Workspaces.Workspace do
+        get :by_user_handle_and_slug do
+          route("/:slug")
+          name "get_user_workspace_by_slug"
+        end
+      end
+
+      base_route "/orgs/:owner_handle/workspaces", EBoss.Workspaces.Workspace do
+        get :by_org_handle_and_slug do
+          route("/:slug")
+          name "get_org_workspace_by_slug"
+        end
+      end
+    end
+  end
 
   resources do
     resource(EBoss.Workspaces.Workspace)
@@ -68,6 +91,23 @@ defmodule EBoss.Workspaces do
 
   def get_workspace_by_owner_and_slug!(owner_type, owner_id, slug, opts \\ []) do
     case get_workspace_by_owner_and_slug(owner_type, owner_id, slug, opts) do
+      {:ok, workspace} -> workspace
+      {:error, error} -> raise error
+    end
+  end
+
+  def get_workspace_by_owner_handle_and_slug(owner_type, owner_handle, slug, opts \\ []) do
+    Workspace
+    |> Ash.Query.for_read(:by_owner_handle_and_slug, %{
+      owner_type: owner_type,
+      owner_handle: owner_handle,
+      slug: slug
+    })
+    |> Ash.read_one(default_opts(opts))
+  end
+
+  def get_workspace_by_owner_handle_and_slug!(owner_type, owner_handle, slug, opts \\ []) do
+    case get_workspace_by_owner_handle_and_slug(owner_type, owner_handle, slug, opts) do
       {:ok, workspace} -> workspace
       {:error, error} -> raise error
     end
