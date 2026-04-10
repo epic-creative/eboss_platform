@@ -35,10 +35,15 @@ defmodule EBossWeb.DashboardComponents do
     ~H"""
     <section
       class="ui-dashboard-shell"
+      aria-label={BrowserTestContracts.dashboard_shell_label()}
       data-dashboard-shell
       data-testid={BrowserTestContracts.dashboard_shell()}
     >
-      <aside class="ui-dashboard-shell__sidebar" data-dashboard-shell-sidebar>
+      <aside
+        class="ui-dashboard-shell__sidebar"
+        aria-label={BrowserTestContracts.dashboard_sidebar_label()}
+        data-dashboard-shell-sidebar
+      >
         <div class="ui-dashboard-shell__rail">
           <div class="ui-dashboard-shell__identity" data-dashboard-chrome="identity">
             <div class="space-y-3">
@@ -116,7 +121,11 @@ defmodule EBossWeb.DashboardComponents do
         </div>
       </aside>
 
-      <div class="ui-dashboard-shell__main" data-dashboard-shell-main>
+      <section
+        class="ui-dashboard-shell__main"
+        aria-label={BrowserTestContracts.dashboard_workspace_label()}
+        data-dashboard-shell-main
+      >
         <header class="ui-dashboard-shell__header" data-dashboard-shell-header>
           {render_slot(@page_header)}
         </header>
@@ -124,7 +133,7 @@ defmodule EBossWeb.DashboardComponents do
         <div class="ui-dashboard-shell__body" data-dashboard-shell-body>
           {render_slot(@inner_block)}
         </div>
-      </div>
+      </section>
     </section>
     """
   end
@@ -179,7 +188,12 @@ defmodule EBossWeb.DashboardComponents do
 
   def dashboard_section(assigns) do
     ~H"""
-    <section class={["ui-dashboard-section", @class]} data-dashboard-section={@section} {@rest}>
+    <section
+      class={["ui-dashboard-section", @class]}
+      aria-label={BrowserTestContracts.dashboard_section_label(@section)}
+      data-dashboard-section={@section}
+      {@rest}
+    >
       {render_slot(@inner_block)}
     </section>
     """
@@ -198,7 +212,7 @@ defmodule EBossWeb.DashboardComponents do
     """
   end
 
-  attr(:label, :string, default: "Dashboard utility strip")
+  attr(:label, :string, default: BrowserTestContracts.dashboard_command_surface_label())
   attr(:title, :string, default: "Command surface")
 
   attr(:description, :string,
@@ -243,7 +257,7 @@ defmodule EBossWeb.DashboardComponents do
     """
   end
 
-  attr(:label, :string, default: "Dashboard quick actions")
+  attr(:label, :string, default: BrowserTestContracts.dashboard_quick_actions_label())
   attr(:title, :string, default: "Quick actions")
 
   attr(:description, :string,
@@ -548,6 +562,7 @@ defmodule EBossWeb.DashboardComponents do
       surface={@surface}
       padding={@padding}
       class={["ui-dashboard-state", @class]}
+      aria-label={BrowserTestContracts.dashboard_state_label(@variant)}
       data-dashboard-state={@variant}
       data-dashboard-density={@density}
       {@rest}

@@ -3,6 +3,8 @@ defmodule EBossWeb.DashboardCommandComponentsTest do
 
   import Phoenix.LiveViewTest
 
+  alias EBossWeb.BrowserTestContracts
+
   test "dashboard utility strip renders lightweight command cues" do
     html =
       render_component(&EBossWeb.DashboardComponents.dashboard_utility_strip/1, %{
@@ -31,6 +33,7 @@ defmodule EBossWeb.DashboardCommandComponentsTest do
       })
 
     assert html =~ ~s(data-dashboard-utility-strip)
+    assert html =~ ~s(aria-label="#{BrowserTestContracts.dashboard_command_surface_label()}")
     assert html =~ ~s(data-dashboard-utility-item="primary-lane")
     assert html =~ ~s(data-dashboard-utility-item="state-audit")
     assert html =~ "Command surface"
@@ -67,7 +70,7 @@ defmodule EBossWeb.DashboardCommandComponentsTest do
       })
 
     assert html =~ ~s(data-dashboard-quick-actions)
-    assert html =~ ~s(aria-label="Dashboard quick actions")
+    assert html =~ ~s(aria-label="#{BrowserTestContracts.dashboard_quick_actions_label()}")
     assert html =~ ~s(data-dashboard-quick-action="open-launch-surface")
     assert html =~ ~s(data-dashboard-quick-action="audit-fallback-states")
     assert html =~ "Quick actions"

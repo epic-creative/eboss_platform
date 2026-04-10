@@ -3,6 +3,8 @@ defmodule EBossWeb.DashboardStateComponentsTest do
 
   import Phoenix.LiveViewTest
 
+  alias EBossWeb.BrowserTestContracts
+
   test "dashboard empty state renders the shared sparse contract" do
     html =
       render_component(&EBossWeb.DashboardComponents.dashboard_empty_state/1, %{
@@ -12,6 +14,7 @@ defmodule EBossWeb.DashboardStateComponentsTest do
       })
 
     assert html =~ ~s(data-dashboard-state="empty")
+    assert html =~ ~s(aria-label="#{BrowserTestContracts.dashboard_state_label("empty")}")
     assert html =~ ~s(data-dashboard-density="sparse")
     assert html =~ "Sparse context"
     assert html =~ "Empty"
@@ -28,6 +31,7 @@ defmodule EBossWeb.DashboardStateComponentsTest do
       })
 
     assert html =~ ~s(data-dashboard-state="loading")
+    assert html =~ ~s(aria-label="#{BrowserTestContracts.dashboard_state_label("loading")}")
     assert html =~ ~s(data-dashboard-density="dense")
     assert html =~ "Dense context"
     assert html =~ "Loading"
@@ -44,6 +48,7 @@ defmodule EBossWeb.DashboardStateComponentsTest do
       })
 
     assert html =~ ~s(data-dashboard-state="error")
+    assert html =~ ~s(aria-label="#{BrowserTestContracts.dashboard_state_label("error")}")
     assert html =~ ~s(data-dashboard-density="dense")
     assert html =~ "Attention"
     assert html =~ ~s(role="alert")

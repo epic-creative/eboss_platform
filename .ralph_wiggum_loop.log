@@ -2554,3 +2554,68 @@ Running ExUnit with seed: 138939, max_cases: 20
 ...............................................................................
 Finished in 8.4 seconds (0.2s async, 8.1s sync)
 79 tests, 0 failures
+1) changed files
+
+- [apps/eboss_web/lib/eboss_web/browser_test_contracts.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/browser_test_contracts.ex)
+- [apps/eboss_web/lib/eboss_web/components/dashboard_components.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/components/dashboard_components.ex)
+- [apps/eboss_web/test/eboss_web/live/dashboard_command_components_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/eboss_web/live/dashboard_command_components_test.exs)
+- [apps/eboss_web/test/eboss_web/live/dashboard_state_components_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/eboss_web/live/dashboard_state_components_test.exs)
+- [apps/eboss_web/test/eboss_web/live/dashboard_contract_smoke_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/eboss_web/live/dashboard_contract_smoke_test.exs)
+
+2) tests/commands executed
+
+- `git diff --check` — passed
+- `ERL_LIBS=_build/test/lib elixir -pa _build/test/consolidated /tmp/eboss_dashboard_contract_check.exs` — passed, `7 tests, 0 failures`
+- `mix precommit` — failed immediately in this sandbox because Mix could not open its local PubSub TCP socket: `Mix.Sync.PubSub.subscribe/1 ... reason: :eperm`
+
+3) acceptance criteria coverage
+
+- Key dashboard surfaces now have stable contracts:
+  - centralized labels in `BrowserTestContracts` for shell, sidebar, navigation, workspace, command surface, quick actions, dashboard sections, and empty/loading/error states
+  - shell still keeps the single explicit structural `data-testid="dashboard-shell"`
+- Selectors now prefer stable semantics over incidental markup:
+  - dashboard shell, sidebar, workspace, sections, and state panels are exposed through landmark-style `aria-label` contracts
+  - tests assert those labels instead of relying on the existing `data-dashboard-*` structure where avoidable
+- Approach is documented in code:
+  - `BrowserTestContracts` moduledoc now spells out the dashboard selector contract
+  - new smoke coverage in `dashboard_contract_smoke_test.exs` proves the contract on the rendered authenticated dashboard surface
+
+4) blockers/assumptions
+
+- Blocker: this environment denies local TCP sockets, so `mix precommit` cannot start Mix PubSub, and direct database-backed route checks are also constrained by the same socket policy.
+- Assumption: outside this sandbox, rerunning `mix precommit` is still required to satisfy the repo gate fully. The story-specific dashboard contract tests themselves passed under the direct `elixir` harness.
+==> eboss_web
+Compiling 3 files (.ex)
+Generated eboss_web app
+==> eboss_data
+There are no tests to run
+==> eboss_accounts
+Running ExUnit with seed: 611913, max_cases: 20
+
+............
+Finished in 7.4 seconds (0.00s async, 7.4s sync)
+12 tests, 0 failures
+==> eboss_tenancy
+Running ExUnit with seed: 303306, max_cases: 20
+
+............
+Finished in 6.5 seconds (0.00s async, 6.5s sync)
+12 tests, 0 failures
+==> eboss_workspaces
+Running ExUnit with seed: 151174, max_cases: 20
+
+............
+Finished in 5.6 seconds (0.00s async, 5.6s sync)
+12 tests, 0 failures
+==> eboss_folio
+Running ExUnit with seed: 212605, max_cases: 20
+
+...........
+Finished in 3.8 seconds (0.00s async, 3.8s sync)
+11 tests, 0 failures
+==> eboss_web
+Running ExUnit with seed: 697836, max_cases: 20
+
+................................................................................
+Finished in 8.5 seconds (0.3s async, 8.1s sync)
+80 tests, 0 failures
