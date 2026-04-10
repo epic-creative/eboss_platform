@@ -7,7 +7,7 @@ import UiPanel from "./UiPanel.vue"
 <template>
   <Story
     title="UI/Panel"
-    :layout="{ type: 'grid', width: 360 }"
+    :layout="{ type: 'grid', width: 1120 }"
     :init-state="() => ({ theme: 'dark' as 'dark' | 'light', density: 'default' as 'default' | 'compact' })"
   >
     <template #controls="{ state }">
@@ -15,12 +15,30 @@ import UiPanel from "./UiPanel.vue"
     </template>
 
     <template #default="{ state }">
-      <Variant title="Surfaces">
+      <Variant title="Surface vocabulary">
         <StorySurface :theme="state.theme" :density="state.density">
-          <div class="grid gap-4">
-            <UiPanel surface="default">Default panel chrome for standard sections.</UiPanel>
-            <UiPanel surface="floating">Floating panel chrome for key surfaces.</UiPanel>
-            <UiPanel tone="inverse" surface="solid">Inverse panel chrome for high-emphasis content.</UiPanel>
+          <div class="grid gap-4 lg:grid-cols-3">
+            <UiPanel class="space-y-3">
+              <p class="ui-text-meta" data-tone="soft">Default surface</p>
+              <p class="ui-text-title" data-size="md">Anchored section chrome.</p>
+              <p class="ui-text-body" data-tone="muted">
+                Use this for standard panels that sit directly in the shell and should feel grounded rather than lifted.
+              </p>
+            </UiPanel>
+            <UiPanel surface="floating" class="space-y-3">
+              <p class="ui-text-meta" data-tone="soft">Floating surface</p>
+              <p class="ui-text-title" data-size="md">Raised shell-leading chrome.</p>
+              <p class="ui-text-body" data-tone="muted">
+                Use this for dialogs, featured panels, and moments that should visibly lift above the default shell plane.
+              </p>
+            </UiPanel>
+            <UiPanel surface="solid" class="space-y-3">
+              <p class="ui-text-meta" data-tone="soft">Solid surface</p>
+              <p class="ui-text-title" data-size="md">Dense inset chrome.</p>
+              <p class="ui-text-body" data-tone="muted">
+                Use this for grouped content nested inside another panel or scene so the hierarchy tightens without adding extra lift.
+              </p>
+            </UiPanel>
           </div>
         </StorySurface>
       </Variant>

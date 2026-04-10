@@ -42,24 +42,24 @@ defmodule EBossWeb.HomeLive do
           </div>
 
           <dl class="ui-card-grid ui-card-grid--3">
-            <div class="ui-metric-card">
+            <.panel as="div" surface="solid" padding="sm" class="ui-metric-card">
               <dt class="ui-text-meta" data-tone="muted">Identity</dt>
               <dd class="ui-text-body mt-3" data-tone="muted">
                 Email confirmation, magic links, and password flows stay on AshAuthentication’s happy path.
               </dd>
-            </div>
-            <div class="ui-metric-card">
+            </.panel>
+            <.panel as="div" surface="solid" padding="sm" class="ui-metric-card">
               <dt class="ui-text-meta" data-tone="muted">Workspaces</dt>
               <dd class="ui-text-body mt-3" data-tone="muted">
                 Owner-aware routing and API-ready boundaries are already in place for the larger application to come.
               </dd>
-            </div>
-            <div class="ui-metric-card">
+            </.panel>
+            <.panel as="div" surface="solid" padding="sm" class="ui-metric-card">
               <dt class="ui-text-meta" data-tone="muted">Folio</dt>
               <dd class="ui-text-body mt-3" data-tone="muted">
                 Planning primitives, audit history, and strict workspace scoping are ready for the next layer.
               </dd>
-            </div>
+            </.panel>
           </dl>
         </div>
 

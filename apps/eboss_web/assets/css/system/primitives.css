@@ -187,35 +187,64 @@ select {
 
 .ui-panel {
   position: relative;
+  isolation: isolate;
   overflow: hidden;
-  border: 1px solid var(--color-border-subtle);
+  border: 1px solid color-mix(in srgb, var(--color-ui-border-subtle) 92%, transparent);
   border-radius: var(--radius-panel);
-  background: var(--color-panel);
-  box-shadow: var(--shadow-panel-soft);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, white 6%, transparent), transparent 22%),
+    var(--color-ui-surface-default);
+  box-shadow: var(--shadow-surface-default);
   backdrop-filter: blur(18px);
 }
 
+.ui-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border-top: 1px solid color-mix(in srgb, white 18%, transparent);
+  opacity: 0.45;
+  pointer-events: none;
+}
+
 .ui-panel[data-surface="floating"] {
-  background: color-mix(in srgb, var(--color-surface-elevated) 88%, transparent);
-  box-shadow: var(--shadow-panel);
+  border-color: color-mix(in srgb, var(--color-ui-border-strong) 78%, var(--color-ui-border-subtle));
+  background:
+    linear-gradient(180deg, color-mix(in srgb, white 10%, transparent), transparent 24%),
+    color-mix(in srgb, var(--color-ui-surface-floating) 96%, transparent);
+  box-shadow: var(--shadow-surface-floating);
 }
 
 .ui-panel[data-surface="solid"] {
-  background: var(--color-surface-elevated);
+  border-color: color-mix(in srgb, var(--color-ui-border-subtle) 98%, transparent);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, white 6%, transparent), transparent 22%),
+    var(--color-ui-surface-solid);
+  box-shadow: var(--shadow-surface-solid);
+  backdrop-filter: none;
 }
 
 .ui-panel[data-tone="primary"] {
   background:
     radial-gradient(circle at top left, color-mix(in srgb, var(--color-ui-primary) 16%, transparent), transparent 32%),
-    linear-gradient(180deg, color-mix(in srgb, var(--color-surface) 96%, transparent), color-mix(in srgb, var(--color-surface-strong) 82%, transparent));
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--color-ui-surface-default) 96%, transparent),
+      color-mix(in srgb, var(--color-ui-surface-solid) 82%, transparent)
+    );
   border-color: color-mix(in srgb, var(--color-ui-primary) 18%, var(--color-border-subtle));
 }
 
 .ui-panel[data-tone="inverse"] {
   background:
     radial-gradient(circle at top left, color-mix(in srgb, var(--color-ui-primary) 16%, transparent), transparent 32%),
-    radial-gradient(circle at bottom right, color-mix(in srgb, var(--color-surface-strong) 82%, transparent), transparent 32%),
-    linear-gradient(180deg, color-mix(in srgb, var(--color-surface-strong) 96%, black 6%), color-mix(in srgb, var(--color-canvas) 96%, black));
+    radial-gradient(circle at bottom right, color-mix(in srgb, var(--color-ui-surface-solid) 82%, transparent), transparent 32%),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--color-ui-surface-solid) 96%, black 6%),
+      color-mix(in srgb, var(--color-canvas) 96%, black)
+    );
   border-color: color-mix(in srgb, var(--color-ui-primary) 18%, var(--color-border-subtle));
 }
 

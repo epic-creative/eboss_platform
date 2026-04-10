@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue"
 import { TabsContent, TabsList, TabsRoot, TabsTrigger } from "reka-ui"
+import UiPanel from "./UiPanel.vue"
 
 type TabItem = {
   value: string
@@ -35,11 +36,11 @@ const activeValue = computed(() => props.modelValue ?? props.items[0]?.value ?? 
     </TabsList>
 
     <TabsContent v-for="item in items" :key="item.value" :value="item.value" class="focus:outline-none">
-      <div class="ui-panel p-6" data-surface="solid">
+      <UiPanel as="div" surface="solid">
         <slot :name="`content-${item.value}`" :item="item">
           <p class="ui-text-body" data-size="lg" data-tone="soft">{{ item.copy }}</p>
         </slot>
-      </div>
+      </UiPanel>
     </TabsContent>
   </TabsRoot>
 </template>

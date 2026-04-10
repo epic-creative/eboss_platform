@@ -15,7 +15,7 @@ withDefaults(
   <div
     :data-theme="theme"
     :data-density="density === 'compact' ? 'compact' : undefined"
-    class="min-h-[18rem] rounded-[28px] border border-ui-border-subtle bg-ui-canvas p-6 text-ui-text shadow-[0_24px_80px_rgba(2,10,23,0.16)]"
+    class="ui-preview-frame"
   >
     <slot />
   </div>

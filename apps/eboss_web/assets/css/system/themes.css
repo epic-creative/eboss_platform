@@ -7,6 +7,10 @@
   --color-surface-strong: #e8eef5;
   --color-panel: rgba(255, 255, 255, 0.86);
   --color-panel-muted: rgba(226, 232, 240, 0.68);
+  --color-surface-default: var(--color-panel);
+  --color-surface-floating: var(--color-surface-elevated);
+  --color-surface-solid: var(--color-surface-strong);
+  --color-surface-subtle: var(--color-panel-muted);
   --color-border-subtle: rgba(148, 163, 184, 0.22);
   --color-border-strong: rgba(71, 85, 105, 0.28);
   --color-text: #0f172a;
@@ -33,6 +37,10 @@
     --color-surface-strong: #111c31;
     --color-panel: rgba(11, 18, 32, 0.88);
     --color-panel-muted: rgba(19, 31, 54, 0.86);
+    --color-surface-default: var(--color-panel);
+    --color-surface-floating: var(--color-surface-elevated);
+    --color-surface-solid: var(--color-surface-strong);
+    --color-surface-subtle: var(--color-panel-muted);
     --color-border-subtle: rgba(125, 211, 252, 0.12);
     --color-border-strong: rgba(148, 163, 184, 0.28);
     --color-text: #e2e8f0;
@@ -63,6 +71,10 @@
   --color-surface-strong: #111c31;
   --color-panel: rgba(11, 18, 32, 0.88);
   --color-panel-muted: rgba(19, 31, 54, 0.86);
+  --color-surface-default: var(--color-panel);
+  --color-surface-floating: var(--color-surface-elevated);
+  --color-surface-solid: var(--color-surface-strong);
+  --color-surface-subtle: var(--color-panel-muted);
   --color-border-subtle: rgba(125, 211, 252, 0.12);
   --color-border-strong: rgba(148, 163, 184, 0.28);
   --color-text: #e2e8f0;

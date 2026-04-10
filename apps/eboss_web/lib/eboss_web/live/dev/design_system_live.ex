@@ -24,6 +24,40 @@ defmodule EBossWeb.Dev.DesignSystemLive do
 
         <section class="ui-dev-preview__section">
           <.section_heading
+            eyebrow="Surface vocabulary"
+            title="Default, floating, and solid surfaces each have one job"
+            subtitle="Default stays anchored in the shell, floating handles raised moments, and solid groups inset content inside another surface."
+            title_size="sm"
+          />
+          <div class="ui-dev-preview__grid ui-dev-preview__grid--3">
+            <.panel class="space-y-3">
+              <p class="ui-text-meta" data-tone="soft">Default surface</p>
+              <p class="ui-text-title" data-size="md">Anchored section chrome.</p>
+              <p class="ui-text-body" data-tone="muted">
+                Use this for standard panels that sit directly in the shell and should feel grounded rather than lifted.
+              </p>
+            </.panel>
+
+            <.panel surface="floating" class="space-y-3">
+              <p class="ui-text-meta" data-tone="soft">Floating surface</p>
+              <p class="ui-text-title" data-size="md">Raised shell-leading chrome.</p>
+              <p class="ui-text-body" data-tone="muted">
+                Use this for dialogs, featured panels, and moments that should visibly lift above the default shell plane.
+              </p>
+            </.panel>
+
+            <.panel surface="solid" class="space-y-3">
+              <p class="ui-text-meta" data-tone="soft">Solid surface</p>
+              <p class="ui-text-title" data-size="md">Dense inset chrome.</p>
+              <p class="ui-text-body" data-tone="muted">
+                Use this for grouped content nested inside another panel or scene so the hierarchy tightens without adding extra lift.
+              </p>
+            </.panel>
+          </div>
+        </section>
+
+        <section class="ui-dev-preview__section">
+          <.section_heading
             eyebrow="Visual DNA"
             title="Operator console first, marketing polish second."
             subtitle="EBoss borrows shell discipline from the `jido_hub` dashboard reference and carries it across every surface without cloning that product."
@@ -44,20 +78,20 @@ defmodule EBossWeb.Dev.DesignSystemLive do
               </div>
 
               <div class="ui-dev-preview__grid ui-dev-preview__grid--2">
-                <div class="rounded-[1.35rem] border border-ui-border-subtle bg-ui-panel-muted/70 p-4">
+                <.panel as="div" surface="solid" padding="sm" class="space-y-3">
                   <p class="ui-text-meta" data-tone="soft">Lean on</p>
-                  <p class="ui-text-body mt-3" data-tone="muted">
+                  <p class="ui-text-body" data-tone="muted">
                     cool surfaces, stable shell chrome, restrained type, mono metadata, and
                     utility-led emphasis
                   </p>
-                </div>
-                <div class="rounded-[1.35rem] border border-ui-border-subtle bg-ui-panel-muted/70 p-4">
+                </.panel>
+                <.panel as="div" surface="solid" padding="sm" class="space-y-3">
                   <p class="ui-text-meta" data-tone="soft">Reject</p>
-                  <p class="ui-text-body mt-3" data-tone="muted">
+                  <p class="ui-text-body" data-tone="muted">
                     neon gradients, borderless cards, pitch-deck heroes, and decorative motion that
                     competes with state clarity
                   </p>
-                </div>
+                </.panel>
               </div>
             </.panel>
 
@@ -102,14 +136,17 @@ defmodule EBossWeb.Dev.DesignSystemLive do
               </div>
 
               <div class="grid gap-3">
-                <div
+                <.panel
                   :for={item <- dashboard_signals()}
-                  class="rounded-[1.35rem] border border-ui-border-subtle bg-ui-panel-muted/70 p-4"
+                  as="div"
+                  surface="solid"
+                  padding="sm"
+                  class="space-y-2"
                 >
                   <p class="ui-text-meta" data-tone="soft">{item.label}</p>
-                  <p class="ui-text-title mt-2" data-size="md">{item.value}</p>
-                  <p class="ui-text-body mt-1" data-tone="muted">{item.copy}</p>
-                </div>
+                  <p class="ui-text-title" data-size="md">{item.value}</p>
+                  <p class="ui-text-body" data-tone="muted">{item.copy}</p>
+                </.panel>
               </div>
             </.panel>
 
@@ -142,13 +179,16 @@ defmodule EBossWeb.Dev.DesignSystemLive do
               </div>
 
               <div class="ui-dev-preview__grid ui-dev-preview__grid--2">
-                <div
+                <.panel
                   :for={item <- public_proof_points()}
-                  class="rounded-[1.35rem] border border-ui-border-subtle bg-ui-panel-muted/70 p-4"
+                  as="div"
+                  surface="solid"
+                  padding="sm"
+                  class="space-y-2"
                 >
                   <p class="ui-text-meta" data-tone="soft">{item.label}</p>
-                  <p class="ui-text-body mt-2" data-tone="muted">{item.copy}</p>
-                </div>
+                  <p class="ui-text-body" data-tone="muted">{item.copy}</p>
+                </.panel>
               </div>
             </.panel>
           </div>

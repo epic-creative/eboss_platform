@@ -210,3 +210,69 @@ Running ExUnit with seed: 752789, max_cases: 20
 .........................................
 Finished in 7.0 seconds (0.2s async, 6.8s sync)
 41 tests, 0 failures
+**1) Changed files**
+- [tokens.css](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/css/system/tokens.css)
+- [themes.css](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/css/system/themes.css)
+- [primitives.css](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/css/system/primitives.css)
+- [patterns.css](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/css/system/patterns.css)
+- [design_system_live.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/live/dev/design_system_live.ex)
+- [home_live.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/live/home_live.ex)
+- [StorySurface.vue](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/vue/stories/StorySurface.vue)
+- [VisualDna.story.vue](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/vue/stories/VisualDna.story.vue)
+- [UiPanel.story.vue](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/vue/components/ui/UiPanel.story.vue)
+- [UiDialog.vue](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/vue/components/ui/UiDialog.vue)
+- [UiTabs.vue](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/vue/components/ui/UiTabs.vue)
+- [design_surface_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/design_surface_test.exs)
+- [design_system_live_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/eboss_web/live/dev/design_system_live_test.exs)
+
+**2) Tests/commands executed**
+- `MIX_OS_CONCURRENCY_LOCK=0 elixir -pa /tmp/mix_override $(which mix) format` ✅
+- `MIX_OS_CONCURRENCY_LOCK=0 elixir -pa /tmp/mix_override $(which mix) compile --warnings-as-errors` ✅
+- `elixir -e 'ExUnit.start(); Code.require_file("apps/eboss_web/test/design_surface_test.exs"); Code.require_file("apps/eboss_web/test/eboss_web/live/dev/design_system_live_test.exs")'` ✅
+- `npm run vue:check` in `apps/eboss_web/assets` ✅
+- `npm run histoire:build` in `apps/eboss_web/assets` ❌ failed with `EMFILE: too many open files, watch`
+- `PATH="/tmp:$PATH" MIX_OS_CONCURRENCY_LOCK=0 mix precommit` ❌ failed when child app test aliases tried to create/connect to PostgreSQL: `tcp connect (localhost:5432): not owner - :eperm`
+
+**3) Acceptance criteria coverage**
+- Shared surfaces now use an explicit shell/panel/card token scale for radius and elevation in [tokens.css](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/css/system/tokens.css), [themes.css](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/css/system/themes.css), [primitives.css](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/css/system/primitives.css), and [patterns.css](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/css/system/patterns.css).
+- `default`, `floating`, and `solid` now have clearer meanings and shared styling rules, and the HEEx preview mirrors the same vocabulary in [design_system_live.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/live/dev/design_system_live.ex).
+- Public/auth/dashboard surfaces now compose from the same surface contract: public metric cards in [home_live.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/live/home_live.ex), auth/dashboard scene tiles, Vue story surfaces, and Vue dialog/tab containers all use the same shared panel vocabulary.
+- HEEx/Vue drift was reduced by replacing ad hoc inset surface chrome in [VisualDna.story.vue](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/vue/stories/VisualDna.story.vue), [StorySurface.vue](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/vue/stories/StorySurface.vue), [UiPanel.story.vue](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/vue/components/ui/UiPanel.story.vue), [UiDialog.vue](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/vue/components/ui/UiDialog.vue), and [UiTabs.vue](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/vue/components/ui/UiTabs.vue).
+- Story-specific test coverage was added in [design_surface_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/design_surface_test.exs) and the design preview assertions were updated in [design_system_live_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/eboss_web/live/dev/design_system_live_test.exs).
+
+**4) Blockers/assumptions**
+- `mix precommit` could not be left passing in this sandbox because the repository’s child-app `test` aliases run `ecto.create`/`ecto.migrate`, and PostgreSQL access is blocked here with `:eperm`.
+- `npm run histoire:build` is also environment-blocked here by a Node/Chokidar watcher limit (`EMFILE`).
+- I used source-contract coverage for the design preview test instead of DB-backed route rendering so this story’s surface vocabulary can still be verified without crossing into the later preview-expansion story.
+==> eboss_data
+There are no tests to run
+==> eboss_accounts
+Running ExUnit with seed: 670962, max_cases: 20
+
+............
+Finished in 7.8 seconds (0.00s async, 7.8s sync)
+12 tests, 0 failures
+==> eboss_tenancy
+Running ExUnit with seed: 798822, max_cases: 20
+
+............
+Finished in 6.9 seconds (0.00s async, 6.9s sync)
+12 tests, 0 failures
+==> eboss_workspaces
+Running ExUnit with seed: 191830, max_cases: 20
+
+............
+Finished in 5.9 seconds (0.00s async, 5.9s sync)
+12 tests, 0 failures
+==> eboss_folio
+Running ExUnit with seed: 672513, max_cases: 20
+
+...........
+Finished in 4.1 seconds (0.00s async, 4.1s sync)
+11 tests, 0 failures
+==> eboss_web
+Running ExUnit with seed: 482112, max_cases: 20
+
+...........................................
+Finished in 6.7 seconds (0.2s async, 6.5s sync)
+43 tests, 0 failures

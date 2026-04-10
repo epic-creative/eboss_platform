@@ -33,8 +33,9 @@
 }
 
 .ui-shell-header {
-  border-bottom: 1px solid var(--color-border-subtle);
-  background: color-mix(in srgb, var(--color-surface) 82%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--color-border-subtle) 94%, transparent);
+  background: color-mix(in srgb, var(--color-ui-surface-default) 86%, transparent);
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--color-text) 6%, transparent);
   backdrop-filter: blur(18px);
 }
 
@@ -67,8 +68,8 @@
   padding: 0.3rem;
   border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-pill);
-  background: color-mix(in srgb, var(--color-surface-elevated) 94%, transparent);
-  box-shadow: var(--shadow-panel-soft);
+  background: color-mix(in srgb, var(--color-ui-surface-floating) 94%, transparent);
+  box-shadow: var(--shadow-surface-default);
 }
 
 .ui-theme-toggle__indicator {
@@ -158,18 +159,13 @@
 }
 
 .ui-auth-scene__tile {
-  border: 1px solid color-mix(in srgb, var(--color-border-subtle) 90%, transparent);
-  border-radius: 1.35rem;
-  background: color-mix(in srgb, var(--color-surface-elevated) 54%, transparent);
-  padding: 1rem;
-  backdrop-filter: blur(12px);
+  border-radius: var(--radius-card);
 }
 
 .ui-metric-card {
-  padding: 1.25rem;
-  border-radius: 1.5rem;
-  border: 1px solid var(--color-border-subtle);
-  background: color-mix(in srgb, var(--color-surface-elevated) 80%, transparent);
+  display: grid;
+  gap: 0.35rem;
+  min-height: 100%;
 }
 
 .ui-hero-grid {
@@ -220,6 +216,21 @@
 .ui-dev-preview__section {
   display: grid;
   gap: 1rem;
+}
+
+.ui-preview-frame {
+  min-height: 18rem;
+  padding: 1.5rem;
+  border: 1px solid color-mix(in srgb, var(--color-border-strong) 34%, var(--color-border-subtle));
+  border-radius: var(--radius-shell);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--color-ui-surface-floating) 72%, var(--color-ui-canvas)) 0%,
+      color-mix(in srgb, var(--color-ui-canvas) 94%, transparent) 100%
+    );
+  box-shadow: var(--shadow-shell);
+  color: var(--color-text);
 }
 
 .ui-dev-preview__grid {

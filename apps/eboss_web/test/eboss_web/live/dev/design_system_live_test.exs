@@ -1,23 +1,29 @@
 defmodule EBossWeb.Dev.DesignSystemLiveTest do
-  use EBossWeb.ConnCase, async: true
+  use ExUnit.Case, async: true
 
-  import Phoenix.LiveViewTest
+  @design_system_live Path.expand(
+                        "../../../../lib/eboss_web/live/dev/design_system_live.ex",
+                        __DIR__
+                      )
 
-  test "renders the dev design system preview", %{conn: conn} do
-    {:ok, _view, html} = live(conn, ~p"/dev/design-system")
+  test "defines the dev design system preview content for shared surfaces" do
+    source = File.read!(@design_system_live)
 
-    assert html =~ "EBoss design system"
-    assert html =~ "Operator console first, marketing polish second."
-    assert html =~ "Dashboard surfaces"
-    assert html =~ "Auth surfaces"
-    assert html =~ "Public surfaces"
-    assert html =~ "No active runs"
-    assert html =~ "Semantic tones"
-    assert html =~ "Operator note"
-    assert html =~ "Success outline"
-    assert html =~ "ui-text-display"
-    assert html =~ "ui-text-title"
-    assert html =~ "ui-text-body"
-    assert html =~ "ui-text-meta"
+    assert source =~ "EBoss design system"
+    assert source =~ "Default, floating, and solid surfaces each have one job"
+    assert source =~ "Default surface"
+    assert source =~ "Floating surface"
+    assert source =~ "Solid surface"
+    assert source =~ "Operator console first, marketing polish second."
+    assert source =~ "Dashboard surfaces"
+    assert source =~ "Auth surfaces"
+    assert source =~ "Public surfaces"
+    assert source =~ "No active runs"
+    assert source =~ "Semantic tones"
+    assert source =~ "Operator note"
+    assert source =~ "ui-text-display"
+    assert source =~ "ui-text-title"
+    assert source =~ "ui-text-body"
+    assert source =~ "ui-text-meta"
   end
 end

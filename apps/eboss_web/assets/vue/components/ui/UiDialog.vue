@@ -8,6 +8,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "reka-ui"
+import UiPanel from "./UiPanel.vue"
 
 withDefaults(
   defineProps<{
@@ -35,7 +36,7 @@ const emit = defineEmits<{
     <DialogPortal>
       <DialogOverlay class="fixed inset-0 z-40 bg-slate-950/72 backdrop-blur-sm" />
       <DialogContent class="fixed inset-x-4 top-1/2 z-50 mx-auto w-full max-w-xl -translate-y-1/2 focus:outline-none">
-        <div class="ui-panel p-6 sm:p-8" data-surface="floating">
+        <UiPanel as="div" surface="floating" class="sm:p-8">
           <div class="flex items-start justify-between gap-4">
             <div class="space-y-2">
               <DialogTitle class="ui-text-title" data-size="lg">
@@ -60,7 +61,7 @@ const emit = defineEmits<{
           <div class="mt-6">
             <slot />
           </div>
-        </div>
+        </UiPanel>
       </DialogContent>
     </DialogPortal>
   </DialogRoot>

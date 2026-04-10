@@ -95,20 +95,20 @@ const publicProofPoints = [
               </div>
 
               <div class="grid gap-4 sm:grid-cols-2">
-                <div class="rounded-[1.35rem] border border-ui-border-subtle bg-ui-panel-muted/70 p-4">
+                <UiPanel surface="solid" padding="sm" class="space-y-3">
                   <p class="ui-text-meta" data-tone="soft">Lean on</p>
-                  <p class="ui-text-body mt-3" data-tone="muted">
+                  <p class="ui-text-body" data-tone="muted">
                     cool surfaces, stable shell chrome, restrained type, mono metadata, and
                     utility-led emphasis
                   </p>
-                </div>
-                <div class="rounded-[1.35rem] border border-ui-border-subtle bg-ui-panel-muted/70 p-4">
+                </UiPanel>
+                <UiPanel surface="solid" padding="sm" class="space-y-3">
                   <p class="ui-text-meta" data-tone="soft">Reject</p>
-                  <p class="ui-text-body mt-3" data-tone="muted">
+                  <p class="ui-text-body" data-tone="muted">
                     neon gradients, borderless cards, pitch-deck heroes, and decorative motion that
                     competes with state clarity
                   </p>
-                </div>
+                </UiPanel>
               </div>
             </UiPanel>
 
@@ -148,15 +148,17 @@ const publicProofPoints = [
               </div>
 
               <div class="grid gap-3">
-                <div
+                <UiPanel
                   v-for="item in dashboardSignals"
                   :key="item.label"
-                  class="rounded-[1.35rem] border border-ui-border-subtle bg-ui-panel-muted/70 p-4"
+                  surface="solid"
+                  padding="sm"
+                  class="space-y-2"
                 >
                   <p class="ui-text-meta" data-tone="soft">{{ item.label }}</p>
-                  <p class="ui-text-title mt-2" data-size="md">{{ item.value }}</p>
-                  <p class="ui-text-body mt-1" data-tone="muted">{{ item.copy }}</p>
-                </div>
+                  <p class="ui-text-title" data-size="md">{{ item.value }}</p>
+                  <p class="ui-text-body" data-tone="muted">{{ item.copy }}</p>
+                </UiPanel>
               </div>
             </UiPanel>
 
@@ -187,14 +189,16 @@ const publicProofPoints = [
               </div>
 
               <div class="grid gap-4 sm:grid-cols-2">
-                <div
+                <UiPanel
                   v-for="item in publicProofPoints"
                   :key="item.label"
-                  class="rounded-[1.35rem] border border-ui-border-subtle bg-ui-panel-muted/70 p-4"
+                  surface="solid"
+                  padding="sm"
+                  class="space-y-2"
                 >
                   <p class="ui-text-meta" data-tone="soft">{{ item.label }}</p>
-                  <p class="ui-text-body mt-2" data-tone="muted">{{ item.copy }}</p>
-                </div>
+                  <p class="ui-text-body" data-tone="muted">{{ item.copy }}</p>
+                </UiPanel>
               </div>
             </UiPanel>
           </div>
