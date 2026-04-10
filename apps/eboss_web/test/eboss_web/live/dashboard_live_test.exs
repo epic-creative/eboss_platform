@@ -37,6 +37,9 @@ defmodule EBossWeb.DashboardLiveTest do
     assert html =~ ~s(data-dashboard-shell-main)
     assert html =~ ~s(data-dashboard-shell-header)
     assert html =~ ~s(data-dashboard-shell-body)
+    assert html =~ ~s(data-dashboard-nav-group="primary-routes")
+    assert html =~ ~s(data-dashboard-nav-group="upcoming-surfaces")
+    assert html =~ ~s(data-dashboard-secondary-nav)
     assert html =~ ~s(data-dashboard-contract="page-header")
     assert html =~ ~s(data-dashboard-contract="page-content")
     assert html =~ ~s(data-dashboard-section="launchpad")
@@ -53,6 +56,9 @@ defmodule EBossWeb.DashboardLiveTest do
     assert html =~ "EBoss dashboard"
     assert html =~ "Operator workspace"
     assert html =~ "The main dashboard now lives inside the shared operator shell"
+    assert html =~ "Primary routes"
+    assert html =~ "Upcoming surfaces"
+    assert html =~ "Secondary cues"
     assert html =~ "Command surface"
     assert html =~ "Quick actions"
     assert html =~ "Launch surface"
@@ -63,6 +69,9 @@ defmodule EBossWeb.DashboardLiveTest do
 
     assert Regex.scan(~r/data-dashboard-header/, html) |> length() == 4
     assert Regex.scan(~r/data-dashboard-action-bar/, html) |> length() == 4
+    assert Regex.scan(~r/data-dashboard-nav-group=/, html) |> length() == 2
+    assert Regex.scan(~r/aria-current="page"/, html) |> length() == 1
+    assert Regex.scan(~r/data-interactive="false"/, html) |> length() == 2
     assert Regex.scan(~r/data-dashboard-utility-item=/, html) |> length() == 4
     assert Regex.scan(~r/data-dashboard-quick-action=/, html) |> length() == 3
 

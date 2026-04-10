@@ -2488,3 +2488,69 @@ Running ExUnit with seed: 209094, max_cases: 20
 ...............................................................................
 Finished in 8.6 seconds (0.3s async, 8.2s sync)
 79 tests, 0 failures
+1) changed files
+
+- [apps/eboss_web/lib/eboss_web/components/dashboard_components.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/components/dashboard_components.ex#L32): grouped the dashboard nav into primary vs upcoming surfaces, added secondary-cues framing, and made planned items explicitly non-interactive with clearer metadata and active-state markup.
+- [apps/eboss_web/assets/css/system/patterns.css](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/css/system/patterns.css#L473): tightened nav density, added group/list styling, strengthened active-state treatment, and visually muted planned non-actionable items.
+- [apps/eboss_web/test/eboss_web/live/dashboard_live_render_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/eboss_web/live/dashboard_live_render_test.exs#L22): added markup-contract assertions for nav groups, secondary cues, single active route, and planned non-interactive items.
+- [apps/eboss_web/test/eboss_web/live/dashboard_live_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/eboss_web/live/dashboard_live_test.exs#L24): mirrored route-level shell assertions for the updated nav hierarchy/state contract.
+- [apps/eboss_web/test/design_surface_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/design_surface_test.exs#L245): extended design-surface coverage for the new nav-group and nav-metadata contracts.
+
+2) tests/commands executed
+
+- `git diff --check` -> passed
+- `mix test apps/eboss_web/test/eboss_web/live/dashboard_live_render_test.exs apps/eboss_web/test/eboss_web/live/dashboard_live_test.exs apps/eboss_web/test/design_surface_test.exs` -> blocked by Mix PubSub TCP socket restriction in sandbox (`:eperm`)
+- `MIX_NO_PUBSUB=1 mix test ...` -> same sandbox block
+- `MIX_NO_PUBSUB=1 mix format` -> same sandbox block
+- `ERL_LIBS=_build/test/lib elixir -e '...compile updated DashboardComponents and run dashboard-focused ExUnit files...'` -> passed, `16 tests, 0 failures`
+
+3) acceptance criteria coverage
+
+- Easier to scan at a glance:
+  primary routes and upcoming surfaces are now separated into distinct nav groups with their own supporting copy and tighter list rhythm.
+- Active/contextual states are unambiguous:
+  the current route has `aria-current="page"`, primary accent treatment, and “Current route” metadata; planned surfaces are rendered without links and marked `data-interactive="false"`; secondary cues are labeled separately from primary routes.
+- Density supports operator workflows without noise:
+  nav spacing and item padding were tightened, while metadata and badges carry hierarchy instead of adding more chrome.
+- Test coverage:
+  LiveView render tests now assert the new group structure, single active item, and non-interactive planned items.
+
+4) blockers/assumptions
+
+- `mix precommit` could not be run in this sandbox. Elixir 1.19’s Mix starts `Mix.PubSub`, which opens a loopback TCP socket; the sandbox denies that with `:eperm`. I verified the story with a manual `elixir`-driven ExUnit run against the affected dashboard suite instead.
+- I generated a local preview at `/tmp/dashboard_nav_preview.html`, but browser-based visual review could not be completed here because the Playwright tool rejected local-file navigation.
+==> eboss_web
+Compiling 2 files (.ex)
+Generated eboss_web app
+==> eboss_data
+There are no tests to run
+==> eboss_accounts
+Running ExUnit with seed: 845835, max_cases: 20
+
+............
+Finished in 7.4 seconds (0.00s async, 7.4s sync)
+12 tests, 0 failures
+==> eboss_tenancy
+Running ExUnit with seed: 655375, max_cases: 20
+
+............
+Finished in 6.4 seconds (0.00s async, 6.4s sync)
+12 tests, 0 failures
+==> eboss_workspaces
+Running ExUnit with seed: 546896, max_cases: 20
+
+............
+Finished in 5.7 seconds (0.00s async, 5.7s sync)
+12 tests, 0 failures
+==> eboss_folio
+Running ExUnit with seed: 680334, max_cases: 20
+
+...........
+Finished in 3.8 seconds (0.00s async, 3.8s sync)
+11 tests, 0 failures
+==> eboss_web
+Running ExUnit with seed: 138939, max_cases: 20
+
+...............................................................................
+Finished in 8.4 seconds (0.2s async, 8.1s sync)
+79 tests, 0 failures

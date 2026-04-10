@@ -244,7 +244,9 @@ defmodule EBossWeb.DesignSurfaceTest do
 
     assert patterns_css =~ ".ui-dashboard-shell"
     assert patterns_css =~ ".ui-dashboard-shell__nav"
+    assert patterns_css =~ ".ui-dashboard-shell__nav-group"
     assert patterns_css =~ ".ui-dashboard-nav__item"
+    assert patterns_css =~ ".ui-dashboard-nav__meta"
     assert patterns_css =~ ".ui-dashboard-page"
     assert patterns_css =~ ".ui-dashboard-page__rail"
     assert patterns_css =~ ".ui-dashboard-section"
@@ -269,6 +271,7 @@ defmodule EBossWeb.DesignSurfaceTest do
     assert dashboard_components =~ ~s(data-dashboard-shell-main)
     assert dashboard_components =~ ~s(data-dashboard-shell-header)
     assert dashboard_components =~ ~s(data-dashboard-shell-body)
+    assert dashboard_components =~ ~s(data-dashboard-nav-group={group.id})
     assert dashboard_components =~ ~s(data-dashboard-header)
     assert dashboard_components =~ ~s(data-dashboard-section)
     assert dashboard_components =~ ~s(data-dashboard-action-bar)
@@ -276,6 +279,7 @@ defmodule EBossWeb.DesignSurfaceTest do
     assert dashboard_components =~ ~s(data-dashboard-quick-actions)
     assert dashboard_components =~ ~s(data-dashboard-keycap)
     assert dashboard_components =~ ~s(data-dashboard-panel-group={@columns})
+    assert dashboard_components =~ ~s(data-dashboard-secondary-nav)
     assert dashboard_components =~ ~s(data-dashboard-nav-item={@item.id})
 
     assert dashboard_live =~ "<.dashboard_shell"

@@ -30,7 +30,7 @@ defmodule EBossWeb.DashboardComponents do
   slot(:sidebar_footer)
 
   def dashboard_shell(assigns) do
-    assigns = assign(assigns, :nav_items, dashboard_nav_items(assigns.current_path))
+    assigns = assign(assigns, :nav_groups, dashboard_nav_groups(assigns.current_path))
 
     ~H"""
     <section
@@ -63,7 +63,22 @@ defmodule EBossWeb.DashboardComponents do
             class="ui-dashboard-shell__nav"
             aria-label={BrowserTestContracts.dashboard_navigation_label()}
           >
-            <.dashboard_nav_item :for={item <- @nav_items} item={item} />
+            <section
+              :for={group <- @nav_groups}
+              class="ui-dashboard-shell__nav-group"
+              data-dashboard-nav-group={group.id}
+            >
+              <div class="ui-dashboard-shell__nav-group-header">
+                <p class="ui-text-meta" data-tone="soft">{group.label}</p>
+                <p class="ui-text-body" data-size="sm" data-tone="soft">{group.description}</p>
+              </div>
+
+              <ul class="ui-dashboard-shell__nav-list" role="list">
+                <li :for={item <- group.items}>
+                  <.dashboard_nav_item item={item} />
+                </li>
+              </ul>
+            </section>
           </nav>
 
           <.panel
@@ -89,6 +104,13 @@ defmodule EBossWeb.DashboardComponents do
           </.panel>
 
           <div :if={@sidebar_footer != []} class="ui-dashboard-shell__sidebar-footer">
+            <div class="ui-dashboard-shell__secondary-nav" data-dashboard-secondary-nav>
+              <p class="ui-text-meta" data-tone="soft">Secondary cues</p>
+              <p class="ui-text-body" data-size="sm" data-tone="soft">
+                Route jumps and review cues stay separate from primary product routes.
+              </p>
+            </div>
+
             {render_slot(@sidebar_footer)}
           </div>
         </div>
@@ -558,7 +580,11 @@ defmodule EBossWeb.DashboardComponents do
   attr(:item, :map, required: true)
 
   defp dashboard_nav_item(assigns) do
-    assigns = assign(assigns, :active_attr, to_string(assigns.item.active?))
+    assigns =
+      assigns
+      |> assign(:active_attr, to_string(assigns.item.active?))
+      |> assign(:interactive_attr, to_string(not is_nil(assigns.item.path)))
+      |> assign(:badge_tone, Map.get(assigns.item, :badge_tone, "neutral"))
 
     ~H"""
     <a
@@ -568,6 +594,7 @@ defmodule EBossWeb.DashboardComponents do
       aria-current={if @item.active?, do: "page", else: nil}
       data-active={@active_attr}
       data-state={@item.state}
+      data-interactive={@interactive_attr}
       data-dashboard-nav-item={@item.id}
     >
       <span class="ui-dashboard-nav__icon">
@@ -575,11 +602,15 @@ defmodule EBossWeb.DashboardComponents do
       </span>
 
       <div class="ui-dashboard-nav__copy">
-        <p class="ui-text-body" data-size="sm">{@item.label}</p>
+        <div class="ui-dashboard-nav__meta">
+          <p class="ui-text-meta" data-tone={Map.get(@item, :meta_tone, "soft")}>{@item.meta}</p>
+          <span class="ui-dashboard-nav__state" data-state={@item.state} aria-hidden="true" />
+        </div>
+        <p class="ui-text-title" data-size="sm">{@item.label}</p>
         <p class="ui-text-body" data-size="sm" data-tone="muted">{@item.detail}</p>
       </div>
 
-      <.badge tone="neutral">{@item.badge}</.badge>
+      <.badge tone={@badge_tone}>{@item.badge}</.badge>
     </a>
 
     <div
@@ -587,6 +618,7 @@ defmodule EBossWeb.DashboardComponents do
       class="ui-dashboard-nav__item"
       data-active={@active_attr}
       data-state={@item.state}
+      data-interactive={@interactive_attr}
       data-dashboard-nav-item={@item.id}
     >
       <span class="ui-dashboard-nav__icon">
@@ -594,46 +626,73 @@ defmodule EBossWeb.DashboardComponents do
       </span>
 
       <div class="ui-dashboard-nav__copy">
-        <p class="ui-text-body" data-size="sm">{@item.label}</p>
+        <div class="ui-dashboard-nav__meta">
+          <p class="ui-text-meta" data-tone={Map.get(@item, :meta_tone, "soft")}>{@item.meta}</p>
+          <span class="ui-dashboard-nav__state" data-state={@item.state} aria-hidden="true" />
+        </div>
+        <p class="ui-text-title" data-size="sm">{@item.label}</p>
         <p class="ui-text-body" data-size="sm" data-tone="muted">{@item.detail}</p>
       </div>
 
-      <.badge tone="neutral">{@item.badge}</.badge>
+      <.badge tone={@badge_tone}>{@item.badge}</.badge>
     </div>
     """
   end
 
-  defp dashboard_nav_items(current_path) do
+  defp dashboard_nav_groups(current_path) do
     [
       %{
-        id: "dashboard",
-        label: "Dashboard",
-        detail: "Authenticated control surface",
-        badge: "Live",
-        icon: "hero-home",
-        path: ~p"/dashboard",
-        active?: current_path == "/dashboard",
-        state: "active"
+        id: "primary-routes",
+        label: "Primary routes",
+        description: "Move between authenticated product surfaces.",
+        items: [
+          %{
+            id: "dashboard",
+            label: "Dashboard",
+            meta: "Current route",
+            meta_tone: "primary",
+            detail: "Shared operator workspace",
+            badge: "Current",
+            badge_tone: "primary",
+            icon: "hero-home",
+            path: ~p"/dashboard",
+            active?: current_path == "/dashboard",
+            state: "active"
+          }
+        ]
       },
       %{
-        id: "workspaces",
-        label: "Workspaces",
-        detail: "Next authenticated surface",
-        badge: "Queued",
-        icon: "hero-rectangle-stack",
-        path: nil,
-        active?: false,
-        state: "planned"
-      },
-      %{
-        id: "folio",
-        label: "Folio",
-        detail: "Scoped execution surface",
-        badge: "Scoped",
-        icon: "hero-document-text",
-        path: nil,
-        active?: false,
-        state: "planned"
+        id: "upcoming-surfaces",
+        label: "Upcoming surfaces",
+        description: "Shared shell targets still converging on the same frame.",
+        items: [
+          %{
+            id: "workspaces",
+            label: "Workspaces",
+            meta: "Planned surface",
+            meta_tone: "soft",
+            detail: "Next authenticated surface",
+            badge: "Planned",
+            badge_tone: "neutral",
+            icon: "hero-rectangle-stack",
+            path: nil,
+            active?: false,
+            state: "planned"
+          },
+          %{
+            id: "folio",
+            label: "Folio",
+            meta: "Planned surface",
+            meta_tone: "soft",
+            detail: "Scoped execution surface",
+            badge: "Planned",
+            badge_tone: "neutral",
+            icon: "hero-document-text",
+            path: nil,
+            active?: false,
+            state: "planned"
+          }
+        ]
       }
     ]
   end
