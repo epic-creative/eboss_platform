@@ -12,16 +12,18 @@ withDefaults(
   defineProps<{
     content: string
     side?: "top" | "right" | "bottom" | "left"
+    open?: boolean
   }>(),
   {
     side: "top",
+    open: undefined,
   },
 )
 </script>
 
 <template>
   <TooltipProvider :delay-duration="120">
-    <TooltipRoot>
+    <TooltipRoot :open="open">
       <TooltipTrigger as-child>
         <slot />
       </TooltipTrigger>
