@@ -246,20 +246,38 @@ defmodule EBossWeb.DesignSurfaceTest do
     assert patterns_css =~ ".ui-dashboard-nav__item"
     assert patterns_css =~ ".ui-dashboard-page"
     assert patterns_css =~ ".ui-dashboard-page__rail"
+    assert patterns_css =~ ".ui-dashboard-section"
+    assert patterns_css =~ ".ui-dashboard-header"
+    assert patterns_css =~ ".ui-dashboard-action-bar"
+    assert patterns_css =~ ".ui-dashboard-panel-group"
 
     assert dashboard_components =~ "def dashboard_shell(assigns)"
+    assert dashboard_components =~ "def dashboard_header(assigns)"
+    assert dashboard_components =~ "def dashboard_section(assigns)"
+    assert dashboard_components =~ "def dashboard_action_bar(assigns)"
+    assert dashboard_components =~ "def dashboard_panel_group(assigns)"
     assert dashboard_components =~ "dashboard_navigation_label()"
     assert dashboard_components =~ ~s(data-dashboard-shell)
     assert dashboard_components =~ ~s(data-dashboard-shell-sidebar)
     assert dashboard_components =~ ~s(data-dashboard-shell-main)
     assert dashboard_components =~ ~s(data-dashboard-shell-header)
     assert dashboard_components =~ ~s(data-dashboard-shell-body)
+    assert dashboard_components =~ ~s(data-dashboard-header)
+    assert dashboard_components =~ ~s(data-dashboard-section)
+    assert dashboard_components =~ ~s(data-dashboard-action-bar)
+    assert dashboard_components =~ ~s(data-dashboard-panel-group={@columns})
     assert dashboard_components =~ ~s(data-dashboard-nav-item={@item.id})
 
     assert dashboard_live =~ "<.dashboard_shell"
+    assert dashboard_live =~ "<.dashboard_header"
+    assert dashboard_live =~ "<.dashboard_section"
+    assert dashboard_live =~ "<.dashboard_action_bar"
+    assert dashboard_live =~ "<.dashboard_panel_group"
     assert dashboard_live =~ ~s(current_path="/dashboard")
     assert dashboard_live =~ ~s(data-dashboard-contract="page-header")
     assert dashboard_live =~ ~s(data-dashboard-contract="page-content")
+    assert dashboard_live =~ ~s(section="launchpad")
+    assert dashboard_live =~ ~s(section="structure")
 
     assert browser_test_contracts =~ ~s(def dashboard_shell)
     assert browser_test_contracts =~ ~s(def dashboard_navigation_label)

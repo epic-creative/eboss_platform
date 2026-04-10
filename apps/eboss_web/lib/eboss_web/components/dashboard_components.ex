@@ -106,6 +106,93 @@ defmodule EBossWeb.DashboardComponents do
     """
   end
 
+  attr :eyebrow, :string, default: nil
+  attr :title, :string, required: true
+  attr :description, :string, default: nil
+  attr :title_tag, :string, values: ~w(h1 h2 h3), default: "h2"
+  attr :title_size, :string, values: ~w(xl lg md sm), default: "md"
+  attr :class, :any, default: nil
+  attr :rest, :global
+
+  slot :badge
+  slot :signal
+  slot :actions
+
+  def dashboard_header(assigns) do
+    ~H"""
+    <header class={["ui-dashboard-header", @class]} data-dashboard-header {@rest}>
+      <div class="ui-dashboard-header__copy">
+        <div :if={@eyebrow || @badge != []} class="ui-dashboard-header__context">
+          <p :if={@eyebrow} class="ui-kicker" data-tone="primary">{@eyebrow}</p>
+          <div :if={@badge != []} class="ui-dashboard-header__badges">
+            {render_slot(@badge)}
+          </div>
+        </div>
+
+        <div class="space-y-2">
+          <.dynamic_tag tag_name={@title_tag} class="ui-section-header__title" data-size={@title_size}>
+            {@title}
+          </.dynamic_tag>
+          <p :if={@description} class="ui-section-header__subtitle">{@description}</p>
+        </div>
+      </div>
+
+      <div :if={@signal != [] || @actions != []} class="ui-dashboard-header__aside">
+        <div :if={@signal != []} class="ui-dashboard-header__signals">
+          {render_slot(@signal)}
+        </div>
+
+        {render_slot(@actions)}
+      </div>
+    </header>
+    """
+  end
+
+  attr :section, :string, required: true
+  attr :class, :any, default: nil
+  attr :rest, :global
+
+  slot :inner_block, required: true
+
+  def dashboard_section(assigns) do
+    ~H"""
+    <section class={["ui-dashboard-section", @class]} data-dashboard-section={@section} {@rest}>
+      {render_slot(@inner_block)}
+    </section>
+    """
+  end
+
+  attr :class, :any, default: nil
+  attr :rest, :global
+
+  slot :inner_block, required: true
+
+  def dashboard_action_bar(assigns) do
+    ~H"""
+    <div class={["ui-dashboard-action-bar", @class]} data-dashboard-action-bar {@rest}>
+      {render_slot(@inner_block)}
+    </div>
+    """
+  end
+
+  attr :columns, :string, values: ~w(stack split), default: "stack"
+  attr :class, :any, default: nil
+  attr :rest, :global
+
+  slot :inner_block, required: true
+
+  def dashboard_panel_group(assigns) do
+    ~H"""
+    <div
+      class={["ui-dashboard-panel-group", @class]}
+      data-dashboard-panel-group={@columns}
+      {@rest}
+    >
+      {render_slot(@inner_block)}
+    </div>
+    """
+  end
+
   attr :item, :map, required: true
 
   defp dashboard_nav_item(assigns) do

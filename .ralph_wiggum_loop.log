@@ -2260,3 +2260,69 @@ Running ExUnit with seed: 823327, max_cases: 20
 ..........................................................................
 Finished in 9.3 seconds (0.4s async, 8.9s sync)
 74 tests, 0 failures
+1) changed files
+
+- [dashboard_components.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/components/dashboard_components.ex#L109): added reusable `dashboard_header`, `dashboard_section`, `dashboard_action_bar`, and `dashboard_panel_group` components.
+- [dashboard_live.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/live/dashboard_live.ex#L24): moved `/dashboard` onto the shared section/header/action/panel composition pattern.
+- [patterns.css](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/css/system/patterns.css#L465): added shared dashboard section/header/action-bar/panel-group styling and responsive alignment rules.
+- [design_surface_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/design_surface_test.exs#L237): extended design-surface coverage for the new dashboard composition primitives.
+- [dashboard_live_render_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/eboss_web/live/dashboard_live_render_test.exs#L22): added render assertions for repeated dashboard headers, action bars, sections, and panel grouping.
+- [dashboard_live_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/eboss_web/live/dashboard_live_test.exs#L24): updated LiveView render coverage for the new shared dashboard structure.
+
+2) tests/commands executed
+
+- `PATH=/tmp:$PATH MIX_OS_CONCURRENCY_LOCK=0 MIX_ENV=test mix run --no-start -e 'Mix.Tasks.Test.run([...])'` for:
+  - `apps/eboss_web/test/design_surface_test.exs`
+  - `apps/eboss_web/test/eboss_web/live/dashboard_live_render_test.exs`
+  - `apps/eboss_web/test/eboss_web/live/dashboard_live_test.exs`
+  - Result: passed (`10 tests, 0 failures`)
+- `PATH=/tmp:$PATH MIX_OS_CONCURRENCY_LOCK=0 MIX_ENV=test mix compile --warnings-as-errors`
+  - Result: passed
+- `PATH=/tmp:$PATH MIX_OS_CONCURRENCY_LOCK=0 MIX_ENV=dev mix format --check-formatted`
+  - Result: passed
+- `PATH=/tmp:$PATH MIX_OS_CONCURRENCY_LOCK=0 mix precommit`
+  - Result: failed in DB setup because the sandbox blocks TCP access to `localhost:5432` with `:eperm`
+
+3) acceptance criteria coverage
+
+- Dashboard sections now use one repeatable contract: shared header component + shared action bar + shared section wrapper in [dashboard_live.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/live/dashboard_live.ex#L24).
+- Panel grouping is standardized with the new shared `dashboard_panel_group` and spacing rules in [dashboard_components.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/components/dashboard_components.ex#L178) and [patterns.css](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/css/system/patterns.css#L540).
+- Shared composition patterns are visible in code through the new dashboard components and verified in rendered markup by [dashboard_live_render_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/eboss_web/live/dashboard_live_render_test.exs#L22) and [dashboard_live_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/eboss_web/live/dashboard_live_test.exs#L24).
+
+4) blockers/assumptions
+
+- `mix precommit` could not be left passing here because the environment blocks PostgreSQL TCP connections; root `mix test` fails when `EBoss.Repo` tries to reach `localhost:5432` and gets `:eperm`.
+- I kept the new action bars structural and navigational for ST-DSH-003; I did not add command-oriented utility patterns from `ST-DSH-005`.
+- Browser visual review was not completed in a running app for the same DB/network reason; the shared dashboard structure is covered by render tests and compile/format checks.
+==> eboss_data
+There are no tests to run
+==> eboss_accounts
+Running ExUnit with seed: 732848, max_cases: 20
+
+............
+Finished in 7.7 seconds (0.00s async, 7.7s sync)
+12 tests, 0 failures
+==> eboss_tenancy
+Running ExUnit with seed: 280653, max_cases: 20
+
+............
+Finished in 7.4 seconds (0.00s async, 7.4s sync)
+12 tests, 0 failures
+==> eboss_workspaces
+Running ExUnit with seed: 223144, max_cases: 20
+
+............
+Finished in 6.1 seconds (0.00s async, 6.1s sync)
+12 tests, 0 failures
+==> eboss_folio
+Running ExUnit with seed: 863338, max_cases: 20
+
+...........
+Finished in 4.1 seconds (0.00s async, 4.1s sync)
+11 tests, 0 failures
+==> eboss_web
+Running ExUnit with seed: 796046, max_cases: 20
+
+..........................................................................
+Finished in 9.0 seconds (0.3s async, 8.7s sync)
+74 tests, 0 failures

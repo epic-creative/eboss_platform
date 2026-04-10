@@ -22,84 +22,143 @@ defmodule EBossWeb.DashboardLive do
         shell_copy="Keep the authenticated product frame stable while workspaces, folio, and future signed-in routes deepen inside it."
       >
         <:page_header>
-          <div class="ui-dashboard-page-heading" data-dashboard-contract="page-header">
-            <div class="space-y-3">
-              <div class="flex flex-wrap items-center gap-2">
-                <p class="ui-kicker" data-tone="primary">EBoss dashboard</p>
-                <.badge tone="neutral">Main route</.badge>
-                <.badge tone="neutral">Authenticated shell</.badge>
-              </div>
-
-              <div class="space-y-2">
-                <h1 class="ui-text-display" data-size="xl">
-                  Welcome back, @{Map.get(@current_user, :username)}.
-                </h1>
-                <p class="ui-text-body" data-size="lg" data-tone="soft">
-                  The main dashboard now lives inside the shared operator shell, so route work can
-                  evolve without resetting navigation, identity, or session controls.
-                </p>
-              </div>
-            </div>
-
-            <div class="ui-dashboard-page-heading__signals">
+          <.dashboard_header
+            id="dashboard-top"
+            class="ui-dashboard-page-heading"
+            eyebrow="EBoss dashboard"
+            title={"Welcome back, @#{Map.get(@current_user, :username)}."}
+            description="The main dashboard now lives inside the shared operator shell, so route work can evolve without resetting navigation, identity, or session controls."
+            title_tag="h1"
+            title_size="xl"
+            data-dashboard-contract="page-header"
+          >
+            <:badge>
+              <.badge tone="neutral">Main route</.badge>
+            </:badge>
+            <:badge>
+              <.badge tone="neutral">Authenticated shell</.badge>
+            </:badge>
+            <:signal>
               <.badge tone="neutral">Stable shell chrome</.badge>
-              <.badge tone="neutral">Route-owned work surface</.badge>
-            </div>
-          </div>
+            </:signal>
+            <:signal>
+              <.badge tone="neutral">Shared page rhythm</.badge>
+            </:signal>
+            <:actions>
+              <.dashboard_action_bar>
+                <.button href="#dashboard-launchpad" variant="outline" tone="neutral" size="sm">
+                  Launch surface
+                </.button>
+                <.button href="#dashboard-structure" variant="ghost" tone="neutral" size="sm">
+                  Panel grouping
+                </.button>
+              </.dashboard_action_bar>
+            </:actions>
+          </.dashboard_header>
         </:page_header>
 
-        <div class="ui-dashboard-page">
-          <.DashboardLaunchpad
-            username={Map.get(@current_user, :username)}
-            email={to_string(Map.get(@current_user, :email))}
-            workspaceLabel="Workspace routes and JSON:API stay available inside the shared product frame."
-            folioLabel="Folio stays workspace-scoped while reusing the same signed-in shell."
-          />
-
-          <div class="ui-dashboard-page__rail">
-            <.panel
-              surface="solid"
-              class="space-y-4"
-              data-dashboard-contract="page-content"
+        <div class="ui-dashboard-page" data-dashboard-contract="page-content">
+          <.dashboard_section id="dashboard-launchpad" section="launchpad">
+            <.dashboard_header
+              eyebrow="Launch surface"
+              title="Route-owned work stays easy to scan."
+              description="The main launch area uses the same section framing, action placement, and spacing rules as the supporting rail."
             >
-              <p class="ui-text-meta" data-tone="primary">Route frame</p>
+              <:signal>
+                <.badge tone="neutral">Primary work surface</.badge>
+              </:signal>
+              <:signal>
+                <.badge tone="neutral">Repeatable section header</.badge>
+              </:signal>
+              <:actions>
+                <.dashboard_action_bar>
+                  <.button href="#dashboard-structure" variant="outline" tone="neutral" size="sm">
+                    Shell contract
+                  </.button>
+                  <.button href="#dashboard-panel-rhythm" variant="ghost" tone="neutral" size="sm">
+                    Panel rhythm
+                  </.button>
+                </.dashboard_action_bar>
+              </:actions>
+            </.dashboard_header>
 
-              <div class="space-y-2">
-                <p class="ui-text-title" data-size="md">
-                  Page content can change without rebuilding the shell.
-                </p>
-                <p class="ui-text-body" data-tone="soft">
-                  The dashboard owns the working surface while identity, navigation, theme
-                  controls, and sign-out stay anchored in persistent shell chrome.
-                </p>
-              </div>
+            <.DashboardLaunchpad
+              username={Map.get(@current_user, :username)}
+              email={to_string(Map.get(@current_user, :email))}
+              workspaceLabel="Workspace routes and JSON:API stay available inside the shared product frame."
+              folioLabel="Folio stays workspace-scoped while reusing the same signed-in shell."
+            />
+          </.dashboard_section>
 
-              <ul class="ui-dashboard-page__list">
-                <li>The main route keeps its own panels and launch surface.</li>
-                <li>Future authenticated routes can inherit the same shell rhythm.</li>
-                <li>Small and large breakpoints keep the same dashboard frame.</li>
-              </ul>
-            </.panel>
+          <.dashboard_section
+            id="dashboard-structure"
+            section="structure"
+            class="ui-dashboard-page__rail"
+          >
+            <.dashboard_header
+              eyebrow="Working structure"
+              title="Panel groupings stay systematic instead of page-specific."
+              description="Supporting panels now share one header pattern, one action bar rhythm, and one grouped layout contract for authenticated product work."
+            >
+              <:signal>
+                <.badge tone="neutral">Shared panel framing</.badge>
+              </:signal>
+              <:signal>
+                <.badge tone="neutral">Consistent actions</.badge>
+              </:signal>
+              <:actions>
+                <.dashboard_action_bar>
+                  <.button href="#dashboard-launchpad" variant="outline" tone="neutral" size="sm">
+                    Launch surface
+                  </.button>
+                  <.button href="#dashboard-top" variant="ghost" tone="neutral" size="sm">
+                    Back to top
+                  </.button>
+                </.dashboard_action_bar>
+              </:actions>
+            </.dashboard_header>
 
-            <.panel tone="inverse" surface="solid" class="space-y-4">
-              <div class="space-y-2">
-                <p class="ui-text-meta" data-tone="primary">Shell reuse</p>
-                <p class="ui-text-title" data-size="md">
-                  One authenticated frame can carry the product system.
-                </p>
-                <p class="ui-text-body" data-tone="soft">
-                  The dashboard route now reads like part of EBoss instead of a stand-alone launch
-                  page, which makes the shell ready for the next signed-in surfaces.
-                </p>
-              </div>
+            <.dashboard_panel_group columns="stack">
+              <.panel id="dashboard-frame" surface="solid" class="space-y-4">
+                <p class="ui-text-meta" data-tone="primary">Route frame</p>
 
-              <div class="flex flex-wrap gap-2">
-                <.badge tone="neutral">Persistent nav</.badge>
-                <.badge tone="neutral">Stable session frame</.badge>
-                <.badge tone="neutral">Route-level panels</.badge>
-              </div>
-            </.panel>
-          </div>
+                <div class="space-y-2">
+                  <p class="ui-text-title" data-size="md">
+                    Page content can change without rebuilding the shell.
+                  </p>
+                  <p class="ui-text-body" data-tone="soft">
+                    The dashboard owns the working surface while identity, navigation, theme
+                    controls, and sign-out stay anchored in persistent shell chrome.
+                  </p>
+                </div>
+
+                <ul class="ui-dashboard-page__list">
+                  <li>The main route keeps its own panels and launch surface.</li>
+                  <li>Future authenticated routes can inherit the same shell rhythm.</li>
+                  <li>Small and large breakpoints keep the same dashboard frame.</li>
+                </ul>
+              </.panel>
+
+              <.panel id="dashboard-panel-rhythm" tone="inverse" surface="solid" class="space-y-4">
+                <div class="space-y-2">
+                  <p class="ui-text-meta" data-tone="primary">Shell reuse</p>
+                  <p class="ui-text-title" data-size="md">
+                    One authenticated frame can carry the product system.
+                  </p>
+                  <p class="ui-text-body" data-tone="soft">
+                    The dashboard route now reads like part of EBoss instead of a stand-alone launch
+                    page, which makes the shell ready for the next signed-in surfaces.
+                  </p>
+                </div>
+
+                <div class="flex flex-wrap gap-2">
+                  <.badge tone="neutral">Persistent nav</.badge>
+                  <.badge tone="neutral">Stable session frame</.badge>
+                  <.badge tone="neutral">Route-level panels</.badge>
+                </div>
+              </.panel>
+            </.dashboard_panel_group>
+          </.dashboard_section>
         </div>
       </.dashboard_shell>
     </Layouts.app>
