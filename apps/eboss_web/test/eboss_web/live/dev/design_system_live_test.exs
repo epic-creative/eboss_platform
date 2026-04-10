@@ -10,6 +10,13 @@ defmodule EBossWeb.Dev.DesignSystemLiveTest do
     source = File.read!(@design_system_live)
 
     assert source =~ "EBoss design system"
+    assert source =~ "Theme and density review matrix"
+    assert source =~ "Dark / default"
+    assert source =~ "Dark / compact"
+    assert source =~ "Light / default"
+    assert source =~ "Light / compact"
+    assert source =~ "Hierarchy survives the mode shift."
+    assert source =~ "Review ready"
     assert source =~ "Default, floating, and solid surfaces each have one job"
     assert source =~ "Default surface"
     assert source =~ "Floating surface"

@@ -23,11 +23,11 @@ const attrs = useAttrs()
 const paddingClass = computed(() => {
   switch (props.padding) {
     case "sm":
-      return "p-4"
+      return "ui-panel-padding-sm"
     case "lg":
-      return "p-8 sm:p-10"
+      return "ui-panel-padding-lg"
     default:
-      return "p-6"
+      return "ui-panel-padding-md"
   }
 })
 </script>

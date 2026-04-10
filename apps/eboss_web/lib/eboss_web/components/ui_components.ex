@@ -17,9 +17,9 @@ defmodule EBossWeb.UIComponents do
   def panel(assigns) do
     padding_class =
       case assigns.padding do
-        "sm" -> "p-4"
-        "lg" -> "p-8 sm:p-10"
-        _ -> "p-6"
+        "sm" -> "ui-panel-padding-sm"
+        "lg" -> "ui-panel-padding-lg"
+        _ -> "ui-panel-padding-md"
       end
 
     surface =

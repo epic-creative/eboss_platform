@@ -205,6 +205,23 @@ This project has both HEEx components and Vue components. They must behave like 
 
 Do not let HEEx become the “server look” and Vue become the “modern look.” They are both part of the same product.
 
+## Theme and Density Parity
+
+Shared design review must cover the supported system modes, not only the default screenshot state.
+
+Supported review modes:
+
+- Themes: `light` and `dark`
+- Densities: `default` and `compact`
+- Review matrix: `dark/default`, `dark/compact`, `light/default`, and `light/compact`
+
+Parity expectations:
+
+- Shared primitives must keep contrast, padding rhythm, focus visibility, and state clarity in every supported theme and density combination.
+- Shell patterns must tighten together when density changes. Do not leave compact controls floating inside roomy headers, panels, or form shells.
+- `system` theme is a runtime selector, not a separate visual contract. It must resolve cleanly to the `light` or `dark` review states above.
+- Shared review surfaces should expose the supported matrix where practical: use Histoire for Vue primitives and `/dev/design-system` for HEEx primitives and shell patterns.
+
 ## Vue Component Logic
 
 Vue components in the design layer should be primarily presentational and compositional.
@@ -309,6 +326,7 @@ Do not use Histoire as a replacement for:
 - Every reusable Vue primitive should have a story.
 - Stories should show meaningful states, not only the happy path.
 - Stories should include boundary examples such as long labels, missing content, dense content, and disabled/loading states where relevant.
+- Stories for shared primitives should remain reviewable in the supported theme and density matrix.
 - Stories should use the shared story helpers in `assets/vue/stories/` when useful.
 - Histoire should load the same CSS entrypoint as the app so components are reviewed in the real design language.
 
@@ -328,6 +346,7 @@ Use `/dev/design-system` to:
 
 - preview shared HEEx primitives
 - compare shell and layout patterns
+- review supported theme and density combinations for shared shell and primitive patterns
 - validate form and panel composition in the app shell
 - make sure HEEx patterns stay aligned with Vue patterns
 

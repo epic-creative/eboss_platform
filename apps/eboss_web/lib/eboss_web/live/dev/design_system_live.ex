@@ -24,6 +24,23 @@ defmodule EBossWeb.Dev.DesignSystemLive do
 
         <section class="ui-dev-preview__section">
           <.section_heading
+            eyebrow="Parity review"
+            title="Theme and density review matrix"
+            subtitle="Review shared shell and primitive surfaces in dark/default, dark/compact, light/default, and light/compact without leaving the app."
+            title_size="sm"
+          />
+          <div class="ui-dev-preview__grid ui-dev-preview__grid--2">
+            <.parity_review_card
+              :for={variant <- parity_variants()}
+              label={variant.label}
+              theme={variant.theme}
+              density={variant.density}
+            />
+          </div>
+        </section>
+
+        <section class="ui-dev-preview__section">
+          <.section_heading
             eyebrow="Surface vocabulary"
             title="Default, floating, and solid surfaces each have one job"
             subtitle="Default stays anchored in the shell, floating handles raised moments, and solid groups inset content inside another surface."
@@ -406,6 +423,105 @@ defmodule EBossWeb.Dev.DesignSystemLive do
       </div>
     </Layouts.app>
     """
+  end
+
+  attr :label, :string, required: true
+  attr :theme, :string, values: ~w(light dark), required: true
+  attr :density, :string, values: ~w(default compact), required: true
+
+  defp parity_review_card(assigns) do
+    density_attr = if assigns.density == "compact", do: "compact", else: nil
+    assigns = assign(assigns, :density_attr, density_attr)
+
+    ~H"""
+    <article class="space-y-3">
+      <div class="flex items-center justify-between gap-3">
+        <div class="space-y-1">
+          <p class="ui-text-meta" data-tone="soft">Supported review variant</p>
+          <p class="ui-text-title" data-size="sm">{@label}</p>
+        </div>
+        <.badge tone="neutral">{String.capitalize(@theme)}</.badge>
+      </div>
+
+      <div class="ui-preview-frame" data-theme={@theme} data-density={@density_attr}>
+        <div class="ui-preview-shell">
+          <header class="ui-shell-header">
+            <div class="ui-shell-header__inner">
+              <div class="ui-shell-brand">
+                <div class="ui-brand-mark">EB</div>
+                <div class="ui-shell-brand__lockup">
+                  <p class="ui-kicker">Shell parity</p>
+                  <p class="ui-text-body" data-size="sm" data-tone="soft">{@label}</p>
+                </div>
+              </div>
+
+              <div class="ui-control-cluster">
+                <.badge tone="neutral">{String.capitalize(@density)}</.badge>
+                <.button variant="outline" tone="neutral" size="sm">Inspect</.button>
+              </div>
+            </div>
+          </header>
+
+          <div class="ui-preview-shell__body">
+            <div class="ui-preview-shell__nav">
+              <.nav_pill to="#runs" active>Runs</.nav_pill>
+              <.nav_pill to="#agents">Agents</.nav_pill>
+              <.nav_pill to="#audit">Audit</.nav_pill>
+            </div>
+
+            <div class="ui-preview-shell__grid">
+              <.panel surface="floating" padding="sm" class="space-y-3">
+                <div class="space-y-1">
+                  <p class="ui-text-meta" data-tone="soft">Shell state</p>
+                  <p class="ui-text-title" data-size="md">Hierarchy survives the mode shift.</p>
+                </div>
+                <p class="ui-text-body" data-tone="muted">
+                  Header chrome, navigation, and primary actions should compress together without losing their reading order.
+                </p>
+                <div class="flex flex-wrap gap-2">
+                  <.button size="sm">Approve</.button>
+                  <.button variant="outline" tone="neutral" size="sm">Inspect</.button>
+                </div>
+              </.panel>
+
+              <.panel surface="solid" padding="sm" class="space-y-3">
+                <.input
+                  id={"review-#{@theme}-#{@density}"}
+                  name={"review-#{@theme}-#{@density}"}
+                  label="Operator note"
+                  value="Parity holds across the supported shell states."
+                  hint="Fields, badges, alerts, and panel framing move together across theme and density."
+                />
+                <div
+                  class="ui-alert"
+                  data-tone="success"
+                  role="status"
+                  aria-live="polite"
+                  aria-atomic="true"
+                >
+                  <div class="ui-alert__content">
+                    <p class="ui-alert__title">Review ready</p>
+                    <p class="ui-alert__description">
+                      Contrast, spacing, and state cues stay legible in this combination.
+                    </p>
+                  </div>
+                </div>
+              </.panel>
+            </div>
+          </div>
+        </div>
+      </div>
+    </article>
+    """
+  end
+
+  defp parity_variants do
+    [
+      %{label: "Dark / default", theme: "dark", density: "default"},
+      %{label: "Dark / compact", theme: "dark", density: "compact"},
+      %{label: "Light / default", theme: "light", density: "default"},
+      %{label: "Light / compact", theme: "light", density: "compact"}
+    ]
   end
 
   defp visual_dna_rules do

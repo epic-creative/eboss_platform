@@ -74,6 +74,48 @@ defmodule EBossWeb.DesignSurfaceTest do
     refute ui_tabs_vue =~ ~s(<div class="ui-panel)
   end
 
+  test "shared previews and shell contracts expose the supported theme and density matrix" do
+    tokens_css = File.read!(@tokens_css)
+    primitives_css = File.read!(@primitives_css)
+    patterns_css = File.read!(@patterns_css)
+    design_system_live = read_file("lib/eboss_web/live/dev/design_system_live.ex")
+    story_controls = read_file("assets/vue/stories/StoryControls.vue")
+    story_surface = read_file("assets/vue/stories/StorySurface.vue")
+    layouts = read_file("lib/eboss_web/components/layouts.ex")
+    ui_components = read_file("lib/eboss_web/components/ui_components.ex")
+    ui_panel_vue = read_file("assets/vue/components/ui/UiPanel.vue")
+
+    assert tokens_css =~ "--space-shell-inline"
+    assert tokens_css =~ "--space-preview-gap"
+    assert tokens_css =~ "--space-panel-md"
+    assert tokens_css =~ ~s([data-density="compact"])
+
+    assert primitives_css =~ ":where(.ui-panel-padding-md)"
+    assert primitives_css =~ ".ui-nav-pill"
+    assert primitives_css =~ "min-height: var(--control-height-md)"
+
+    assert patterns_css =~ ".ui-shell-header__inner"
+    assert patterns_css =~ ".ui-shell-main"
+    assert patterns_css =~ ".ui-preview-shell"
+    assert patterns_css =~ ".ui-preview-shell__grid"
+
+    assert layouts =~ "ui-shell-header__inner"
+    assert layouts =~ "ui-shell-main"
+    assert ui_components =~ ~s("ui-panel-padding-md")
+    assert ui_panel_vue =~ ~s(return "ui-panel-padding-md")
+
+    assert story_controls =~ "update:density"
+    assert story_surface =~ ~s(:data-density="density === 'compact' ? 'compact' : undefined")
+
+    assert design_system_live =~ "Theme and density review matrix"
+    assert design_system_live =~ "Dark / default"
+    assert design_system_live =~ "Dark / compact"
+    assert design_system_live =~ "Light / default"
+    assert design_system_live =~ "Light / compact"
+    assert design_system_live =~ "data-theme={@theme}"
+    assert design_system_live =~ "data-density={@density_attr}"
+  end
+
   defp read_file(path) do
     @app_dir
     |> Path.join(path)

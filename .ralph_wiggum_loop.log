@@ -394,3 +394,74 @@ Running ExUnit with seed: 972261, max_cases: 20
 ..............................................
 Finished in 7.4 seconds (0.2s async, 7.1s sync)
 46 tests, 0 failures
+1. changed files
+
+- [DESIGN.md](/Users/mhostetler/Source/EBoss/eboss_platform/DESIGN.md)
+- [apps/eboss_web/assets/css/system/tokens.css](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/css/system/tokens.css)
+- [apps/eboss_web/assets/css/system/primitives.css](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/css/system/primitives.css)
+- [apps/eboss_web/assets/css/system/patterns.css](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/css/system/patterns.css)
+- [apps/eboss_web/assets/vue/components/ui/UiPanel.vue](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/vue/components/ui/UiPanel.vue)
+- [apps/eboss_web/lib/eboss_web/components/layouts.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/components/layouts.ex)
+- [apps/eboss_web/lib/eboss_web/components/ui_components.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/components/ui_components.ex)
+- [apps/eboss_web/lib/eboss_web/live/dev/design_system_live.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/live/dev/design_system_live.ex)
+- [apps/eboss_web/test/design_doc_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/design_doc_test.exs)
+- [apps/eboss_web/test/design_surface_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/design_surface_test.exs)
+- [apps/eboss_web/test/eboss_web/live/dev/design_system_live_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/eboss_web/live/dev/design_system_live_test.exs)
+
+2. tests/commands executed
+
+- `elixir -e '...Code.string_to_quoted!...'` on the changed Elixir modules: passed
+- `elixir -e 'ExUnit.start(); ... Code.require_file(...) ... ExUnit.run()'` for:
+  - `apps/eboss_web/test/design_doc_test.exs`
+  - `apps/eboss_web/test/design_surface_test.exs`
+  - `apps/eboss_web/test/eboss_web/live/dev/design_system_live_test.exs`
+  Result: `7 tests, 0 failures`
+- `PATH=/tmp/codex-mix-wrap:$PATH mix format`: passed
+- `MIX_OS_CONCURRENCY_LOCK=0 PATH=/tmp/codex-mix-wrap:$PATH mix cmd env MIX_ENV=test mix compile --warnings-as-errors`: passed
+- `MIX_OS_CONCURRENCY_LOCK=0 PATH=/tmp/codex-mix-wrap:$PATH mix precommit`: failed in test setup because PostgreSQL access to `localhost:5432` is blocked in this sandbox (`tcp connect ... :eperm`)
+
+3. acceptance criteria coverage
+
+- Shared primitives remain coherent across supported themes and density states.
+  Added density-aware spacing/padding tokens and applied them to panels, nav pills, alerts, list rows, empty states, and shared shell/layout pattern spacing. `UiPanel` in both HEEx and Vue now uses shared density-aware panel padding classes.
+- Shells do not rely on a single theme or density assumption to look correct.
+  Refactored the shared shell layout to use shared shell classes, then added a `/dev/design-system` parity review matrix showing `dark/default`, `dark/compact`, `light/default`, and `light/compact` with shell/header, navigation, panel, form, and feedback states.
+- Theme and density expectations are explicit in the system guidance.
+  Added a `Theme and Density Parity` section to `DESIGN.md`, documented the supported review matrix, and extended tests to lock the docs and preview coverage.
+
+4. blockers/assumptions
+
+- Assumption: the supported parity matrix for this story is the existing `light`/`dark` themes and `default`/`compact` densities already used by the Vue story helpers.
+- Blocker: I could not leave full `mix precommit` passing because this sandbox denies PostgreSQL TCP access and there is no local Postgres socket/binary available. The compile gate passed, the story-specific tests passed, and the only remaining failure is database connectivity during the umbrella test phase.
+==> eboss_data
+There are no tests to run
+==> eboss_accounts
+Running ExUnit with seed: 202329, max_cases: 20
+
+............
+Finished in 8.5 seconds (0.00s async, 8.5s sync)
+12 tests, 0 failures
+==> eboss_tenancy
+Running ExUnit with seed: 324806, max_cases: 20
+
+............
+Finished in 7.5 seconds (0.00s async, 7.5s sync)
+12 tests, 0 failures
+==> eboss_workspaces
+Running ExUnit with seed: 551227, max_cases: 20
+
+............
+Finished in 6.5 seconds (0.00s async, 6.5s sync)
+12 tests, 0 failures
+==> eboss_folio
+Running ExUnit with seed: 705450, max_cases: 20
+
+...........
+Finished in 4.5 seconds (0.00s async, 4.5s sync)
+11 tests, 0 failures
+==> eboss_web
+Running ExUnit with seed: 320513, max_cases: 20
+
+................................................
+Finished in 7.4 seconds (0.2s async, 7.1s sync)
+48 tests, 0 failures

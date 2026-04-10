@@ -25,10 +25,10 @@ defmodule EBossWeb.Layouts do
       <div class="ui-shell__topline" />
       <div class="ui-shell__inner">
         <header class="ui-shell-header">
-          <div class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
-            <a href={~p"/"} class="flex items-center gap-3">
+          <div class="ui-shell-header__inner">
+            <a href={~p"/"} class="ui-shell-brand">
               <div class="ui-brand-mark">EB</div>
-              <div class="space-y-1">
+              <div class="ui-shell-brand__lockup">
                 <p class="ui-kicker">EBoss Platform</p>
                 <p class="ui-text-body" data-size="sm" data-tone="soft">
                   Precision control for agent orchestration.
@@ -64,8 +64,8 @@ defmodule EBossWeb.Layouts do
           </div>
         </header>
 
-        <main class="px-4 py-10 sm:px-6 lg:px-8">
-          <div class="mx-auto max-w-7xl">
+        <main class="ui-shell-main">
+          <div class="ui-shell-main__inner">
             {render_slot(@inner_block)}
           </div>
         </main>
