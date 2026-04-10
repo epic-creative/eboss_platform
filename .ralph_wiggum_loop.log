@@ -2686,3 +2686,71 @@ Running ExUnit with seed: 303204, max_cases: 20
 ................................................................................
 Finished in 8.6 seconds (0.2s async, 8.4s sync)
 80 tests, 0 failures
+1. **changed files**
+
+- [UiInput.spec.ts](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/tests/vue/components/ui/UiInput.spec.ts#L1)  
+  Added behavior coverage for input contract wiring: `update:modelValue`, merged `aria-describedby`, and invalid/error state.
+- [UiSelect.spec.ts](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/tests/vue/components/ui/UiSelect.spec.ts#L1)  
+  Added behavior coverage for prompt rendering, disabled options, emitted selection updates, and invalid/error accessibility wiring.
+- [UiTabs.spec.ts](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/tests/vue/components/ui/UiTabs.spec.ts#L1)  
+  Added behavior coverage for default active tab selection, `v-model` updates, custom tab content, mouse activation, and arrow-key navigation.
+
+2. **tests/commands executed**
+
+- `cd apps/eboss_web/assets && npm run vue:test`  
+  Failed: `vitest: command not found`
+- `cd apps/eboss_web/assets && npm run vue:check`  
+  Failed: missing `vitest`, `@vue/test-utils`, and `vitest/config` modules/types in the asset install
+- `cd apps/eboss_web/assets && npm install --offline --no-audit --no-fund`  
+  Failed: `ENOTCACHED` for `@vue/test-utils`
+- `cd apps/eboss_web/assets && npm install`  
+  Failed: `ENOTFOUND registry.npmjs.org`
+- `mix precommit`  
+  Failed in sandbox before compile: `Mix.Sync.PubSub.subscribe/1` could not open its local TCP socket (`:eperm`)
+
+3. **acceptance criteria coverage**
+
+- Stable Vue primitives now have focused behavior tests for `UiInput`, `UiSelect`, and `UiTabs`, alongside the existing `UiButton` proof-of-life test.
+- The new tests assert component contracts, not implementation trivia:
+  - field primitives: emitted value updates, accessibility ids, invalid/error state
+  - select: prompt and disabled option behavior
+  - tabs: default active state, `v-model` updates, custom content, keyboard-driven transitions
+- The coverage complements Histoire and browser smoke checks by using targeted assertions and no snapshots.
+
+4. **blockers/assumptions**
+
+- Blocker: the sandbox does not have the required frontend test packages installed for `apps/eboss_web/assets`, and network access is blocked, so I could not complete the requested Vitest and `vue:check` runs here.
+- Blocker: the sandbox also blocks Mix’s local PubSub TCP socket, so `mix precommit` cannot complete in this environment.
+- Assumption: `UiTabs` should preserve Reka’s automatic arrow-key activation contract; the spec targets that behavior.
+==> eboss_data
+There are no tests to run
+==> eboss_accounts
+Running ExUnit with seed: 684878, max_cases: 20
+
+............
+Finished in 7.5 seconds (0.00s async, 7.5s sync)
+12 tests, 0 failures
+==> eboss_tenancy
+Running ExUnit with seed: 604896, max_cases: 20
+
+............
+Finished in 6.6 seconds (0.00s async, 6.6s sync)
+12 tests, 0 failures
+==> eboss_workspaces
+Running ExUnit with seed: 546733, max_cases: 20
+
+............
+Finished in 5.8 seconds (0.00s async, 5.8s sync)
+12 tests, 0 failures
+==> eboss_folio
+Running ExUnit with seed: 783156, max_cases: 20
+
+...........
+Finished in 4.0 seconds (0.00s async, 4.0s sync)
+11 tests, 0 failures
+==> eboss_web
+Running ExUnit with seed: 351736, max_cases: 20
+
+................................................................................
+Finished in 8.6 seconds (0.2s async, 8.3s sync)
+80 tests, 0 failures
