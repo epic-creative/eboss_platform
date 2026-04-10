@@ -18,6 +18,14 @@ npm run playwright:setup
 npm run playwright:smoke
 ```
 
+Automated repo gate from the umbrella root:
+
+```bash
+mix frontend.gate
+```
+
+The `Frontend Confidence` GitHub Actions workflow runs that gate on pushes and pull requests. The automated lane keeps Playwright to deterministic setup plus `npm run playwright:smoke`.
+
 Dashboard smoke subset from `apps/eboss_web/assets`:
 
 ```bash

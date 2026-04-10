@@ -68,6 +68,11 @@ defmodule EBoss.Umbrella.MixProject do
       # run `mix setup` in all child apps
       setup: ["cmd mix setup"],
       seed: ["run apps/eboss_data/priv/repo/seeds.exs"],
+      "frontend.gate": [
+        &run_frontend_gate_vitest/1,
+        &run_frontend_gate_playwright_setup/1,
+        &run_frontend_gate_playwright_smoke/1
+      ],
       precommit: [
         "cmd env MIX_ENV=test mix compile --warnings-as-errors",
         &unlock_unused_dev/1,
@@ -85,6 +90,18 @@ defmodule EBoss.Umbrella.MixProject do
     run_root_mix("dev", ["format"])
   end
 
+  defp run_frontend_gate_vitest(_args) do
+    run_frontend_npm(["run", "vue:test"])
+  end
+
+  defp run_frontend_gate_playwright_setup(_args) do
+    run_frontend_npm(["run", "playwright:setup"])
+  end
+
+  defp run_frontend_gate_playwright_smoke(_args) do
+    run_frontend_npm(["run", "playwright:smoke"])
+  end
+
   defp run_root_mix(env, args) do
     mix = System.find_executable("mix") || Mix.raise("Unable to locate the mix executable")
 
@@ -98,5 +115,24 @@ defmodule EBoss.Umbrella.MixProject do
     if status != 0 do
       Mix.raise("Command failed: MIX_ENV=#{env} mix #{Enum.join(args, " ")}")
     end
+  end
+
+  defp run_frontend_npm(args) do
+    npm = System.find_executable("npm") || Mix.raise("Unable to locate the npm executable")
+
+    {_, status} =
+      System.cmd(npm, args,
+        cd: frontend_assets_dir(),
+        into: IO.stream(:stdio, :line),
+        stderr_to_stdout: true
+      )
+
+    if status != 0 do
+      Mix.raise("Command failed: (cd apps/eboss_web/assets && npm #{Enum.join(args, " ")})")
+    end
+  end
+
+  defp frontend_assets_dir do
+    Path.expand("apps/eboss_web/assets", __DIR__)
   end
 end

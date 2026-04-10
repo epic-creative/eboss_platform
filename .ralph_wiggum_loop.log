@@ -2823,3 +2823,74 @@ Running ExUnit with seed: 987543, max_cases: 20
 ................................................................................
 Finished in 8.4 seconds (0.2s async, 8.2s sync)
 80 tests, 0 failures
+1) changed files
+
+- `.github/workflows/frontend-confidence.yml`
+- `mix.exs`
+- `README.md`
+- `apps/eboss_web/assets/tests/playwright/README.md`
+- `apps/eboss_web/assets/tests/vue/README.md`
+- `apps/eboss_web/test/eboss_web/frontend_gate_test.exs`
+
+2) tests/commands executed
+
+- Passed: `elixir -e 'ExUnit.start(); Code.require_file("apps/eboss_web/test/eboss_web/frontend_gate_test.exs"); %{failures: failures} = ExUnit.run(); System.halt(if failures == 0, do: 0, else: 1)'`
+- Passed: `git diff --check`
+- Attempted: `mix frontend.gate`
+  - failed at `npm run vue:test` with `sh: vitest: command not found`
+- Attempted: `npm ci` in `apps/eboss_web/assets`
+  - failed with `ENOTFOUND registry.npmjs.org`
+- Attempted: `mix precommit`
+  - failed in sandbox with `Mix.PubSub` TCP socket permission error (`Mix.Sync.PubSub.subscribe/1`, reason `:eperm`)
+
+3) acceptance criteria coverage
+
+- Playwright and Vitest have an automated execution path without manual intervention:
+  - added root gate alias `mix frontend.gate`
+  - added GitHub Actions workflow `Frontend Confidence` running on `push` and `pull_request`
+- Failures in chosen suites are visible and fail the automated gate:
+  - `mix frontend.gate` runs `npm run vue:test`, `npm run playwright:setup`, and `npm run playwright:smoke`
+  - any failing command raises and fails the workflow job
+- Repo documents intended automated test path clearly:
+  - updated root `README.md`
+  - updated Playwright and Vitest suite READMEs
+- Added acceptance-focused regression coverage:
+  - `apps/eboss_web/test/eboss_web/frontend_gate_test.exs` pins the gate command, workflow, and docs to the lean Vitest + Playwright lane
+
+4) blockers/assumptions
+
+- Blocker: this sandbox cannot fetch npm packages, so `npm ci` and `npm exec` hit `ENOTFOUND registry.npmjs.org`; I could not complete a full local frontend gate run here.
+- Blocker: this sandbox also prevents `mix precommit` from opening Mix’s local PubSub TCP socket, so I could not leave `mix precommit` passing here despite attempting it.
+- Assumption: a GitHub Actions workflow is an acceptable “automated repo gate” for `ST-TST-010`.
+==> eboss_data
+There are no tests to run
+==> eboss_accounts
+Running ExUnit with seed: 259725, max_cases: 20
+
+............
+Finished in 7.8 seconds (0.00s async, 7.8s sync)
+12 tests, 0 failures
+==> eboss_tenancy
+Running ExUnit with seed: 400651, max_cases: 20
+
+............
+Finished in 6.4 seconds (0.00s async, 6.4s sync)
+12 tests, 0 failures
+==> eboss_workspaces
+Running ExUnit with seed: 85208, max_cases: 20
+
+............
+Finished in 5.6 seconds (0.00s async, 5.6s sync)
+12 tests, 0 failures
+==> eboss_folio
+Running ExUnit with seed: 156481, max_cases: 20
+
+...........
+Finished in 3.8 seconds (0.00s async, 3.8s sync)
+11 tests, 0 failures
+==> eboss_web
+Running ExUnit with seed: 520209, max_cases: 20
+
+.................................................................................
+Finished in 8.6 seconds (0.3s async, 8.2s sync)
+81 tests, 0 failures

@@ -56,3 +56,15 @@ npm run playwright:verify-setup
 ```
 
 The Playwright runner starts the Phoenix test server automatically for the smoke and setup-verification lanes. Use `npm run playwright:server:test` only when you want the test server running outside the Playwright process.
+
+## Automated Frontend Gate
+
+Run the lean repo gate from the umbrella root:
+
+```bash
+mix frontend.gate
+```
+
+That command runs `npm run vue:test`, `npm run playwright:setup`, and `npm run playwright:smoke` from `apps/eboss_web/assets`.
+
+GitHub Actions runs the same gate in the `Frontend Confidence` workflow on pushes and pull requests. CI pins `PLAYWRIGHT_BROWSER_CHANNEL=chromium`, so failures in either the Vitest lane or the Playwright smoke lane fail the workflow directly.

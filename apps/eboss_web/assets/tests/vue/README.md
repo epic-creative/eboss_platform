@@ -13,6 +13,14 @@ npm run vue:test
 npm run vue:check
 ```
 
+Automated repo gate from the umbrella root:
+
+```bash
+mix frontend.gate
+```
+
+The `Frontend Confidence` GitHub Actions workflow runs that gate on pushes and pull requests. The automated lane keeps the Vue check focused on `npm run vue:test`.
+
 Tooling decisions:
 
 - `Vitest` with `@vue/test-utils` is the default component-test stack for Vue work in this repo.
