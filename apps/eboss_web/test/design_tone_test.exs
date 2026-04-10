@@ -87,8 +87,8 @@ defmodule EBossWeb.DesignToneTest do
     assert heex_contents =~ ~s(<.badge tone="neutral">Dashboard surfaces</.badge>)
     assert vue_contents =~ ~s(<UiBadge tone="neutral">Dashboard surfaces</UiBadge>)
 
-    assert design_system_live =~ ~s(<div class="ui-alert" data-tone="warning">)
-    assert design_system_live =~ ~s(<div class="ui-alert" data-tone="danger">)
+    assert design_system_live =~ ~r/<div\s+class="ui-alert"\s+data-tone="warning"[\s\S]*?>/
+    assert design_system_live =~ ~r/<div\s+class="ui-alert"\s+data-tone="danger"[\s\S]*?>/
     assert ui_alert_story =~ ~s(<UiAlert tone="warning")
     assert ui_alert_story =~ ~s(<UiAlert tone="danger")
   end

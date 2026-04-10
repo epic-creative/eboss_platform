@@ -30,18 +30,25 @@ const props = withDefaults(
 )
 
 const attrs = useAttrs()
-const tagName = computed(() => (props.href ? "a" : props.as))
 const disabledState = computed(() => props.disabled || props.loading)
+const tagName = computed(() => {
+  if (props.href && disabledState.value) return "span"
+  if (props.href) return "a"
+  return props.as
+})
+const resolvedHref = computed(() => (tagName.value === "a" ? props.href : undefined))
 </script>
 
 <template>
   <component
     :is="tagName"
     v-bind="attrs"
-    :href="href"
+    :href="resolvedHref"
     :type="tagName === 'button' ? type : undefined"
     :disabled="tagName === 'button' ? disabledState : undefined"
-    :aria-disabled="tagName !== 'button' ? String(disabledState) : undefined"
+    :aria-busy="loading ? 'true' : undefined"
+    :aria-disabled="tagName !== 'button' && disabledState ? 'true' : undefined"
+    :tabindex="tagName !== 'button' && disabledState ? -1 : attrs.tabindex"
     class="ui-button"
     :data-variant="variant"
     :data-tone="tone"

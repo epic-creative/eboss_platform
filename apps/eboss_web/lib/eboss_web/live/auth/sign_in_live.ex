@@ -156,7 +156,14 @@ defmodule EBossWeb.Auth.SignInLive do
                 </p>
               </div>
 
-              <div :if={@magic_link_requested} class="ui-alert" data-tone="success">
+              <div
+                :if={@magic_link_requested}
+                class="ui-alert"
+                data-tone="success"
+                role="status"
+                aria-live="polite"
+                aria-atomic="true"
+              >
                 Check your email for the sign-in link.
               </div>
 

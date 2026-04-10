@@ -173,16 +173,24 @@ select {
 }
 
 .ui-text-link {
+  display: inline-flex;
+  align-items: center;
   color: var(--color-accent);
   font-size: var(--type-body-sm-size);
   font-weight: 600;
   line-height: var(--type-body-line-height);
   text-decoration: none;
+  border-radius: 0.4rem;
   transition: color var(--motion-fast) var(--ease-standard);
 }
 
 .ui-text-link:hover {
   color: var(--color-accent-strong);
+}
+
+.ui-text-link:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
 }
 
 .ui-panel {
@@ -518,6 +526,13 @@ select {
   border-color: color-mix(in srgb, var(--color-danger) 42%, transparent);
 }
 
+.ui-field-control[data-invalid="true"]:focus-within {
+  border-color: color-mix(in srgb, var(--color-danger) 56%, transparent);
+  box-shadow:
+    var(--shadow-focus),
+    0 0 0 1px color-mix(in srgb, var(--color-danger) 28%, transparent);
+}
+
 .ui-field-affix {
   color: var(--color-text-soft);
   font-family: var(--font-mono);
@@ -814,5 +829,24 @@ select {
 @keyframes ui-spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-text-link,
+  .ui-button,
+  .ui-field-control,
+  .ui-checkbox,
+  .ui-nav-pill {
+    transition-duration: 0ms;
+  }
+
+  .ui-button:hover,
+  .ui-button:focus-visible {
+    transform: none;
+  }
+
+  .ui-spinner {
+    animation: none;
   }
 }

@@ -106,6 +106,10 @@ defmodule EBossWeb.AuthLiveTest do
 
     assert html =~ "We need a quick fix before continuing."
     assert html =~ "must"
+    assert html =~ ~s(role="alert")
+    assert html =~ ~s(aria-invalid="true")
+    assert html =~ ~s(aria-live="polite")
+    assert html =~ ~r/aria-describedby="[^"]+-error"/
   end
 
   test "password sign-in succeeds from the custom page", %{conn: conn} do
@@ -142,6 +146,8 @@ defmodule EBossWeb.AuthLiveTest do
       |> render_submit()
 
     assert html =~ "We need a quick fix before continuing."
+    assert html =~ ~s(role="alert")
+    assert html =~ ~s(aria-live="assertive")
   end
 
   test "forgot password sends a reset email", %{conn: conn} do
@@ -156,6 +162,8 @@ defmodule EBossWeb.AuthLiveTest do
       |> render_submit()
 
     assert html =~ "Reset instructions are on the way"
+    assert html =~ ~s(role="status")
+    assert html =~ ~s(aria-live="polite")
 
     assert_received {:email, email}
     assert email.html_body =~ "/reset/"

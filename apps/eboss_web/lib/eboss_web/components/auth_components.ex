@@ -48,7 +48,14 @@ defmodule EBossWeb.AuthComponents do
       )
 
     ~H"""
-    <div :if={@messages != []} class="ui-alert" data-tone="danger">
+    <div
+      :if={@messages != []}
+      class="ui-alert"
+      data-tone="danger"
+      role="alert"
+      aria-live="assertive"
+      aria-atomic="true"
+    >
       <.icon name="hero-exclamation-circle" class="mt-0.5 size-5 shrink-0" />
       <div class="ui-alert__content">
         <p class="ui-alert__title">We need a quick fix before continuing.</p>

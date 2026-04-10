@@ -252,12 +252,26 @@ If a new component cannot explain its contract simply, it is probably a pattern 
 
 Accessibility is part of design quality, not a later pass.
 
-- Inputs must have clear labels.
-- Interactive controls must have keyboard and focus behavior.
-- Focus states must be visible and consistent.
-- Dialogs, tabs, alerts, and form feedback must use appropriate semantics.
-- Color must not be the only signal for meaning.
-- Empty, loading, and error states should remain understandable without visual ornament.
+### Focus and keyboard access
+
+- Never remove a visible focus indicator without replacing it with the shared focus treatment or a stronger, clearer equivalent.
+- Interactive primitives must use native controls or preserve equivalent keyboard semantics. Do not fake buttons, links, tabs, or dialogs with click-only containers.
+- Disabled links must stop behaving like links. Do not leave keyboard-activatable anchors styled as disabled buttons.
+- Icon-only controls must expose an accessible name.
+- Keyboard order should follow the reading order of the layout, not visual decoration.
+
+### Feedback semantics
+
+- Inputs must have clear labels, and validation feedback must stay connected to the control with `aria-describedby` and `aria-invalid`.
+- Informational or success feedback should use polite live-region semantics. Destructive or blocking feedback should use alert semantics.
+- Dialogs, tabs, alerts, and form feedback must keep their expected semantics instead of relying on visual treatment alone.
+- Color must not be the only signal for validation, warning, success, active, or selected states.
+
+### Contrast and clarity
+
+- Text, icons, borders, and focus indicators must remain legible across supported themes and density modes.
+- Disabled, loading, empty, and error states must stay understandable without animation or decorative illustration.
+- If a state disappears when color is removed, the design is underspecified.
 
 ## Motion and Feedback
 
@@ -267,6 +281,8 @@ Motion should clarify, not decorate.
 - Keep transitions restrained and consistent.
 - Prefer a small motion vocabulary reused throughout the app.
 - Loading states should preserve layout stability whenever possible.
+- Shared motion must degrade cleanly under `prefers-reduced-motion`.
+- Reduced-motion behavior should remove non-essential transforms and animation while preserving the clarity of feedback.
 
 Avoid layered animations that compete with content or make operator workflows feel soft or slow.
 

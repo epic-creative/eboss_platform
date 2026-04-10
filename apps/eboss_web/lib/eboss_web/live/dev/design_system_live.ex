@@ -292,7 +292,13 @@ defmodule EBossWeb.Dev.DesignSystemLive do
             title_size="sm"
           />
           <div class="ui-dev-preview__grid ui-dev-preview__grid--3">
-            <div class="ui-alert" data-tone="neutral">
+            <div
+              class="ui-alert"
+              data-tone="neutral"
+              role="status"
+              aria-live="polite"
+              aria-atomic="true"
+            >
               <div class="ui-alert__content">
                 <p class="ui-alert__title">Operator note</p>
                 <p class="ui-alert__description">
@@ -300,7 +306,13 @@ defmodule EBossWeb.Dev.DesignSystemLive do
                 </p>
               </div>
             </div>
-            <div class="ui-alert" data-tone="primary">
+            <div
+              class="ui-alert"
+              data-tone="primary"
+              role="status"
+              aria-live="polite"
+              aria-atomic="true"
+            >
               <div class="ui-alert__content">
                 <p class="ui-alert__title">Queue scheduled</p>
                 <p class="ui-alert__description">
@@ -308,7 +320,13 @@ defmodule EBossWeb.Dev.DesignSystemLive do
                 </p>
               </div>
             </div>
-            <div class="ui-alert" data-tone="success">
+            <div
+              class="ui-alert"
+              data-tone="success"
+              role="status"
+              aria-live="polite"
+              aria-atomic="true"
+            >
               <div class="ui-alert__content">
                 <p class="ui-alert__title">Run approved</p>
                 <p class="ui-alert__description">
@@ -316,13 +334,25 @@ defmodule EBossWeb.Dev.DesignSystemLive do
                 </p>
               </div>
             </div>
-            <div class="ui-alert" data-tone="warning">
+            <div
+              class="ui-alert"
+              data-tone="warning"
+              role="alert"
+              aria-live="assertive"
+              aria-atomic="true"
+            >
               <div class="ui-alert__content">
                 <p class="ui-alert__title">Human review requested</p>
                 <p class="ui-alert__description">A sensitive branch is waiting for operator input.</p>
               </div>
             </div>
-            <div class="ui-alert" data-tone="danger">
+            <div
+              class="ui-alert"
+              data-tone="danger"
+              role="alert"
+              aria-live="assertive"
+              aria-atomic="true"
+            >
               <div class="ui-alert__content">
                 <p class="ui-alert__title">Delivery failed</p>
                 <p class="ui-alert__description">

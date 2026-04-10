@@ -30,7 +30,13 @@ defmodule EBossWeb.CoreComponents do
       class="ui-toast-stack"
       {@rest}
     >
-      <div role="alert" class="ui-alert w-80 max-w-80 sm:w-96 sm:max-w-96" data-tone={@tone}>
+      <div
+        role="alert"
+        aria-live="assertive"
+        aria-atomic="true"
+        class="ui-alert w-80 max-w-80 sm:w-96 sm:max-w-96"
+        data-tone={@tone}
+      >
         <.icon name={@icon_name} class="mt-0.5 size-5 shrink-0" />
         <div class="ui-alert__content">
           <p :if={@title} class="ui-alert__title">{@title}</p>
@@ -67,46 +73,72 @@ defmodule EBossWeb.CoreComponents do
   def button(%{rest: rest} = assigns) do
     state = if assigns.loading, do: "loading", else: "default"
     button_class = ["ui-button", assigns.class]
+    button_disabled = assigns.loading || !!rest[:disabled]
+    is_link = !!(rest[:href] || rest[:navigate] || rest[:patch])
 
     assigns =
       assigns
       |> assign(:button_class, button_class)
       |> assign(:button_state, state)
-      |> assign(:is_link, !!(rest[:href] || rest[:navigate] || rest[:patch]))
-      |> assign(:button_disabled, assigns.loading || !!rest[:disabled])
+      |> assign(:is_link, is_link)
+      |> assign(:button_disabled, button_disabled)
+      |> assign(:button_rest, strip_button_accessibility_attrs(rest))
+      |> assign(:disabled_link_rest, strip_disabled_link_attrs(rest))
 
-    if assigns.is_link do
-      ~H"""
-      <.link
-        class={@button_class}
-        data-variant={@variant}
-        data-tone={@tone}
-        data-size={@size}
-        data-state={@button_state}
-        aria-disabled={to_string(@button_disabled)}
-        {@rest}
-      >
-        <.button_inner loading={@loading} icon={@icon} icon_position={@icon_position}>
-          {render_slot(@inner_block)}
-        </.button_inner>
-      </.link>
-      """
-    else
-      ~H"""
-      <button
-        class={@button_class}
-        data-variant={@variant}
-        data-tone={@tone}
-        data-size={@size}
-        data-state={@button_state}
-        disabled={@button_disabled}
-        {@rest}
-      >
-        <.button_inner loading={@loading} icon={@icon} icon_position={@icon_position}>
-          {render_slot(@inner_block)}
-        </.button_inner>
-      </button>
-      """
+    cond do
+      assigns.is_link && assigns.button_disabled ->
+        ~H"""
+        <span
+          class={@button_class}
+          data-variant={@variant}
+          data-tone={@tone}
+          data-size={@size}
+          data-state={@button_state}
+          aria-busy={busy_attr(@loading)}
+          aria-disabled="true"
+          tabindex="-1"
+          {@disabled_link_rest}
+        >
+          <.button_inner loading={@loading} icon={@icon} icon_position={@icon_position}>
+            {render_slot(@inner_block)}
+          </.button_inner>
+        </span>
+        """
+
+      assigns.is_link ->
+        ~H"""
+        <.link
+          class={@button_class}
+          data-variant={@variant}
+          data-tone={@tone}
+          data-size={@size}
+          data-state={@button_state}
+          aria-busy={busy_attr(@loading)}
+          {@button_rest}
+        >
+          <.button_inner loading={@loading} icon={@icon} icon_position={@icon_position}>
+            {render_slot(@inner_block)}
+          </.button_inner>
+        </.link>
+        """
+
+      true ->
+        ~H"""
+        <button
+          class={@button_class}
+          data-variant={@variant}
+          data-tone={@tone}
+          data-size={@size}
+          data-state={@button_state}
+          aria-busy={busy_attr(@loading)}
+          disabled={@button_disabled}
+          {@button_rest}
+        >
+          <.button_inner loading={@loading} icon={@icon} icon_position={@icon_position}>
+            {render_slot(@inner_block)}
+          </.button_inner>
+        </button>
+        """
     end
   end
 
@@ -181,7 +213,7 @@ defmodule EBossWeb.CoreComponents do
       |> assign_new(:checked, fn ->
         Phoenix.HTML.Form.normalize_value("checkbox", assigns[:value])
       end)
-      |> assign(:invalid_state, field_invalid?(assigns.errors, assigns.invalid))
+      |> with_input_a11y()
 
     ~H"""
     <div class="ui-field">
@@ -200,57 +232,80 @@ defmodule EBossWeb.CoreComponents do
           value="true"
           checked={@checked}
           class={["ui-checkbox", @class]}
+          aria-describedby={@describedby}
+          aria-invalid={invalid_attr(@invalid_state)}
           {@rest}
         />
         <span class="ui-checkbox-label">
           <span :if={@label} class="ui-field-label">{@label}</span>
-          <span :if={@hint} class="ui-checkbox-caption">{@hint}</span>
+          <span :if={@hint} id={@hint_id} class="ui-checkbox-caption">{@hint}</span>
         </span>
       </label>
-      <.error :for={msg <- @errors} class={@error_class}>{msg}</.error>
+      <div :if={@errors != []} id={@error_id} class="grid gap-2" aria-live="polite">
+        <.error :for={msg <- @errors} class={@error_class}>{msg}</.error>
+      </div>
     </div>
     """
   end
 
   def input(%{type: "select"} = assigns) do
-    assigns = assign(assigns, :invalid_state, field_invalid?(assigns.errors, assigns.invalid))
+    assigns = with_input_a11y(assigns)
 
     ~H"""
     <div class="ui-field">
       <label :if={@label} for={@id} class="ui-field-label">{@label}</label>
       <div class="ui-field-control" data-size={@size} data-invalid={to_string(@invalid_state)}>
         <span :if={@prefix} class="ui-field-affix">{@prefix}</span>
-        <select id={@id} name={@name} class={["ui-select", @class]} multiple={@multiple} {@rest}>
+        <select
+          id={@id}
+          name={@name}
+          class={["ui-select", @class]}
+          multiple={@multiple}
+          aria-describedby={@describedby}
+          aria-invalid={invalid_attr(@invalid_state)}
+          {@rest}
+        >
           <option :if={@prompt} value="">{@prompt}</option>
           {Phoenix.HTML.Form.options_for_select(@options, @value)}
         </select>
         <span :if={@suffix} class="ui-field-affix">{@suffix}</span>
       </div>
-      <p :if={@hint} class="ui-field-hint">{@hint}</p>
-      <.error :for={msg <- @errors} class={@error_class}>{msg}</.error>
+      <p :if={@hint} id={@hint_id} class="ui-field-hint">{@hint}</p>
+      <div :if={@errors != []} id={@error_id} class="grid gap-2" aria-live="polite">
+        <.error :for={msg <- @errors} class={@error_class}>{msg}</.error>
+      </div>
     </div>
     """
   end
 
   def input(%{type: "textarea"} = assigns) do
-    assigns = assign(assigns, :invalid_state, field_invalid?(assigns.errors, assigns.invalid))
+    assigns = with_input_a11y(assigns)
 
     ~H"""
     <div class="ui-field">
       <label :if={@label} for={@id} class="ui-field-label">{@label}</label>
       <div class="ui-field-control" data-size={@size} data-invalid={to_string(@invalid_state)}>
         <span :if={@prefix} class="ui-field-affix">{@prefix}</span>
-        <textarea id={@id} name={@name} class={["ui-textarea", @class]} {@rest}>{Phoenix.HTML.Form.normalize_value("textarea", @value)}</textarea>
+        <textarea
+          id={@id}
+          name={@name}
+          class={["ui-textarea", @class]}
+          aria-describedby={@describedby}
+          aria-invalid={invalid_attr(@invalid_state)}
+          {@rest}
+        >{Phoenix.HTML.Form.normalize_value("textarea", @value)}</textarea>
         <span :if={@suffix} class="ui-field-affix">{@suffix}</span>
       </div>
-      <p :if={@hint} class="ui-field-hint">{@hint}</p>
-      <.error :for={msg <- @errors} class={@error_class}>{msg}</.error>
+      <p :if={@hint} id={@hint_id} class="ui-field-hint">{@hint}</p>
+      <div :if={@errors != []} id={@error_id} class="grid gap-2" aria-live="polite">
+        <.error :for={msg <- @errors} class={@error_class}>{msg}</.error>
+      </div>
     </div>
     """
   end
 
   def input(assigns) do
-    assigns = assign(assigns, :invalid_state, field_invalid?(assigns.errors, assigns.invalid))
+    assigns = with_input_a11y(assigns)
 
     ~H"""
     <div class="ui-field">
@@ -263,12 +318,16 @@ defmodule EBossWeb.CoreComponents do
           id={@id}
           value={Phoenix.HTML.Form.normalize_value(@type, @value)}
           class={["ui-input", @class]}
+          aria-describedby={@describedby}
+          aria-invalid={invalid_attr(@invalid_state)}
           {@rest}
         />
         <span :if={@suffix} class="ui-field-affix">{@suffix}</span>
       </div>
-      <p :if={@hint} class="ui-field-hint">{@hint}</p>
-      <.error :for={msg <- @errors} class={@error_class}>{msg}</.error>
+      <p :if={@hint} id={@hint_id} class="ui-field-hint">{@hint}</p>
+      <div :if={@errors != []} id={@error_id} class="grid gap-2" aria-live="polite">
+        <.error :for={msg <- @errors} class={@error_class}>{msg}</.error>
+      </div>
     </div>
     """
   end
@@ -417,6 +476,89 @@ defmodule EBossWeb.CoreComponents do
   end
 
   defp field_invalid?(errors, invalid), do: invalid || errors != []
+
+  defp busy_attr(true), do: "true"
+  defp busy_attr(false), do: nil
+
+  defp invalid_attr(true), do: "true"
+  defp invalid_attr(false), do: nil
+
+  defp with_input_a11y(assigns) do
+    id = assigns[:id] || input_id_from_name(assigns[:name])
+    hint_id = if id && present?(assigns[:hint]), do: "#{id}-hint", else: nil
+    error_id = if id && assigns[:errors] != [], do: "#{id}-error", else: nil
+
+    assigns
+    |> assign(:id, id)
+    |> assign(:invalid_state, field_invalid?(assigns.errors, assigns.invalid))
+    |> assign(:hint_id, hint_id)
+    |> assign(:error_id, error_id)
+    |> assign(:describedby, described_by_attr(assigns.rest, [hint_id, error_id]))
+    |> assign(:rest, drop_accessibility_attrs(assigns.rest))
+  end
+
+  defp described_by_attr(rest, ids) do
+    existing = rest[:"aria-describedby"] || rest["aria-describedby"]
+
+    [existing | ids]
+    |> Enum.reject(&(is_nil(&1) || &1 == ""))
+    |> Enum.join(" ")
+    |> case do
+      "" -> nil
+      value -> value
+    end
+  end
+
+  defp drop_accessibility_attrs(rest) do
+    Map.drop(rest, [:"aria-describedby", "aria-describedby", :"aria-invalid", "aria-invalid"])
+  end
+
+  defp strip_button_accessibility_attrs(rest) do
+    Map.drop(rest, [
+      :"aria-busy",
+      "aria-busy",
+      :"aria-disabled",
+      "aria-disabled",
+      :tabindex,
+      "tabindex"
+    ])
+  end
+
+  defp strip_disabled_link_attrs(rest) do
+    rest
+    |> strip_button_accessibility_attrs()
+    |> Map.drop([
+      :disabled,
+      "disabled",
+      :download,
+      "download",
+      :href,
+      "href",
+      :method,
+      "method",
+      :name,
+      "name",
+      :navigate,
+      "navigate",
+      :patch,
+      "patch",
+      :type,
+      "type",
+      :value,
+      "value"
+    ])
+  end
+
+  defp input_id_from_name(nil), do: nil
+
+  defp input_id_from_name(name) do
+    name
+    |> to_string()
+    |> String.replace(~r/[^a-zA-Z0-9_-]+/, "_")
+    |> String.trim("_")
+  end
+
+  defp present?(value), do: value not in [nil, ""]
 
   defp tone_from_kind(:info), do: "primary"
   defp tone_from_kind(:error), do: "danger"

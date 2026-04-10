@@ -276,3 +276,121 @@ Running ExUnit with seed: 482112, max_cases: 20
 ...........................................
 Finished in 6.7 seconds (0.2s async, 6.5s sync)
 43 tests, 0 failures
+1) changed files
+
+- Docs: [DESIGN.md](/Users/mhostetler/Source/EBoss/eboss_platform/DESIGN.md)
+- CSS foundation: [primitives.css](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/css/system/primitives.css)
+- HEEx shared primitives and representative surfaces: [core_components.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/components/core_components.ex), [auth_components.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/components/auth_components.ex), [sign_in_live.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/live/auth/sign_in_live.ex), [forgot_password_live.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/live/auth/forgot_password_live.ex), [design_system_live.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/live/dev/design_system_live.ex)
+- Vue shared primitives: [UiButton.vue](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/vue/components/ui/UiButton.vue), [UiAlert.vue](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/vue/components/ui/UiAlert.vue), [UiInput.vue](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/vue/components/ui/UiInput.vue), [UiSelect.vue](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/vue/components/ui/UiSelect.vue), [UiTextarea.vue](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/vue/components/ui/UiTextarea.vue)
+- Tests: [design_accessibility_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/design_accessibility_test.exs), [auth_live_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/eboss_web/live/auth/auth_live_test.exs)
+
+2) tests/commands executed
+
+- `npm run vue:check` in `apps/eboss_web/assets`: passed
+- `elixir -e '...Code.string_to_quoted!...'` against the edited `.ex`/`.exs` files: passed syntax parse
+- `mix format`: failed before execution because Mix could not start `Mix.PubSub` (`failed to open a TCP socket ... reason: :eperm`)
+- `mix test apps/eboss_web/test/design_accessibility_test.exs apps/eboss_web/test/eboss_web/live/auth/auth_live_test.exs`: failed for the same `Mix.PubSub` socket restriction
+- `mix precommit`: failed for the same `Mix.PubSub` socket restriction
+
+3) acceptance criteria coverage
+
+- Shared primitives now have explicit accessibility rules in [DESIGN.md](/Users/mhostetler/Source/EBoss/eboss_platform/DESIGN.md), explicit alert semantics in HEEx/Vue, and explicit field contracts for `aria-describedby`, `aria-invalid`, and polite error live regions.
+- Focus and keyboard behavior are now first-class in the shared layer: [primitives.css](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/css/system/primitives.css) adds visible focus for text links and invalid-field focus treatment, and both [core_components.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/components/core_components.ex) and [UiButton.vue](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/vue/components/ui/UiButton.vue) stop disabled links from remaining keyboard-activatable.
+- Motion and feedback rules now account for reduced motion and clarity: shared CSS adds a `prefers-reduced-motion` fallback, [UiAlert.vue](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/vue/components/ui/UiAlert.vue) defaults status vs alert semantics by tone, and representative HEEx surfaces use explicit `role`/`aria-live` semantics.
+
+4) blockers/assumptions
+
+- Blocker: this sandbox prevents Mix from opening the TCP socket required by `Mix.Sync.PubSub`, so I could not get `mix precommit` to complete in-session.
+- Assumption: updating the existing `/dev/design-system` alert examples for semantics is still within `ST-DSN-005` because it tightens the current shared primitive contract rather than expanding preview coverage into `ST-DSN-007`.
+==> eboss_web
+Compiling 6 files (.ex)
+Generated eboss_web app
+==> eboss_data
+There are no tests to run
+==> eboss_accounts
+Running ExUnit with seed: 388518, max_cases: 20
+
+............
+Finished in 7.9 seconds (0.00s async, 7.9s sync)
+12 tests, 0 failures
+==> eboss_tenancy
+Running ExUnit with seed: 828058, max_cases: 20
+
+............
+Finished in 6.9 seconds (0.00s async, 6.9s sync)
+12 tests, 0 failures
+==> eboss_workspaces
+Running ExUnit with seed: 320555, max_cases: 20
+
+............
+Finished in 6.1 seconds (0.00s async, 6.1s sync)
+12 tests, 0 failures
+==> eboss_folio
+Running ExUnit with seed: 93843, max_cases: 20
+
+...........
+Finished in 4.3 seconds (0.00s async, 4.3s sync)
+11 tests, 0 failures
+==> eboss_web
+Compiling 3 files (.ex)
+Generated eboss_web app
+Running ExUnit with seed: 918968, max_cases: 20
+
+...............
+
+  1) test shared surfaces reserve warning and danger tones for actual state cues (EBossWeb.DesignToneTest)
+     test/design_tone_test.exs:76
+     Assertion with =~ failed
+     code:  assert design_system_live =~ ~s(<div class="ui-alert" data-tone="warning">)
+     left:  "defmodule EBossWeb.Dev.DesignSystemLive do\n  use EBossWeb, :live_view\n\n  @impl true\n  def mount(_params, _session, socket) do\n    {:ok, assign(socket, :page_title, \"Design System\")}\n  end\n\n  @impl true\n  def render(assigns) do\n    ~H\"\"\"\n    <Layouts.app\n      flash={@flash}\n      current_scope={assigns[:current_scope]}\n      current_user={assigns[:current_user]}\n    >\n      <div class=\"ui-dev-preview\">\n        <.section_heading\n          eyebrow=\"Development route\"\n          title=\"EBoss design system\"\n          subtitle=\"This surface makes the dashboard-derived visual DNA explicit so shared primitives, auth flows, and public-facing moments stay in one product language.\"\n          title_size=\"lg\"\n        />\n\n        <section class=\"ui-dev-preview__section\">\n          <.section_heading\n            eyebrow=\"Surface vocabulary\"\n            title=\"Default, floating, and solid surfaces each have one job\"\n            subtitle=\"Default stays anchored in the shell, floating handles raised moments, and solid groups inset content inside another surface.\"\n            title_size=\"sm\"\n          />\n          <div class=\"ui-dev-preview__grid ui-dev-preview__grid--3\">\n            <.panel class=\"space-y-3\">\n              <p class=\"ui-text-meta\" data-tone=\"soft\">Default surface</p>\n              <p class=\"ui-text-title\" data-size=\"md\">Anchored section chrome.</p>\n              <p class=\"ui-text-body\" data-tone=\"muted\">\n                Use this for standard panels that sit directly in the shell and should feel grounded rather than lifted.\n              </p>\n            </.panel>\n\n            <.panel surface=\"floating\" class=\"space-y-3\">\n              <p class=\"ui-text-meta\" data-tone=\"soft\">Floating surface</p>\n              <p class=\"ui-text-title\" data-size=\"md\">Raised shell-leading chrome.</p>\n              <p class=\"ui-text-body\" data-tone=\"muted\">\n                Use this for dialogs, featured panels, and moments that should visibly lift above the default shell plane.\n              </p>\n            </.panel>\n\n            <.panel surface=\"solid\" class=\"space-y-3\">\n              <p class=\"ui-text-meta\" data-tone=\"soft\">Solid surface</p>\n              <p class=\"ui-text-title\" data-size=\"md\">Dense inset chrome.</p>\n              <p class=\"ui-text-body\" data-tone=\"muted\">\n                Use this for grouped content nested inside another panel or scene so the hierarchy tightens without adding extra lift.\n              </p>\n            </.panel>\n          </div>\n        </section>\n\n        <section class=\"ui-dev-preview__section\">\n          <.section_heading\n            eyebrow=\"Visual DNA\"\n            title=\"Operator console first, marketing polish second.\"\n            subtitle=\"EBoss borrows shell discipline from the `jido_hub` dashboard reference and carries it across every surface without cloning that product.\"\n            title_size=\"sm\"\n          />\n          <div class=\"ui-dev-preview__grid ui-dev-preview__grid--2\">\n            <.panel tone=\"inverse\" surface=\"solid\" class=\"space-y-6\">\n              <div class=\"space-y-3\">\n                <.badge tone=\"neutral\">Shared thesis</.badge>\n                <h2 class=\"ui-text-display\" data-size=\"xl\">\n                  Calm control surfaces, framed precisely enough to carry real work.\n                </h2>\n                <p class=\"ui-text-body max-w-3xl\" data-size=\"lg\" data-tone=\"soft\">\n                  The shell, borders, panels, and type hierarchy should do most of the brand work.\n                  Accent and motion stay secondary. If a design needs loud color, playful type, or\n                  floating fragments to feel interesting, it is drifting off-brand.\n                </p>\n              </div>\n\n              <div class=\"ui-dev-preview__grid ui-dev-preview__grid--2\">\n                <.panel as=\"div\" surface=\"solid\" padding=\"sm\" class=\"space-y-3\">\n                  <p class=\"ui-text-meta\" data-tone=\"soft\">Lean on</p>\n                  <p class=\"ui-text-body\" data-tone=\"muted\">\n                    cool surfaces, stable shell chrome, restrained type, mono metadata, and\n                " <> ...
+     right: "<div class=\"ui-alert\" data-tone=\"warning\">"
+     stacktrace:
+       test/design_tone_test.exs:90: (test)
+
+..............................
+Finished in 6.7 seconds (0.1s async, 6.5s sync)
+46 tests, 1 failure
+** (exit) 2
+    (mix 1.19.5) lib/mix/tasks/cmd.ex:135: Mix.Tasks.Cmd.run/1
+    (mix 1.19.5) lib/mix/task.ex:499: anonymous fn/3 in Mix.Task.run_task/5
+    (mix 1.19.5) lib/mix/project.ex:557: Mix.Project.in_project/4
+    (elixir 1.19.5) lib/file.ex:2013: File.cd!/2
+    (mix 1.19.5) lib/mix/task.ex:671: anonymous fn/4 in Mix.Task.run_in_children_projects/2
+    (elixir 1.19.5) lib/enum.ex:2520: Enum."-reduce/3-lists^foldl/2-0-"/3
+    (mix 1.19.5) lib/mix/task.ex:670: Mix.Task.run_in_children_projects/2
+    (mix 1.19.5) lib/mix/project_stack.ex:241: Mix.ProjectStack.recur/1
+Adjusted the brittle alert assertions in [apps/eboss_web/test/design_tone_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/design_tone_test.exs#L90) so they match the current multiline HEEx alert markup instead of requiring a single exact `<div ...>` string. That preserves the accessibility attributes added for ST-DSN-005 and fixes the repo-side failure shown in the provided precommit output.
+
+Verification in this sandbox: `MIX_ENV=test mix compile --warnings-as-errors` passed, and `mix format --check-formatted` passed. I also invoked `mix precommit`, but it is blocked here before the suite can finish because the sandbox denies the Postgres connection to `localhost:5432` (`:eperm`), so I could not leave the full alias passing in this environment. No commit or push performed.
+==> eboss_data
+There are no tests to run
+==> eboss_accounts
+Running ExUnit with seed: 806499, max_cases: 20
+
+............
+Finished in 9.3 seconds (0.00s async, 9.3s sync)
+12 tests, 0 failures
+==> eboss_tenancy
+Running ExUnit with seed: 988406, max_cases: 20
+
+............
+Finished in 9.6 seconds (0.00s async, 9.6s sync)
+12 tests, 0 failures
+==> eboss_workspaces
+Running ExUnit with seed: 466157, max_cases: 20
+
+............
+Finished in 6.8 seconds (0.00s async, 6.8s sync)
+12 tests, 0 failures
+==> eboss_folio
+Running ExUnit with seed: 171169, max_cases: 20
+
+...........
+Finished in 4.7 seconds (0.00s async, 4.7s sync)
+11 tests, 0 failures
+==> eboss_web
+Running ExUnit with seed: 972261, max_cases: 20
+
+..............................................
+Finished in 7.4 seconds (0.2s async, 7.1s sync)
+46 tests, 0 failures

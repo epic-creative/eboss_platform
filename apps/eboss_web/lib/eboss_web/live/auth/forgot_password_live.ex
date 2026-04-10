@@ -65,7 +65,14 @@ defmodule EBossWeb.Auth.ForgotPasswordLive do
           />
           <.auth_nav current_path="/forgot-password" />
 
-          <div :if={@request_sent} class="ui-alert" data-tone="success">
+          <div
+            :if={@request_sent}
+            class="ui-alert"
+            data-tone="success"
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+          >
             Reset instructions are on the way if the account exists.
           </div>
 
