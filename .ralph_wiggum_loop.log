@@ -2049,3 +2049,66 @@ Running ExUnit with seed: 506421, max_cases: 20
 .....................................................................
 Finished in 9.3 seconds (0.3s async, 8.9s sync)
 69 tests, 0 failures
+1) changed files
+
+- Added [apps/eboss_web/assets/tests/playwright/regression/sign-in-field-retention.spec.ts](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/tests/playwright/regression/sign-in-field-retention.spec.ts)
+
+2) tests/commands executed
+
+- `node` TypeScript transpile check for the new spec: passed
+- `MIX_OS_CONCURRENCY_LOCK=0 elixir -pa /tmp/mix_nopubsub -e 'Application.ensure_all_started(:mix); Mix.env(:test); Mix.CLI.main(["compile", "--warnings-as-errors"])'`: passed
+- `MIX_OS_CONCURRENCY_LOCK=0 elixir -pa /tmp/mix_nopubsub -e 'Application.ensure_all_started(:mix); Mix.env(:dev); Mix.CLI.main(["format", "--check-formatted"])'`: passed
+- `npm run playwright:setup`: failed in this sandbox because Mix cannot open required local TCP sockets
+- `MIX_OS_CONCURRENCY_LOCK=0 elixir -pa /tmp/mix_nopubsub -e 'Application.ensure_all_started(:mix); Mix.env(:test); Mix.CLI.main(["test", ...])'`: blocked because Postgres `localhost:5432` connections are denied with `:eperm`
+- `mix precommit`: not runnable here for the same local-socket restriction, so I could not leave the full alias passing in this environment
+- Targeted Playwright execution for the new regression spec: not runnable here because the sandbox denies localhost HTTP/TCP access and npm registry access
+
+3) acceptance criteria coverage
+
+- The sign-in field-retention regression is now covered in Playwright in [apps/eboss_web/assets/tests/playwright/regression/sign-in-field-retention.spec.ts#L1](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/tests/playwright/regression/sign-in-field-retention.spec.ts#L1).
+- The test uses real typing (`pressSequentially`) and the stable auth contracts already established: prepared public state, `auth-shell`, and accessible form names in [apps/eboss_web/assets/tests/playwright/regression/sign-in-field-retention.spec.ts#L5](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/tests/playwright/regression/sign-in-field-retention.spec.ts#L5).
+- Coverage includes both regression directions:
+  - password form survives magic-link typing in [apps/eboss_web/assets/tests/playwright/regression/sign-in-field-retention.spec.ts#L12](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/tests/playwright/regression/sign-in-field-retention.spec.ts#L12)
+  - magic-link form survives password typing in [apps/eboss_web/assets/tests/playwright/regression/sign-in-field-retention.spec.ts#L37](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/tests/playwright/regression/sign-in-field-retention.spec.ts#L37)
+- I could not complete the requested runtime proof that it fails on broken behavior and passes on corrected behavior because the sandbox blocks the app/server/DB network path needed to execute Playwright and `mix precommit`.
+
+4) blockers/assumptions
+
+- Blocker: this environment denies local TCP sockets (`:eperm`), which breaks Mix PubSub, Postgres on `localhost:5432`, and HTTP access to the Phoenix server on `localhost:4002`.
+- Blocker: npm registry access is also blocked (`ENOTFOUND registry.npmjs.org`), so on-demand Playwright package fetches cannot run here.
+- Assumption: the ST-AUTH-003 fix is already present; this story only adds the browser regression coverage to lock that behavior in.
+==> eboss_web
+Compiling 1 file (.ex)
+Generated eboss_web app
+==> eboss_data
+There are no tests to run
+==> eboss_accounts
+Running ExUnit with seed: 165883, max_cases: 20
+
+............
+Finished in 7.9 seconds (0.00s async, 7.9s sync)
+12 tests, 0 failures
+==> eboss_tenancy
+Running ExUnit with seed: 553743, max_cases: 20
+
+............
+Finished in 7.0 seconds (0.00s async, 7.0s sync)
+12 tests, 0 failures
+==> eboss_workspaces
+Running ExUnit with seed: 189484, max_cases: 20
+
+............
+Finished in 6.0 seconds (0.00s async, 6.0s sync)
+12 tests, 0 failures
+==> eboss_folio
+Running ExUnit with seed: 870690, max_cases: 20
+
+...........
+Finished in 4.4 seconds (0.00s async, 4.4s sync)
+11 tests, 0 failures
+==> eboss_web
+Running ExUnit with seed: 90266, max_cases: 20
+
+.....................................................................
+Finished in 9.2 seconds (0.3s async, 8.9s sync)
+69 tests, 0 failures
