@@ -42,6 +42,10 @@ defmodule EBossWeb.DashboardLiveTest do
     assert html =~ ~s(data-dashboard-section="launchpad")
     assert html =~ ~s(data-dashboard-section="structure")
     assert html =~ ~s(data-dashboard-section="states")
+    assert html =~ ~s(data-dashboard-utility-strip)
+    assert html =~ ~s(data-dashboard-utility-item="primary-lane")
+    assert html =~ ~s(data-dashboard-quick-actions)
+    assert html =~ ~s(data-dashboard-quick-action="open-launch-surface")
     assert html =~ ~s(data-dashboard-panel-group="stack")
     assert html =~ ~s(data-dashboard-state="empty")
     assert html =~ ~s(data-dashboard-state="loading")
@@ -49,6 +53,8 @@ defmodule EBossWeb.DashboardLiveTest do
     assert html =~ "EBoss dashboard"
     assert html =~ "Operator workspace"
     assert html =~ "The main dashboard now lives inside the shared operator shell"
+    assert html =~ "Command surface"
+    assert html =~ "Quick actions"
     assert html =~ "Launch surface"
     assert html =~ "Panel groupings stay systematic instead of page-specific."
     assert html =~ "Empty, loading, and error states stay in the dashboard language."
@@ -57,6 +63,8 @@ defmodule EBossWeb.DashboardLiveTest do
 
     assert Regex.scan(~r/data-dashboard-header/, html) |> length() == 4
     assert Regex.scan(~r/data-dashboard-action-bar/, html) |> length() == 4
+    assert Regex.scan(~r/data-dashboard-utility-item=/, html) |> length() == 4
+    assert Regex.scan(~r/data-dashboard-quick-action=/, html) |> length() == 3
 
     refute html =~ "Dark / compact"
   end

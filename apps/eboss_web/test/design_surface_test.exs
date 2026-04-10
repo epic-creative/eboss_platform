@@ -239,6 +239,7 @@ defmodule EBossWeb.DesignSurfaceTest do
     browser_test_contracts = read_file("lib/eboss_web/browser_test_contracts.ex")
     dashboard_components = read_file("lib/eboss_web/components/dashboard_components.ex")
     dashboard_live = read_file("lib/eboss_web/live/dashboard_live.ex")
+    design_system_live = read_file("lib/eboss_web/live/dev/design_system_live.ex")
     eboss_web = read_file("lib/eboss_web.ex")
 
     assert patterns_css =~ ".ui-dashboard-shell"
@@ -250,11 +251,17 @@ defmodule EBossWeb.DesignSurfaceTest do
     assert patterns_css =~ ".ui-dashboard-header"
     assert patterns_css =~ ".ui-dashboard-action-bar"
     assert patterns_css =~ ".ui-dashboard-panel-group"
+    assert patterns_css =~ ".ui-dashboard-utility-strip"
+    assert patterns_css =~ ".ui-dashboard-quick-actions"
+    assert patterns_css =~ ".ui-dashboard-keycap"
 
     assert dashboard_components =~ "def dashboard_shell(assigns)"
     assert dashboard_components =~ "def dashboard_header(assigns)"
     assert dashboard_components =~ "def dashboard_section(assigns)"
     assert dashboard_components =~ "def dashboard_action_bar(assigns)"
+    assert dashboard_components =~ "def dashboard_utility_strip(assigns)"
+    assert dashboard_components =~ "def dashboard_quick_actions(assigns)"
+    assert dashboard_components =~ "def dashboard_keycap(assigns)"
     assert dashboard_components =~ "def dashboard_panel_group(assigns)"
     assert dashboard_components =~ "dashboard_navigation_label()"
     assert dashboard_components =~ ~s(data-dashboard-shell)
@@ -265,6 +272,9 @@ defmodule EBossWeb.DesignSurfaceTest do
     assert dashboard_components =~ ~s(data-dashboard-header)
     assert dashboard_components =~ ~s(data-dashboard-section)
     assert dashboard_components =~ ~s(data-dashboard-action-bar)
+    assert dashboard_components =~ ~s(data-dashboard-utility-strip)
+    assert dashboard_components =~ ~s(data-dashboard-quick-actions)
+    assert dashboard_components =~ ~s(data-dashboard-keycap)
     assert dashboard_components =~ ~s(data-dashboard-panel-group={@columns})
     assert dashboard_components =~ ~s(data-dashboard-nav-item={@item.id})
 
@@ -272,12 +282,21 @@ defmodule EBossWeb.DesignSurfaceTest do
     assert dashboard_live =~ "<.dashboard_header"
     assert dashboard_live =~ "<.dashboard_section"
     assert dashboard_live =~ "<.dashboard_action_bar"
+    assert dashboard_live =~ "<.dashboard_utility_strip"
+    assert dashboard_live =~ "<.dashboard_quick_actions"
     assert dashboard_live =~ "<.dashboard_panel_group"
     assert dashboard_live =~ ~s(current_path="/dashboard")
     assert dashboard_live =~ ~s(data-dashboard-contract="page-header")
     assert dashboard_live =~ ~s(data-dashboard-contract="page-content")
     assert dashboard_live =~ ~s(section="launchpad")
     assert dashboard_live =~ ~s(section="structure")
+    assert dashboard_live =~ ~s(id="dashboard-utilities")
+    assert dashboard_live =~ ~s(id="dashboard-quick-actions")
+
+    assert design_system_live =~ ~s(id="dashboard-commands")
+    assert design_system_live =~ "Quick actions and utility cues stay light but task-oriented."
+    assert design_system_live =~ "<.dashboard_utility_strip"
+    assert design_system_live =~ "<.dashboard_quick_actions"
 
     assert browser_test_contracts =~ ~s(def dashboard_shell)
     assert browser_test_contracts =~ ~s(def dashboard_navigation_label)

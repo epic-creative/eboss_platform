@@ -583,6 +583,99 @@ defmodule EBossWeb.Dev.DesignSystemLive do
           </div>
         </section>
 
+        <section id="dashboard-commands" class="ui-dev-preview__section">
+          <.section_heading
+            eyebrow="Dashboard commands"
+            title="Quick actions and utility cues stay light but task-oriented."
+            subtitle="Review the command-surface treatment without implying a full workflow palette or custom key handling."
+            title_size="sm"
+          />
+
+          <div class="grid gap-4">
+            <.dashboard_utility_strip
+              title="Command surface"
+              description="Keep route orientation and the next move visible with lightweight jump cues instead of heavier dashboard chrome."
+            >
+              <:item
+                id="preview-primary-lane"
+                label="Primary lane"
+                value="Launch surface"
+                hint="Route-owned workspace entry"
+                href="#dashboard-states"
+                shortcut="GL"
+                tone="primary"
+                icon="hero-bolt"
+              />
+              <:item
+                id="preview-supporting-rail"
+                label="Supporting rail"
+                value="Panel grouping"
+                hint="Review structure and reuse"
+                href="#shells"
+                shortcut="GR"
+                tone="neutral"
+                icon="hero-rectangle-stack"
+              />
+              <:item
+                id="preview-state-audit"
+                label="State audit"
+                value="Fallback states"
+                hint="Inspect empty, loading, and recovery"
+                href="#feedback"
+                shortcut="GS"
+                tone="warning"
+                icon="hero-command-line"
+              />
+              <:item
+                id="preview-shell-frame"
+                label="Shell frame"
+                value="Route context"
+                hint="Identity and controls stay pinned"
+                href="#navigation"
+                shortcut="GT"
+                tone="neutral"
+                icon="hero-shield-check"
+              />
+            </.dashboard_utility_strip>
+
+            <.dashboard_quick_actions
+              title="Quick actions"
+              description="Mnemonic route cues keep the next jump obvious while the dashboard stays visually calm."
+            >
+              <:action
+                id="preview-open-launch-surface"
+                label="Open launch surface"
+                description="Return to the primary operator lane and route-owned workspace context."
+                href="#shells"
+                shortcut="GL"
+                badge="Primary"
+                tone="primary"
+                icon="hero-bolt"
+              />
+              <:action
+                id="preview-inspect-panel-rhythm"
+                label="Inspect panel rhythm"
+                description="Review grouped panels and supporting rail composition."
+                href="#navigation"
+                shortcut="GR"
+                badge="Review"
+                tone="neutral"
+                icon="hero-rectangle-stack"
+              />
+              <:action
+                id="preview-audit-fallback-states"
+                label="Audit fallback states"
+                description="Keep recovery and loading review inside the same dashboard language."
+                href="#dashboard-states"
+                shortcut="GS"
+                badge="States"
+                tone="warning"
+                icon="hero-exclamation-triangle"
+              />
+            </.dashboard_quick_actions>
+          </div>
+        </section>
+
         <section id="dashboard-states" class="ui-dev-preview__section">
           <.section_heading
             eyebrow="Dashboard states"
@@ -1052,6 +1145,7 @@ defmodule EBossWeb.Dev.DesignSystemLive do
       %{label: "Panels", to: "#panels"},
       %{label: "Public patterns", to: "#public-patterns"},
       %{label: "Shells", to: "#shells"},
+      %{label: "Dashboard commands", to: "#dashboard-commands"},
       %{label: "Dashboard states", to: "#dashboard-states"},
       %{label: "Forms", to: "#forms"},
       %{label: "Feedback", to: "#feedback"},

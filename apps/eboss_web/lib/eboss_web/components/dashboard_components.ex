@@ -176,6 +176,139 @@ defmodule EBossWeb.DashboardComponents do
     """
   end
 
+  attr(:label, :string, default: "Dashboard utility strip")
+  attr(:title, :string, default: "Command surface")
+
+  attr(:description, :string,
+    default:
+      "Keep route orientation and the next move visible without adding heavier workflow chrome."
+  )
+
+  attr(:class, :any, default: nil)
+  attr(:rest, :global)
+
+  slot(:item, required: true) do
+    attr(:id, :string, required: true)
+    attr(:label, :string, required: true)
+    attr(:value, :string, required: true)
+    attr(:hint, :string)
+    attr(:href, :string)
+    attr(:shortcut, :string)
+    attr(:icon, :string)
+    attr(:tone, :string, values: ~w(neutral primary success warning danger))
+  end
+
+  def dashboard_utility_strip(assigns) do
+    ~H"""
+    <.panel
+      as="section"
+      surface="solid"
+      padding="sm"
+      class={["ui-dashboard-utility-strip", @class]}
+      aria-label={@label}
+      data-dashboard-utility-strip
+      {@rest}
+    >
+      <div class="ui-dashboard-utility-strip__intro">
+        <p class="ui-text-meta" data-tone="soft">{@title}</p>
+        <p class="ui-text-body" data-size="sm" data-tone="soft">{@description}</p>
+      </div>
+
+      <div class="ui-dashboard-utility-strip__items">
+        <.dashboard_utility_item :for={item <- @item} item={item} />
+      </div>
+    </.panel>
+    """
+  end
+
+  attr(:label, :string, default: "Dashboard quick actions")
+  attr(:title, :string, default: "Quick actions")
+
+  attr(:description, :string,
+    default:
+      "Mnemonic route cues keep the dashboard easy to move through before a fuller command palette exists."
+  )
+
+  attr(:class, :any, default: nil)
+  attr(:rest, :global)
+
+  slot(:action, required: true) do
+    attr(:id, :string, required: true)
+    attr(:label, :string, required: true)
+    attr(:description, :string, required: true)
+    attr(:href, :string, required: true)
+    attr(:shortcut, :string)
+    attr(:badge, :string)
+    attr(:icon, :string)
+    attr(:tone, :string, values: ~w(neutral primary success warning danger))
+  end
+
+  def dashboard_quick_actions(assigns) do
+    ~H"""
+    <.panel
+      as="nav"
+      surface="solid"
+      padding="sm"
+      class={["ui-dashboard-quick-actions", @class]}
+      aria-label={@label}
+      data-dashboard-quick-actions
+      {@rest}
+    >
+      <div class="ui-dashboard-quick-actions__header">
+        <p class="ui-text-meta" data-tone="soft">{@title}</p>
+        <p class="ui-text-body" data-size="sm" data-tone="soft">{@description}</p>
+      </div>
+
+      <div class="ui-dashboard-quick-actions__list">
+        <a
+          :for={action <- @action}
+          href={action[:href]}
+          class="ui-dashboard-quick-actions__item"
+          data-tone={Map.get(action, :tone, "neutral")}
+          data-dashboard-quick-action={action[:id]}
+        >
+          <div class="ui-dashboard-quick-actions__item-copy">
+            <div class="ui-dashboard-quick-actions__item-context">
+              <span class="ui-dashboard-quick-actions__item-icon">
+                <.icon name={Map.get(action, :icon, "hero-bolt")} class="size-4" />
+              </span>
+              <p class="ui-text-title" data-size="sm">{action[:label]}</p>
+              <.badge :if={action[:badge]} tone={Map.get(action, :tone, "neutral")}>
+                {action[:badge]}
+              </.badge>
+            </div>
+
+            <p class="ui-text-body" data-size="sm" data-tone="soft">{action[:description]}</p>
+          </div>
+
+          <div class="ui-dashboard-quick-actions__item-meta">
+            <div :if={action[:shortcut]} class="ui-dashboard-quick-actions__cue">
+              <p class="ui-text-meta" data-tone={Map.get(action, :tone, "neutral")}>Cue</p>
+              <.dashboard_keycap>{action[:shortcut]}</.dashboard_keycap>
+            </div>
+
+            <span class="ui-dashboard-quick-actions__arrow">
+              <.icon name="hero-arrow-right" class="size-4" />
+            </span>
+          </div>
+        </a>
+      </div>
+    </.panel>
+    """
+  end
+
+  attr(:class, :any, default: nil)
+
+  slot(:inner_block, required: true)
+
+  def dashboard_keycap(assigns) do
+    ~H"""
+    <span class={["ui-dashboard-keycap", @class]} data-dashboard-keycap>
+      {render_slot(@inner_block)}
+    </span>
+    """
+  end
+
   attr(:columns, :string, values: ~w(stack split), default: "stack")
   attr(:class, :any, default: nil)
   attr(:rest, :global)
@@ -503,6 +636,61 @@ defmodule EBossWeb.DashboardComponents do
         state: "planned"
       }
     ]
+  end
+
+  attr(:item, :map, required: true)
+
+  defp dashboard_utility_item(assigns) do
+    assigns =
+      assigns
+      |> assign(:linked?, is_binary(assigns.item[:href]))
+      |> assign(:tone, Map.get(assigns.item, :tone, "neutral"))
+      |> assign(:icon, Map.get(assigns.item, :icon, "hero-arrow-up-right"))
+      |> assign(:hint, Map.get(assigns.item, :hint))
+      |> assign(:shortcut, Map.get(assigns.item, :shortcut))
+
+    ~H"""
+    <a
+      :if={@linked?}
+      href={@item[:href]}
+      class="ui-dashboard-utility-strip__item"
+      data-tone={@tone}
+      data-dashboard-utility-item={@item[:id]}
+    >
+      <div class="ui-dashboard-utility-strip__item-copy">
+        <p class="ui-text-meta" data-tone={@tone}>{@item[:label]}</p>
+        <p class="ui-text-body" data-size="sm">{@item[:value]}</p>
+      </div>
+
+      <div class="ui-dashboard-utility-strip__item-meta">
+        <p :if={@hint} class="ui-text-body" data-size="sm" data-tone="muted">
+          {@hint}
+        </p>
+        <.dashboard_keycap :if={@shortcut}>{@shortcut}</.dashboard_keycap>
+        <.icon :if={@icon} name={@icon} class="size-4" />
+      </div>
+    </a>
+
+    <div
+      :if={not @linked?}
+      class="ui-dashboard-utility-strip__item"
+      data-tone={@tone}
+      data-dashboard-utility-item={@item[:id]}
+    >
+      <div class="ui-dashboard-utility-strip__item-copy">
+        <p class="ui-text-meta" data-tone={@tone}>{@item[:label]}</p>
+        <p class="ui-text-body" data-size="sm">{@item[:value]}</p>
+      </div>
+
+      <div class="ui-dashboard-utility-strip__item-meta">
+        <p :if={@hint} class="ui-text-body" data-size="sm" data-tone="muted">
+          {@hint}
+        </p>
+        <.dashboard_keycap :if={@shortcut}>{@shortcut}</.dashboard_keycap>
+        <.icon :if={@icon} name={@icon} class="size-4" />
+      </div>
+    </div>
+    """
   end
 
   defp assign_dashboard_state_label(assigns) do

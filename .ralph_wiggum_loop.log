@@ -2409,3 +2409,82 @@ Running ExUnit with seed: 931941, max_cases: 20
 .............................................................................
 Finished in 9.4 seconds (0.3s async, 9.1s sync)
 77 tests, 0 failures
+1) changed files
+
+- [apps/eboss_web/assets/css/system/patterns.css](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/css/system/patterns.css): added styling for the dashboard utility strip, quick actions, and keycap cues.
+- [apps/eboss_web/lib/eboss_web/components/dashboard_components.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/components/dashboard_components.ex): added shared `dashboard_utility_strip/1`, `dashboard_quick_actions/1`, and `dashboard_keycap/1` patterns.
+- [apps/eboss_web/lib/eboss_web/live/dashboard_live.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/live/dashboard_live.ex): added the command-surface utility strip and sidebar quick actions to the dashboard route.
+- [apps/eboss_web/lib/eboss_web/live/dev/design_system_live.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/live/dev/design_system_live.ex): added a design-system review section for the new dashboard command patterns.
+- [apps/eboss_web/test/eboss_web/live/dashboard_command_components_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/eboss_web/live/dashboard_command_components_test.exs): new component-level tests for the utility strip and quick actions.
+- [apps/eboss_web/test/eboss_web/live/dashboard_live_render_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/eboss_web/live/dashboard_live_render_test.exs): updated render assertions for the new dashboard affordances.
+- [apps/eboss_web/test/eboss_web/live/dashboard_live_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/eboss_web/live/dashboard_live_test.exs): updated route-level assertions for the dashboard command surfaces.
+- [apps/eboss_web/test/design_surface_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/design_surface_test.exs): added design-surface coverage for the new shared patterns.
+
+2) tests/commands executed
+
+- `git diff --check`
+- `elixir $paths -e 'ExUnit.start(); Enum.each([...], &Code.require_file/1)'` against:
+  - `dashboard_command_components_test.exs`
+  - `dashboard_live_render_test.exs`
+  - `dashboard_live_test.exs`
+  - `design_surface_test.exs`
+  Result: `12 tests, 0 failures`
+- `mix precommit`
+  Result: failed in this sandbox because Mix tried to start `Mix.PubSub` and open a TCP socket, which is blocked here with `:eperm`
+- Browser review: Playwright accessibility snapshot against a rendered static preview of the new utility strip and quick actions
+
+3) acceptance criteria coverage
+
+- Dashboard utility patterns improve task orientation and action clarity:
+  the dashboard now has a lightweight utility strip plus sidebar quick actions that point operators to launchpad, structure, states, and route-top anchors with mnemonic cues (`GL`, `GR`, `GS`, `GT`).
+- New utility patterns feel native to EBoss:
+  the affordances were implemented as shared dashboard components and styled with the existing design-system language instead of introducing a separate command-palette UI.
+- The added affordances do not overload the dashboard visually:
+  they are link-based, compact, and integrated into existing header/sidebar rhythm with restrained tone treatment and no new heavy workflow chrome.
+- Verification:
+  component/render tests cover the new surfaces and hooks; browser review confirmed the new landmarks and links. No new client-side keyboard behavior was introduced, so no JS keyboard automation was needed.
+
+4) blockers/assumptions
+
+- Story implementation itself is complete.
+- Environment blocker: I could not leave `mix precommit` passing in this sandbox because Mix 1.19 starts `Mix.PubSub`, and the sandbox forbids the TCP socket it tries to open (`Mix.Sync.PubSub.subscribe/1`, `:eperm`).
+- Assumption: the shortcut labels are command-surface cues, not active keyboard shortcuts. That matches the story’s “without overbuilding early workflow UI” constraint.
+- No commit, push, or PR actions were performed.
+==> eboss_web
+Compiling 4 files (.ex)
+Compiling 13 files (.ex)
+Generated eboss_web app
+==> eboss_data
+There are no tests to run
+==> eboss_accounts
+Running ExUnit with seed: 347302, max_cases: 20
+
+............
+Finished in 7.9 seconds (0.00s async, 7.9s sync)
+12 tests, 0 failures
+==> eboss_tenancy
+Running ExUnit with seed: 705341, max_cases: 20
+
+............
+Finished in 6.5 seconds (0.00s async, 6.5s sync)
+12 tests, 0 failures
+==> eboss_workspaces
+Running ExUnit with seed: 711414, max_cases: 20
+
+............
+Finished in 5.7 seconds (0.00s async, 5.7s sync)
+12 tests, 0 failures
+==> eboss_folio
+Running ExUnit with seed: 836099, max_cases: 20
+
+...........
+Finished in 3.8 seconds (0.00s async, 3.8s sync)
+11 tests, 0 failures
+==> eboss_web
+Compiling 4 files (.ex)
+Generated eboss_web app
+Running ExUnit with seed: 209094, max_cases: 20
+
+...............................................................................
+Finished in 8.6 seconds (0.3s async, 8.2s sync)
+79 tests, 0 failures

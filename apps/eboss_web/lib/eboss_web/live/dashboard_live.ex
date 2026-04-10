@@ -27,7 +27,7 @@ defmodule EBossWeb.DashboardLive do
             class="ui-dashboard-page-heading"
             eyebrow="EBoss dashboard"
             title={"Welcome back, @#{Map.get(@current_user, :username)}."}
-            description="The main dashboard now lives inside the shared operator shell, so route work can evolve without resetting navigation, identity, or session controls."
+            description="The main dashboard now lives inside the shared operator shell, so route work can evolve without resetting navigation, identity, session controls, or lightweight command cues."
             title_tag="h1"
             title_size="xl"
             data-dashboard-contract="page-header"
@@ -42,12 +42,12 @@ defmodule EBossWeb.DashboardLive do
               <.badge tone="neutral">Stable shell chrome</.badge>
             </:signal>
             <:signal>
-              <.badge tone="neutral">Shared page rhythm</.badge>
+              <.badge tone="neutral">Command cues visible</.badge>
             </:signal>
             <:actions>
               <.dashboard_action_bar>
-                <.button href="#dashboard-launchpad" variant="outline" tone="neutral" size="sm">
-                  Launch surface
+                <.button href="#dashboard-utilities" variant="outline" tone="neutral" size="sm">
+                  Command surface
                 </.button>
                 <.button href="#dashboard-structure" variant="ghost" tone="neutral" size="sm">
                   Panel grouping
@@ -57,7 +57,94 @@ defmodule EBossWeb.DashboardLive do
           </.dashboard_header>
         </:page_header>
 
+        <:sidebar_footer>
+          <.dashboard_quick_actions
+            id="dashboard-quick-actions"
+            title="Quick actions"
+            description="Mnemonic route cues keep the next jump obvious while the dashboard stays visually calm."
+          >
+            <:action
+              id="open-launch-surface"
+              label="Open launch surface"
+              description="Return to the primary operator lane and route-owned workspace context."
+              href="#dashboard-launchpad"
+              shortcut="GL"
+              badge="Primary"
+              tone="primary"
+              icon="hero-bolt"
+            />
+            <:action
+              id="inspect-panel-rhythm"
+              label="Inspect panel rhythm"
+              description="Review the support rail, grouped panels, and shell reuse notes."
+              href="#dashboard-structure"
+              shortcut="GR"
+              badge="Review"
+              tone="neutral"
+              icon="hero-rectangle-stack"
+            />
+            <:action
+              id="audit-fallback-states"
+              label="Audit fallback states"
+              description="Check empty, loading, and recovery treatments without leaving the route."
+              href="#dashboard-states"
+              shortcut="GS"
+              badge="States"
+              tone="warning"
+              icon="hero-exclamation-triangle"
+            />
+          </.dashboard_quick_actions>
+        </:sidebar_footer>
+
         <div class="ui-dashboard-page" data-dashboard-contract="page-content">
+          <.dashboard_utility_strip
+            id="dashboard-utilities"
+            class="lg:col-span-2"
+            title="Command surface"
+            description="Keep route orientation and the next move visible with lightweight jump cues instead of heavier workflow chrome."
+          >
+            <:item
+              id="primary-lane"
+              label="Primary lane"
+              value="Launch surface"
+              hint="Route-owned workspace entry"
+              href="#dashboard-launchpad"
+              shortcut="GL"
+              tone="primary"
+              icon="hero-bolt"
+            />
+            <:item
+              id="supporting-rail"
+              label="Supporting rail"
+              value="Panel grouping"
+              hint="Review structure and shell reuse"
+              href="#dashboard-structure"
+              shortcut="GR"
+              tone="neutral"
+              icon="hero-rectangle-stack"
+            />
+            <:item
+              id="state-audit"
+              label="State audit"
+              value="Fallback states"
+              hint="Check empty, loading, and error treatment"
+              href="#dashboard-states"
+              shortcut="GS"
+              tone="warning"
+              icon="hero-command-line"
+            />
+            <:item
+              id="shell-frame"
+              label="Shell frame"
+              value="Route context"
+              hint="Identity and controls stay pinned"
+              href="#dashboard-top"
+              shortcut="GT"
+              tone="neutral"
+              icon="hero-shield-check"
+            />
+          </.dashboard_utility_strip>
+
           <.dashboard_section id="dashboard-launchpad" section="launchpad">
             <.dashboard_header
               eyebrow="Launch surface"
