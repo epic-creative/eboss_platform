@@ -3,14 +3,13 @@ import { phoenixVitePlugin } from "phoenix_vite"
 import tailwindcss from "@tailwindcss/vite"
 import vue from "@vitejs/plugin-vue"
 import liveVuePlugin from "live_vue/vitePlugin"
+import { sharedOptimizeDeps, sharedResolve } from "./vite.shared.mjs"
 
 const ebossEnv = process.env.EBOSS_ENV ?? "local"
 const defaultHost = ebossEnv === "test" ? "localhost" : "local.eboss.ai"
 const phxHost = process.env.PHX_HOST ?? defaultHost
 const vitePort = Number(process.env.VITE_PORT ?? 5173)
-const allowedHosts = [".eboss.ai", phxHost, "localhost", "127.0.0.1"]
-  .map((host) => host.trim())
-  .filter(Boolean)
+const allowedHosts = [".eboss.ai", phxHost, "localhost", "127.0.0.1"].map((host) => host.trim()).filter(Boolean)
 
 export default defineConfig({
   server: {
@@ -25,9 +24,7 @@ export default defineConfig({
       protocol: "ws",
     },
   },
-  optimizeDeps: {
-    include: ["live_vue", "phoenix", "phoenix_html", "phoenix_live_view"],
-  },
+  optimizeDeps: sharedOptimizeDeps,
   build: {
     outDir: "../priv/static/assets",
     emptyOutDir: true,
@@ -35,12 +32,7 @@ export default defineConfig({
       input: ["js/app.js", "css/app.css"],
     },
   },
-  resolve: {
-    alias: {
-      "@": ".",
-      "phoenix-colocated": `${process.env.MIX_BUILD_PATH}/phoenix-colocated`,
-    },
-  },
+  resolve: sharedResolve,
   plugins: [
     tailwindcss(),
     phoenixVitePlugin({

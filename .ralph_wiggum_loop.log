@@ -2619,3 +2619,70 @@ Running ExUnit with seed: 697836, max_cases: 20
 ................................................................................
 Finished in 8.5 seconds (0.3s async, 8.1s sync)
 80 tests, 0 failures
+1) changed files
+
+- [apps/eboss_web/assets/package.json](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/package.json)
+- [apps/eboss_web/assets/tsconfig.json](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/tsconfig.json)
+- [apps/eboss_web/assets/vite.config.mjs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/vite.config.mjs)
+- [apps/eboss_web/assets/vite.shared.mjs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/vite.shared.mjs)
+- [apps/eboss_web/assets/vitest.config.ts](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/vitest.config.ts)
+- [apps/eboss_web/assets/tests/vue/README.md](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/tests/vue/README.md)
+- [apps/eboss_web/assets/tests/vue/setup.ts](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/tests/vue/setup.ts)
+- [apps/eboss_web/assets/tests/vue/support/mount.ts](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/tests/vue/support/mount.ts)
+- [apps/eboss_web/assets/tests/vue/components/ui/UiButton.spec.ts](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/tests/vue/components/ui/UiButton.spec.ts)
+
+2) tests/commands executed
+
+- `cd apps/eboss_web/assets && npm install`
+  - failed: `ENOTFOUND registry.npmjs.org` while fetching `@vue/test-utils`
+- `cd apps/eboss_web/assets && npm run vue:check`
+  - failed: missing installed modules `vitest`, `vitest/config`, and `@vue/test-utils`
+- `cd apps/eboss_web/assets && node ~/.npm/_npx/1197d4502b24d694/node_modules/vitest/vitest.mjs run --config vitest.config.ts`
+  - failed: local `vitest/config` module not installed in this workspace
+- `cd /Users/mhostetler/Source/EBoss/eboss_platform && mix precommit`
+  - failed: Mix PubSub could not open its loopback TCP socket in this sandbox, `reason: :eperm`
+
+3) acceptance criteria coverage
+
+- Added the intended stack wiring for later stories: `Vitest` command path, `@vue/test-utils` dependency declaration, Vitest config, shared setup, mount helper, and a proof-of-life Vue spec.
+- The command path is clear: `npm run vue:test`, `npm run vue:test:watch`, `npm run vue:check`.
+- The structure is ready for stable primitive tests: `tests/vue/components`, `tests/vue/support`, and an initial `UiButton` behavior spec.
+- Full local execution was not verifiable here because the required npm packages could not be installed in this sandbox.
+
+4) blockers/assumptions
+
+- Blocker: this environment cannot reach npm, and `@vue/test-utils` is not present in the local npm cache. Because of that, `package-lock.json` could not be updated and the new Vue test lane could not be fully installed or run.
+- Blocker: `mix precommit` is also sandbox-blocked here; Mix 1.19’s PubSub opens a loopback TCP socket and the sandbox rejects it with `:eperm`.
+- Assumption: in a normal dev environment with npm/network access, running `npm install` in `apps/eboss_web/assets` should materialize `vitest` and `@vue/test-utils`, after which `npm run vue:test` and `npm run vue:check` can be validated normally.
+==> eboss_data
+There are no tests to run
+==> eboss_accounts
+Running ExUnit with seed: 840598, max_cases: 20
+
+............
+Finished in 7.7 seconds (0.00s async, 7.7s sync)
+12 tests, 0 failures
+==> eboss_tenancy
+Running ExUnit with seed: 981706, max_cases: 20
+
+............
+Finished in 6.9 seconds (0.00s async, 6.9s sync)
+12 tests, 0 failures
+==> eboss_workspaces
+Running ExUnit with seed: 404025, max_cases: 20
+
+............
+Finished in 5.8 seconds (0.00s async, 5.8s sync)
+12 tests, 0 failures
+==> eboss_folio
+Running ExUnit with seed: 714944, max_cases: 20
+
+...........
+Finished in 3.9 seconds (0.00s async, 3.9s sync)
+11 tests, 0 failures
+==> eboss_web
+Running ExUnit with seed: 303204, max_cases: 20
+
+................................................................................
+Finished in 8.6 seconds (0.2s async, 8.4s sync)
+80 tests, 0 failures
