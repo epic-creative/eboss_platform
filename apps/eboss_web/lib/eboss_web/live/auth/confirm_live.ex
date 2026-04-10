@@ -37,14 +37,11 @@ defmodule EBossWeb.Auth.ConfirmLive do
         detail_two="Unconfirmed accounts still stay inside the first-party UX"
         detail_three="Successful confirmations land on the dashboard shell"
       >
-        <div class="space-y-8">
-          <.section_heading
-            eyebrow="Email confirmation"
-            title="Confirm your account"
-            subtitle="Use the button below to verify the email address attached to this account."
-            title_size="md"
-          />
-
+        <.auth_page
+          eyebrow="Email confirmation"
+          title="Confirm your account"
+          subtitle="Use the button below to verify the email address attached to this account."
+        >
           <.form_errors form={@form} />
 
           <.form
@@ -59,11 +56,22 @@ defmodule EBossWeb.Auth.ConfirmLive do
           >
             <input type="hidden" name={form[:confirm].name} value={@token} />
 
-            <.button type="submit">
-              Confirm email
-            </.button>
+            <div class="flex justify-end">
+              <.button type="submit">
+                Confirm email
+              </.button>
+            </div>
           </.form>
-        </div>
+
+          <:footer>
+            <.auth_page_footer
+              prompt="Need to return to your base auth routes?"
+              link_text="Sign in"
+              link_href={~p"/sign-in"}
+              note="Confirmation stays inside the same public shell until the account is ready for the dashboard."
+            />
+          </:footer>
+        </.auth_page>
       </.auth_shell>
     </Layouts.app>
     """

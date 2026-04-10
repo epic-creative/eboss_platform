@@ -864,3 +864,75 @@ Running ExUnit with seed: 117834, max_cases: 20
 ..................................................
 Finished in 6.5 seconds (0.2s async, 6.2s sync)
 50 tests, 0 failures
+1. changed files
+
+- [apps/eboss_web/lib/eboss_web/components/auth_components.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/components/auth_components.ex)
+- [apps/eboss_web/assets/css/system/patterns.css](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/css/system/patterns.css)
+- [apps/eboss_web/lib/eboss_web/live/auth/sign_in_live.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/live/auth/sign_in_live.ex)
+- [apps/eboss_web/lib/eboss_web/live/auth/register_live.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/live/auth/register_live.ex)
+- [apps/eboss_web/lib/eboss_web/live/auth/forgot_password_live.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/live/auth/forgot_password_live.ex)
+- [apps/eboss_web/lib/eboss_web/live/auth/reset_password_live.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/live/auth/reset_password_live.ex)
+- [apps/eboss_web/lib/eboss_web/live/auth/confirm_live.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/live/auth/confirm_live.ex)
+- [apps/eboss_web/lib/eboss_web/live/auth/magic_link_live.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/live/auth/magic_link_live.ex)
+- [apps/eboss_web/lib/eboss_web/live/dev/design_system_live.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/live/dev/design_system_live.ex)
+- [apps/eboss_web/test/design_surface_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/design_surface_test.exs)
+- [apps/eboss_web/test/eboss_web/live/auth/auth_live_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/eboss_web/live/auth/auth_live_test.exs)
+
+2. tests/commands executed
+
+- `MIX_OS_CONCURRENCY_LOCK=0 elixir -pa /tmp/mix_shim/ebin -S mix format`  
+  Passed.
+- `MIX_ENV=test MIX_OS_CONCURRENCY_LOCK=0 elixir -pa /tmp/mix_shim/ebin -S mix compile --warnings-as-errors`  
+  Passed.
+- `elixir $(find _build/test/lib -maxdepth 2 -type d -name ebin | sed 's#^#-pa #' | tr '\n' ' ') -e 'ExUnit.start()' -r apps/eboss_web/test/design_surface_test.exs -r apps/eboss_web/test/design_typography_test.exs -r apps/eboss_web/test/design_accessibility_test.exs -e 'ExUnit.run()'`  
+  Passed, `11 tests, 0 failures`.
+- `PGHOST=/private/tmp MIX_OS_CONCURRENCY_LOCK=0 elixir -pa /tmp/mix_shim/ebin -S mix test apps/eboss_web/test/eboss_web/live/auth/auth_live_test.exs apps/eboss_web/test/design_surface_test.exs`  
+  Failed: Postgrex connect blocked by sandbox, `tcp connect ... :eperm`.
+- `PATH=/tmp/mix_wrapper:$PATH PGHOST=/private/tmp MIX_OS_CONCURRENCY_LOCK=0 mix precommit`  
+  Failed for the same reason during DB creation/connect.
+
+3. acceptance criteria coverage
+
+- Auth pages now share one reusable inner shell via `auth_page/1` and `auth_page_footer/1` in [auth_components.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/components/auth_components.ex).
+- Sign-in, register, forgot-password, reset, confirm, and magic-link routes now all render the same meta/header/nav/body/footer hierarchy in their LiveViews.
+- Shared auth shell styling lives in [patterns.css](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/css/system/patterns.css), using existing tokenized spacing/surface rules for mobile/desktop and theme/density parity.
+- The design-system preview was updated to use the same auth-shell contract in [design_system_live.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/live/dev/design_system_live.ex).
+- Test coverage was added/updated in [design_surface_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/design_surface_test.exs) and [auth_live_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/eboss_web/live/auth/auth_live_test.exs) to assert the shared shell hierarchy and reusable-component usage.
+
+4. blockers/assumptions
+
+- `mix precommit` is not passing in this sandbox because PostgreSQL connections are denied with `:eperm`, even when targeting the local socket at `/private/tmp/.s.PGSQL.5432`.
+- The updated LiveView auth test was added but could not be executed here for that reason.
+- Full browser visual review of auth routes was not completed here because the app cannot be brought up against the blocked database.
+==> eboss_data
+There are no tests to run
+==> eboss_accounts
+Running ExUnit with seed: 744113, max_cases: 20
+
+............
+Finished in 7.7 seconds (0.00s async, 7.7s sync)
+12 tests, 0 failures
+==> eboss_tenancy
+Running ExUnit with seed: 878862, max_cases: 20
+
+............
+Finished in 6.7 seconds (0.00s async, 6.7s sync)
+12 tests, 0 failures
+==> eboss_workspaces
+Running ExUnit with seed: 151310, max_cases: 20
+
+............
+Finished in 5.8 seconds (0.00s async, 5.8s sync)
+12 tests, 0 failures
+==> eboss_folio
+Running ExUnit with seed: 722214, max_cases: 20
+
+...........
+Finished in 4.0 seconds (0.00s async, 4.0s sync)
+11 tests, 0 failures
+==> eboss_web
+Running ExUnit with seed: 481711, max_cases: 20
+
+....................................................
+Finished in 6.8 seconds (0.2s async, 6.6s sync)
+52 tests, 0 failures

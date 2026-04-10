@@ -20,6 +20,36 @@ defmodule EBossWeb.AuthLiveTest do
     assert forgot_password.module == EBossWeb.Auth.ForgotPasswordLive
   end
 
+  test "auth routes share the same shell hierarchy", %{conn: conn} do
+    user = register_user(%{email: "shared-shell@example.com", username: "shared_shell_user"})
+    confirm_token = extract_token_from_latest_email("confirm")
+
+    EBoss.Accounts.request_password_reset_token!(%{email: user.email}, authorize?: false)
+    reset_token = extract_token_from_latest_email("reset")
+
+    EBoss.Accounts.request_magic_link!(%{email: user.email}, authorize?: false)
+    magic_token = extract_token_from_latest_email("magic_link")
+
+    routes = [
+      ~p"/sign-in",
+      ~p"/register",
+      ~p"/forgot-password",
+      "/reset/#{reset_token}",
+      "/confirm/#{confirm_token}",
+      "/magic_link/#{magic_token}"
+    ]
+
+    for route <- routes do
+      assert {:ok, view, _html} = live(conn, route)
+      assert has_element?(view, "[data-auth-shell]")
+      assert has_element?(view, ".ui-auth-page")
+      assert has_element?(view, ".ui-auth-page__header")
+      assert has_element?(view, ".ui-auth-page__body")
+      assert has_element?(view, ".ui-auth-page__footer")
+      assert has_element?(view, "nav[aria-label='Authentication routes']")
+    end
+  end
+
   test "signed-in visitors are redirected away from home and anonymous-only auth pages",
        context do
     %{conn: conn} = register_and_log_in_user(context)

@@ -56,15 +56,12 @@ defmodule EBossWeb.Auth.ForgotPasswordLive do
         detail_two="Reset links land on the same public route contract"
         detail_three="Successful resets create an authenticated session and go to the dashboard"
       >
-        <div class="space-y-8">
-          <.section_heading
-            eyebrow="Password reset"
-            title="Forgot your password?"
-            subtitle="Enter the email for your account and we will send a reset link if it exists."
-            title_size="md"
-          />
-          <.auth_nav current_path="/forgot-password" />
-
+        <.auth_page
+          eyebrow="Password reset"
+          title="Forgot your password?"
+          subtitle="Enter the email for your account and we will send a reset link if it exists."
+          current_path="/forgot-password"
+        >
           <.alert :if={@request_sent} tone="success" role="status" live="polite">
             Reset instructions are on the way if the account exists.
           </.alert>
@@ -81,19 +78,22 @@ defmodule EBossWeb.Auth.ForgotPasswordLive do
           >
             <.input field={form[:email]} type="email" label="Email" autocomplete="email" />
 
-            <div class="flex items-center justify-between gap-4">
-              <a
-                href={~p"/sign-in"}
-                class="ui-text-link"
-              >
-                Back to sign in
-              </a>
+            <div class="flex justify-end">
               <.button type="submit">
                 Email reset link
               </.button>
             </div>
           </.form>
-        </div>
+
+          <:footer>
+            <.auth_page_footer
+              prompt="Remembered your password?"
+              link_text="Back to sign in"
+              link_href={~p"/sign-in"}
+              note="Reset emails return to the same public auth shell before the session resumes."
+            />
+          </:footer>
+        </.auth_page>
       </.auth_shell>
     </Layouts.app>
     """

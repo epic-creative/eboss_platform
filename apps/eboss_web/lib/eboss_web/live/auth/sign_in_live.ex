@@ -91,19 +91,18 @@ defmodule EBossWeb.Auth.SignInLive do
         detail_two="Magic links stay sign-in only for existing accounts"
         detail_three="Every session lands on a dedicated dashboard shell"
       >
-        <div class="space-y-8">
-          <.section_heading
-            eyebrow="Account access"
-            title="Sign in"
-            subtitle="Your account session is handled by AshAuthentication. This page keeps the experience first-party."
-            title_size="md"
-          />
-          <.auth_nav current_path="/sign-in" />
-
-          <div class="space-y-8">
-            <div class="space-y-4">
+        <.auth_page
+          eyebrow="Account access"
+          title="Sign in"
+          subtitle="Choose your entry path. Password and magic-link access stay inside the same first-party shell."
+          current_path="/sign-in"
+        >
+          <div class="ui-auth-flow-stack">
+            <section class="ui-auth-flow-section" aria-labelledby="sign-in-password-heading">
               <div class="space-y-1">
-                <h2 class="ui-text-title" data-size="md">Password</h2>
+                <h2 id="sign-in-password-heading" class="ui-text-title" data-size="md">
+                  Password
+                </h2>
                 <p class="ui-text-body" data-size="sm" data-tone="soft">
                   Use the password flow for a normal sign-in session.
                 </p>
@@ -144,13 +143,15 @@ defmodule EBossWeb.Auth.SignInLive do
                   </.button>
                 </div>
               </.form>
-            </div>
+            </section>
 
-            <div class="h-px bg-ui-border-subtle" />
+            <div class="ui-auth-flow-divider" />
 
-            <div class="space-y-4">
+            <section class="ui-auth-flow-section" aria-labelledby="sign-in-magic-link-heading">
               <div class="space-y-1">
-                <h2 class="ui-text-title" data-size="md">Magic link</h2>
+                <h2 id="sign-in-magic-link-heading" class="ui-text-title" data-size="md">
+                  Magic link
+                </h2>
                 <p class="ui-text-body" data-size="sm" data-tone="soft">
                   Request a one-time sign-in link for an existing account.
                 </p>
@@ -177,13 +178,24 @@ defmodule EBossWeb.Auth.SignInLive do
                   autocomplete="section-magic-link email"
                 />
 
-                <.button type="submit" variant="outline" tone="neutral">
-                  Email me a magic link
-                </.button>
+                <div class="flex justify-end">
+                  <.button type="submit" variant="outline" tone="neutral">
+                    Email me a magic link
+                  </.button>
+                </div>
               </.form>
-            </div>
+            </section>
           </div>
-        </div>
+
+          <:footer>
+            <.auth_page_footer
+              prompt="Need a fresh account?"
+              link_text="Register"
+              link_href={~p"/register"}
+              note="Password and magic-link access land in the same authenticated dashboard shell."
+            />
+          </:footer>
+        </.auth_page>
       </.auth_shell>
     </Layouts.app>
     """

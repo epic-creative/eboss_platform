@@ -64,14 +64,11 @@ defmodule EBossWeb.Auth.ResetPasswordLive do
         detail_two="Successful resets also create a session"
         detail_three="Invalid tokens fall back to the sign-in flow cleanly"
       >
-        <div class="space-y-8">
-          <.section_heading
-            eyebrow="Reset password"
-            title="Set a new password"
-            subtitle="Choose a fresh password and we will sign you back into the application."
-            title_size="md"
-          />
-
+        <.auth_page
+          eyebrow="Reset password"
+          title="Set a new password"
+          subtitle="Choose a fresh password and we will sign you back into the application."
+        >
           <.form_errors form={@form} />
 
           <.form
@@ -96,11 +93,22 @@ defmodule EBossWeb.Auth.ResetPasswordLive do
               autocomplete="new-password"
             />
 
-            <.button type="submit">
-              Reset password
-            </.button>
+            <div class="flex justify-end">
+              <.button type="submit">
+                Reset password
+              </.button>
+            </div>
           </.form>
-        </div>
+
+          <:footer>
+            <.auth_page_footer
+              prompt="Need another reset email?"
+              link_text="Request a new link"
+              link_href={~p"/forgot-password"}
+              note="Expired or invalid tokens fall back to the same recovery flow without leaving the auth family."
+            />
+          </:footer>
+        </.auth_page>
       </.auth_shell>
     </Layouts.app>
     """

@@ -37,14 +37,11 @@ defmodule EBossWeb.Auth.MagicLinkLive do
         detail_two="No parallel custom JSON auth endpoint is introduced"
         detail_three="The final destination is the same dashboard shell as password sign-in"
       >
-        <div class="space-y-8">
-          <.section_heading
-            eyebrow="Magic link"
-            title="Use this sign-in link"
-            subtitle="Confirm the sign-in and we will take you into the authenticated part of the app."
-            title_size="md"
-          />
-
+        <.auth_page
+          eyebrow="Magic link"
+          title="Use this sign-in link"
+          subtitle="Confirm the sign-in and we will take you into the authenticated part of the app."
+        >
           <.form_errors form={@form} />
 
           <.form
@@ -59,11 +56,22 @@ defmodule EBossWeb.Auth.MagicLinkLive do
           >
             <input type="hidden" name={form[:token].name} value={@token} />
 
-            <.button type="submit">
-              Sign me in
-            </.button>
+            <div class="flex justify-end">
+              <.button type="submit">
+                Sign me in
+              </.button>
+            </div>
           </.form>
-        </div>
+
+          <:footer>
+            <.auth_page_footer
+              prompt="Prefer a standard credential flow?"
+              link_text="Sign in with password"
+              link_href={~p"/sign-in"}
+              note="Magic-link confirmation uses the same public shell and lands in the same authenticated destination."
+            />
+          </:footer>
+        </.auth_page>
       </.auth_shell>
     </Layouts.app>
     """

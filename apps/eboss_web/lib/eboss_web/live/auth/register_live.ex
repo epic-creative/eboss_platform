@@ -53,15 +53,12 @@ defmodule EBossWeb.Auth.RegisterLive do
         detail_two="New registrations sign in through Ash sign-in tokens"
         detail_three="Email confirmation links keep the same public route contract"
       >
-        <div class="space-y-8">
-          <.section_heading
-            eyebrow="New account"
-            title="Register"
-            subtitle="Create your account with an email, a stable username, and a password you can rotate later."
-            title_size="md"
-          />
-          <.auth_nav current_path="/register" />
-
+        <.auth_page
+          eyebrow="New account"
+          title="Register"
+          subtitle="Create your account with the same shell, spacing, and route hierarchy used across every auth step."
+          current_path="/register"
+        >
           <.form_errors form={@form} />
 
           <.form
@@ -87,19 +84,22 @@ defmodule EBossWeb.Auth.RegisterLive do
               autocomplete="new-password"
             />
 
-            <div class="flex items-center justify-between gap-4">
-              <p class="ui-text-body" data-size="sm" data-tone="soft">
-                Already have an account? <a
-                  href={~p"/sign-in"}
-                  class="ui-text-link"
-                >Sign in</a>.
-              </p>
+            <div class="flex justify-end">
               <.button type="submit">
                 Create account
               </.button>
             </div>
           </.form>
-        </div>
+
+          <:footer>
+            <.auth_page_footer
+              prompt="Already have access?"
+              link_text="Sign in"
+              link_href={~p"/sign-in"}
+              note="New accounts confirm email on the same public route family before returning to the product shell."
+            />
+          </:footer>
+        </.auth_page>
       </.auth_shell>
     </Layouts.app>
     """

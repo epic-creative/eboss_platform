@@ -15,7 +15,7 @@ defmodule EBossWeb.AuthComponents do
 
   def auth_shell(assigns) do
     ~H"""
-    <section class="ui-auth-grid">
+    <section class="ui-auth-grid" data-auth-shell>
       <.panel surface="floating" class="ui-frame-card">
         <.AuthScene
           eyebrow={@eyebrow}
@@ -31,6 +31,66 @@ defmodule EBossWeb.AuthComponents do
         {render_slot(@inner_block)}
       </.panel>
     </section>
+    """
+  end
+
+  attr :eyebrow, :string, required: true
+  attr :title, :string, required: true
+  attr :subtitle, :string, required: true
+  attr :current_path, :string, default: nil
+  attr :family_label, :string, default: "Secure access"
+  attr :family_badge, :string, default: "First-party auth"
+  attr :show_nav, :boolean, default: true
+  slot :inner_block, required: true
+  slot :footer
+
+  def auth_page(assigns) do
+    ~H"""
+    <div class="ui-auth-page">
+      <header class="ui-auth-page__header">
+        <div class="ui-auth-page__meta">
+          <p class="ui-text-meta" data-tone="soft">{@family_label}</p>
+          <.badge tone="neutral">{@family_badge}</.badge>
+        </div>
+
+        <.section_heading
+          eyebrow={@eyebrow}
+          title={@title}
+          subtitle={@subtitle}
+          title_size="md"
+        />
+
+        <div :if={@show_nav} class="ui-auth-page__nav">
+          <.auth_nav current_path={@current_path || ""} />
+        </div>
+      </header>
+
+      <div class="ui-auth-page__body">
+        {render_slot(@inner_block)}
+      </div>
+
+      <footer :if={@footer != []} class="ui-auth-page__footer">
+        {render_slot(@footer)}
+      </footer>
+    </div>
+    """
+  end
+
+  attr :prompt, :string, required: true
+  attr :link_text, :string, required: true
+  attr :link_href, :string, required: true
+  attr :note, :string, default: nil
+
+  def auth_page_footer(assigns) do
+    ~H"""
+    <div class="ui-auth-page__footer-copy">
+      <p class="ui-text-body" data-size="sm" data-tone="soft">
+        {@prompt} <a href={@link_href} class="ui-text-link">{@link_text}</a>.
+      </p>
+      <p :if={@note} class="ui-text-body" data-size="sm" data-tone="muted">
+        {@note}
+      </p>
+    </div>
     """
   end
 
@@ -66,7 +126,7 @@ defmodule EBossWeb.AuthComponents do
 
   def auth_nav(assigns) do
     ~H"""
-    <nav class="flex flex-wrap gap-2">
+    <nav class="ui-auth-nav flex flex-wrap gap-2" aria-label="Authentication routes">
       <.nav_pill to={~p"/sign-in"} active={@current_path == "/sign-in"}>
         Sign in
       </.nav_pill>

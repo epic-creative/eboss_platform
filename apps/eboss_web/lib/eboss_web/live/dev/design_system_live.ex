@@ -1,7 +1,8 @@
 defmodule EBossWeb.Dev.DesignSystemLive do
   use EBossWeb, :live_view
 
-  import EBossWeb.AuthComponents, only: [auth_nav: 1, auth_shell: 1]
+  import EBossWeb.AuthComponents,
+    only: [auth_nav: 1, auth_page: 1, auth_page_footer: 1, auth_shell: 1]
 
   @impl true
   def mount(_params, _session, socket) do
@@ -567,16 +568,12 @@ defmodule EBossWeb.Dev.DesignSystemLive do
                     detail_two="Navigation between auth steps should feel related to the primary shell pills."
                     detail_three="Validation and feedback should land inside the same frame vocabulary."
                   >
-                    <div class="space-y-6">
-                      <.section_heading
-                        eyebrow="Entry flow"
-                        title="Sign in"
-                        subtitle="Review auth framing, nav, and form controls without leaving the preview route."
-                        title_size="md"
-                      />
-
-                      <.auth_nav current_path="/sign-in" />
-
+                    <.auth_page
+                      eyebrow="Entry flow"
+                      title="Sign in"
+                      subtitle="Review auth framing, nav, and form controls without leaving the preview route."
+                      current_path="/sign-in"
+                    >
                       <div class="space-y-4">
                         <.input
                           name="auth_email_preview"
@@ -600,7 +597,16 @@ defmodule EBossWeb.Dev.DesignSystemLive do
                           <.button size="sm">Continue</.button>
                         </div>
                       </div>
-                    </div>
+
+                      <:footer>
+                        <.auth_page_footer
+                          prompt="Need a neighboring route?"
+                          link_text="Register"
+                          link_href="#register"
+                          note="Preview the shell hierarchy, then carry the same frame across every auth route."
+                        />
+                      </:footer>
+                    </.auth_page>
                   </.auth_shell>
                 </div>
               </div>

@@ -193,6 +193,36 @@ defmodule EBossWeb.DesignSurfaceTest do
              ~s(:errors="['Add the triggering run, owner, and current blocker.']")
   end
 
+  test "auth routes share a reusable shell hierarchy and preview contract" do
+    patterns_css = File.read!(@patterns_css)
+    auth_components = read_file("lib/eboss_web/components/auth_components.ex")
+    design_system_live = read_file("lib/eboss_web/live/dev/design_system_live.ex")
+    sign_in_live = read_file("lib/eboss_web/live/auth/sign_in_live.ex")
+    register_live = read_file("lib/eboss_web/live/auth/register_live.ex")
+    forgot_password_live = read_file("lib/eboss_web/live/auth/forgot_password_live.ex")
+    reset_password_live = read_file("lib/eboss_web/live/auth/reset_password_live.ex")
+    confirm_live = read_file("lib/eboss_web/live/auth/confirm_live.ex")
+    magic_link_live = read_file("lib/eboss_web/live/auth/magic_link_live.ex")
+
+    assert patterns_css =~ ".ui-auth-page"
+    assert patterns_css =~ ".ui-auth-page__header"
+    assert patterns_css =~ ".ui-auth-page__body"
+    assert patterns_css =~ ".ui-auth-page__footer"
+    assert patterns_css =~ ".ui-auth-flow-stack"
+
+    assert auth_components =~ "def auth_page(assigns)"
+    assert auth_components =~ "def auth_page_footer(assigns)"
+    assert auth_components =~ ~s(aria-label="Authentication routes")
+
+    assert design_system_live =~ "<.auth_page"
+    assert sign_in_live =~ "<.auth_page"
+    assert register_live =~ "<.auth_page"
+    assert forgot_password_live =~ "<.auth_page"
+    assert reset_password_live =~ "<.auth_page"
+    assert confirm_live =~ "<.auth_page"
+    assert magic_link_live =~ "<.auth_page"
+  end
+
   defp read_file(path) do
     @app_dir
     |> Path.join(path)
