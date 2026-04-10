@@ -2,6 +2,9 @@
   "scripts": {
     "histoire": "histoire dev --config histoire.config.ts --host 127.0.0.1 --port 6006",
     "histoire:build": "histoire build --config histoire.config.ts",
+    "playwright:report": "npm exec --yes --package=playwright@1.59.1 playwright show-report test-results/playwright/report",
+    "playwright:smoke": "npm exec --yes --package=playwright@1.59.1 playwright test tests/playwright/smoke",
+    "playwright:test": "npm exec --yes --package=playwright@1.59.1 playwright test",
     "vue:check": "vue-tsc --noEmit"
   },
   "dependencies": {

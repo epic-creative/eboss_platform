@@ -1746,3 +1746,70 @@ Running ExUnit with seed: 267044, max_cases: 20
 ...................................................................
 Finished in 7.6 seconds (0.3s async, 7.3s sync)
 67 tests, 0 failures
+1) changed files
+
+- [README.md](/Users/mhostetler/Source/EBoss/eboss_platform/README.md#L40)
+- [apps/eboss_web/assets/.gitignore](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/.gitignore#L1)
+- [apps/eboss_web/assets/package.json](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/package.json#L1)
+- [apps/eboss_web/assets/playwright.config.ts](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/playwright.config.ts#L1)
+- [apps/eboss_web/assets/tests/playwright/README.md](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/tests/playwright/README.md#L1)
+- [apps/eboss_web/assets/tests/playwright/fixtures/bootstrap.html](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/tests/playwright/fixtures/bootstrap.html#L1)
+- [apps/eboss_web/assets/tests/playwright/regression/.gitkeep](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/tests/playwright/regression/.gitkeep)
+- [apps/eboss_web/assets/tests/playwright/smoke/bootstrap.spec.ts](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/tests/playwright/smoke/bootstrap.spec.ts#L1)
+- [apps/eboss_web/test/eboss_web/playwright_tooling_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/eboss_web/playwright_tooling_test.exs#L1)
+
+2) tests/commands executed
+
+- `elixir $(find _build/test/lib -maxdepth 2 -type d -name ebin -print | sed 's#^#-pa #') -e 'ExUnit.start(); Code.require_file("apps/eboss_web/test/eboss_web/playwright_tooling_test.exs"); result = ExUnit.run(); System.halt(if result.failures == 0, do: 0, else: 1)'`  
+  Passed.
+- `NODE_PATH=$HOME/.npm/_npx/e41f203b7505f1fb/node_modules node $HOME/.npm/_npx/e41f203b7505f1fb/node_modules/playwright/cli.js test tests/playwright/smoke --config=playwright.config.ts --list`  
+  Passed. Playwright discovered the bootstrap smoke test.
+- `NODE_PATH=... node .../playwright/cli.js test tests/playwright/smoke --config=playwright.config.ts`  
+  Failed in this sandbox when launching the browser process.
+- `mix precommit`  
+  Failed in this sandbox before compilation because `Mix.PubSub` could not open its loopback TCP socket (`:eperm`).
+
+3) acceptance criteria coverage
+
+- The repo now has documented local Playwright commands in [README.md](/Users/mhostetler/Source/EBoss/eboss_platform/README.md#L40) and scripted entrypoints in [package.json](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/package.json#L2).
+- The Playwright structure is in place for later stories: config in [playwright.config.ts](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/playwright.config.ts#L1), smoke/regression/fixtures layout in [tests/playwright/README.md](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/tests/playwright/README.md#L1), bootstrap smoke in [bootstrap.spec.ts](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/tests/playwright/smoke/bootstrap.spec.ts#L1), and artifact paths ignored in [.gitignore](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/.gitignore#L1).
+- Tooling decisions are encoded and documented: smoke vs regression directories, fixture location, and traces/screenshots/report output under `test-results/playwright`.
+
+4) blockers/assumptions
+
+- I kept this story scoped to Playwright foundation only. The bootstrap smoke is self-contained on a checked-in fixture page, which avoids pulling ST-TST-003/ST-TST-004 app-flow work forward.
+- `mix precommit` could not be completed here because this sandbox forbids the local TCP socket Mix uses for `Mix.PubSub`.
+- A full browser run could not be completed here because browser child processes launched from the shell abort or hang under this sandbox. Playwright config/spec discovery did run successfully.
+- The documented `npm run playwright:*` commands use `npm exec --package=playwright@1.59.1`; the first real local run needs npm network access unless that package is already cached.
+==> eboss_data
+There are no tests to run
+==> eboss_accounts
+Running ExUnit with seed: 766141, max_cases: 20
+
+............
+Finished in 8.0 seconds (0.00s async, 8.0s sync)
+12 tests, 0 failures
+==> eboss_tenancy
+Running ExUnit with seed: 510024, max_cases: 20
+
+............
+Finished in 7.0 seconds (0.00s async, 7.0s sync)
+12 tests, 0 failures
+==> eboss_workspaces
+Running ExUnit with seed: 66158, max_cases: 20
+
+............
+Finished in 6.1 seconds (0.00s async, 6.1s sync)
+12 tests, 0 failures
+==> eboss_folio
+Running ExUnit with seed: 868485, max_cases: 20
+
+...........
+Finished in 4.4 seconds (0.00s async, 4.4s sync)
+11 tests, 0 failures
+==> eboss_web
+Running ExUnit with seed: 186946, max_cases: 20
+
+....................................................................
+Finished in 8.1 seconds (0.3s async, 7.8s sync)
+68 tests, 0 failures

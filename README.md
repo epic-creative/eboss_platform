@@ -36,3 +36,14 @@ EBOSS_SEED_PASSWORD=supersecret123 mix seed
 
 The seed script creates example users, an organization, user and org workspaces,
 and a small Folio graph for local auth and API testing.
+
+## Browser Smoke
+
+After `mix setup`, run the Playwright bootstrap smoke from the web assets app:
+
+```bash
+cd apps/eboss_web/assets
+npm run playwright:smoke
+```
+
+The bootstrap smoke stays self-contained on a checked-in fixture page so the runner is proven before auth/public browser coverage lands. Smoke specs live in `apps/eboss_web/assets/tests/playwright/smoke`, future regression coverage lives in `apps/eboss_web/assets/tests/playwright/regression`, and generated traces, screenshots, and reports stay under `apps/eboss_web/assets/test-results/playwright/`.
