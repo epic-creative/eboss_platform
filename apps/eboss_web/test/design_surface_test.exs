@@ -33,6 +33,11 @@ defmodule EBossWeb.DesignSurfaceTest do
     assert patterns_css =~ "var(--radius-shell)"
     assert patterns_css =~ "var(--radius-card)"
 
+    refute primitives_css =~ ".ui-heading"
+    refute primitives_css =~ ".ui-copy-muted"
+    refute patterns_css =~ ".ui-frame-card"
+    refute patterns_css =~ ".ui-form-card"
+
     refute patterns_css =~ "border-radius: 1.35rem;"
     refute patterns_css =~ "border-radius: 1.5rem;"
   end
@@ -439,8 +444,13 @@ defmodule EBossWeb.DesignSurfaceTest do
     assert auth_components =~ "def auth_page_footer(assigns)"
     assert auth_components =~ "authentication_routes_nav_label()"
     assert auth_components =~ "data-testid={BrowserTestContracts.auth_shell()}"
+    assert auth_components =~ ~s(<.panel surface="floating" padding="sm">)
+    assert auth_components =~ ~s(<.panel surface="floating" padding="lg">)
     assert auth_components =~ "def auth_form(assigns)"
     assert auth_components =~ "def auth_submit(assigns)"
+
+    refute auth_components =~ "ui-frame-card"
+    refute auth_components =~ "ui-form-card"
 
     assert browser_test_contracts =~ ~s(- `auth-shell`)
     assert browser_test_contracts =~ ~s(def password_sign_in_form_label)

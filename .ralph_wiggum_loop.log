@@ -2894,3 +2894,85 @@ Running ExUnit with seed: 520209, max_cases: 20
 .................................................................................
 Finished in 8.6 seconds (0.3s async, 8.2s sync)
 81 tests, 0 failures
+1) changed files
+
+- [apps/eboss_web/lib/eboss_web/components/auth_components.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/components/auth_components.ex#L17)  
+  Consolidated the auth shell onto the canonical `<.panel>` path with `padding="sm"` and `padding="lg"` instead of auth-only wrapper classes.
+
+- [apps/eboss_web/assets/css/system/patterns.css](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/css/system/patterns.css#L202)  
+  Removed deprecated auth wrapper classes `.ui-frame-card` and `.ui-form-card`.
+
+- [apps/eboss_web/assets/css/system/primitives.css](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/css/system/primitives.css#L68)  
+  Removed unused typography alias paths `.ui-heading` and `.ui-copy-muted`, leaving the semantic `ui-text-*` contract as the only shared path.
+
+- [apps/eboss_web/test/design_surface_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/design_surface_test.exs#L10)  
+  Added assertions that the deprecated CSS/component paths are gone and that auth now uses canonical panel padding.
+
+- [apps/eboss_web/test/eboss_web/live/auth/auth_contract_smoke_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/eboss_web/live/auth/auth_contract_smoke_test.exs#L50)  
+  Added route-smoke assertions for the consolidated auth shell panel classes and removal of the old detour classes.
+
+2) tests/commands executed
+
+- `MIX_ENV=dev ... Mix.CLI.main(["deps.unlock", "--unused"])` via a no-socket Mix shim
+- `MIX_ENV=dev ... Mix.CLI.main(["format"])` via the same shim
+- `Mix.CLI.main(["format", "--check-formatted"])`
+- `MIX_ENV=test ... Mix.CLI.main(["compile", "--warnings-as-errors"])`
+- Manual ExUnit harness for `apps/eboss_web/test/design_surface_test.exs` -> passed
+- Manual ExUnit harness for:
+  - `apps/eboss_web/test/eboss_web/live/auth/auth_contract_smoke_test.exs`
+  - `apps/eboss_web/test/eboss_web/live/public_shell_smoke_test.exs`
+  - `apps/eboss_web/test/eboss_web/live/dashboard_contract_smoke_test.exs`
+  -> 5 tests passed
+
+3) acceptance criteria coverage
+
+- Deprecated shared UI paths removed or consolidated:
+  - removed `.ui-frame-card`
+  - removed `.ui-form-card`
+  - removed `.ui-heading`
+  - removed `.ui-copy-muted`
+- Current design-system path is easier to identify:
+  - auth shell now uses the shared `<.panel padding=...>` API directly
+  - tests assert the deprecated detours no longer exist
+- Cleanup does not break auth, public, or dashboard surfaces:
+  - auth/public/dashboard smoke tests passed
+  - design surface contract test passed
+
+4) blockers/assumptions
+
+- I could not leave the literal `mix precommit` alias passing in this sandbox. Two sandbox limits block it:
+  - raw `mix` startup fails on `Mix.Sync.PubSub.subscribe/1` with `:eperm`
+  - once shimmed past that, `mix test` cannot open the local Postgres socket and fails with `tcp connect ... :eperm`
+- Assumption: story verification is satisfied by the passing compile/format checks plus the targeted design-surface and route-smoke coverage above.
+==> eboss_data
+There are no tests to run
+==> eboss_accounts
+Running ExUnit with seed: 539873, max_cases: 20
+
+............
+Finished in 7.4 seconds (0.00s async, 7.4s sync)
+12 tests, 0 failures
+==> eboss_tenancy
+Running ExUnit with seed: 284155, max_cases: 20
+
+............
+Finished in 6.4 seconds (0.00s async, 6.4s sync)
+12 tests, 0 failures
+==> eboss_workspaces
+Running ExUnit with seed: 130473, max_cases: 20
+
+............
+Finished in 5.6 seconds (0.00s async, 5.6s sync)
+12 tests, 0 failures
+==> eboss_folio
+Running ExUnit with seed: 68963, max_cases: 20
+
+...........
+Finished in 3.8 seconds (0.00s async, 3.8s sync)
+11 tests, 0 failures
+==> eboss_web
+Running ExUnit with seed: 418473, max_cases: 20
+
+.................................................................................
+Finished in 8.5 seconds (0.3s async, 8.2s sync)
+81 tests, 0 failures

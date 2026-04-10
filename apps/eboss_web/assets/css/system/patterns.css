@@ -216,20 +216,6 @@
   gap: var(--space-stack);
 }
 
-.ui-frame-card {
-  padding: var(--space-card-pad);
-}
-
-.ui-form-card {
-  padding: var(--space-form-pad);
-}
-
-@media (min-width: 640px) {
-  .ui-form-card {
-    padding: var(--space-form-pad-sm);
-  }
-}
-
 .ui-auth-page {
   display: grid;
   gap: calc(var(--space-stack) * 1.5);

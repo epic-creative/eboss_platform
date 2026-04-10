@@ -17,7 +17,7 @@ defmodule EBossWeb.AuthComponents do
   def auth_shell(assigns) do
     ~H"""
     <section class="ui-auth-grid" data-auth-shell data-testid={BrowserTestContracts.auth_shell()}>
-      <.panel surface="floating" class="ui-frame-card">
+      <.panel surface="floating" padding="sm">
         <.AuthScene
           eyebrow={@eyebrow}
           title={@title}
@@ -28,7 +28,7 @@ defmodule EBossWeb.AuthComponents do
         />
       </.panel>
 
-      <.panel surface="floating" class="ui-form-card">
+      <.panel surface="floating" padding="lg">
         {render_slot(@inner_block)}
       </.panel>
     </section>
