@@ -1,6 +1,8 @@
 defmodule EBossWeb.Dev.DesignSystemLive do
   use EBossWeb, :live_view
 
+  import EBossWeb.AuthComponents, only: [auth_nav: 1, auth_shell: 1]
+
   @impl true
   def mount(_params, _session, socket) do
     {:ok, assign(socket, :page_title, "Design System")}
@@ -14,15 +16,89 @@ defmodule EBossWeb.Dev.DesignSystemLive do
       current_scope={assigns[:current_scope]}
       current_user={assigns[:current_user]}
     >
-      <div class="ui-dev-preview">
+      <div class="ui-dev-preview" id="design-system-preview">
         <.section_heading
           eyebrow="Development route"
           title="EBoss design system"
-          subtitle="This surface makes the dashboard-derived visual DNA explicit so shared primitives, auth flows, and public-facing moments stay in one product language."
+          subtitle="Use this route as the in-app review surface for shared HEEx primitives, shells, and state treatments instead of checking them page by page across the product."
           title_size="lg"
-        />
+        >
+          <:actions>
+            <div class="flex flex-wrap gap-2">
+              <.nav_pill :for={link <- review_links()} to={link.to}>
+                {link.label}
+              </.nav_pill>
+            </div>
+          </:actions>
+        </.section_heading>
 
-        <section class="ui-dev-preview__section">
+        <section id="review-index" class="ui-dev-preview__section">
+          <div class="ui-dev-preview__grid ui-dev-preview__grid--2">
+            <.panel surface="floating" class="space-y-5">
+              <.header title_size="md">
+                Shared HEEx review index
+                <:subtitle>
+                  Review the shell, panel, form, feedback, and navigation vocabulary here before
+                  checking individual product routes.
+                </:subtitle>
+                <:actions>
+                  <div class="flex flex-wrap gap-3">
+                    <.button size="sm" href="#shells">
+                      Inspect shells
+                    </.button>
+                    <.button
+                      variant="outline"
+                      tone="neutral"
+                      size="sm"
+                      href="#forms"
+                      icon="hero-arrow-right"
+                      icon_position="trailing"
+                    >
+                      Inspect forms
+                    </.button>
+                  </div>
+                </:actions>
+              </.header>
+
+              <.list>
+                <:item :for={item <- review_checklist()} title={item.title}>
+                  {item.copy}
+                </:item>
+              </.list>
+            </.panel>
+
+            <.panel tone="inverse" surface="solid" class="space-y-5">
+              <div class="space-y-3">
+                <p class="ui-text-meta" data-tone="soft">Coverage targets</p>
+                <div class="flex flex-wrap gap-2">
+                  <.badge :for={target <- coverage_targets()} tone="neutral">
+                    {target}
+                  </.badge>
+                </div>
+              </div>
+
+              <div class="ui-dev-preview__grid ui-dev-preview__grid--2">
+                <.panel as="div" surface="solid" padding="sm" class="space-y-3">
+                  <p class="ui-text-meta" data-tone="soft">Review states</p>
+                  <p class="ui-text-body" data-tone="muted">
+                    Valid, invalid, loading, disabled, empty, success, warning, and danger states
+                    should remain visible on this page as the shared primitives evolve.
+                  </p>
+                </.panel>
+
+                <.panel as="div" surface="solid" padding="sm" class="space-y-3">
+                  <p class="ui-text-meta" data-tone="soft">Drift guard</p>
+                  <p class="ui-text-body" data-tone="muted">
+                    If a shared HEEx primitive changes in the product, update this route in the same
+                    pass so design review stays current.
+                  </p>
+                </.panel>
+              </div>
+            </.panel>
+          </div>
+        </section>
+
+        <section id="review-matrix" class="ui-dev-preview__section">
           <.section_heading
             eyebrow="Parity review"
             title="Theme and density review matrix"
@@ -39,19 +115,21 @@ defmodule EBossWeb.Dev.DesignSystemLive do
           </div>
         </section>
 
-        <section class="ui-dev-preview__section">
+        <section id="panels" class="ui-dev-preview__section">
           <.section_heading
-            eyebrow="Surface vocabulary"
-            title="Default, floating, and solid surfaces each have one job"
-            subtitle="Default stays anchored in the shell, floating handles raised moments, and solid groups inset content inside another surface."
+            eyebrow="Panels"
+            title="Surface vocabulary and grouped content"
+            subtitle="Default stays anchored in the shell, floating handles raised moments, and solid tightens nested content without inventing a new visual language."
             title_size="sm"
           />
+
           <div class="ui-dev-preview__grid ui-dev-preview__grid--3">
             <.panel class="space-y-3">
               <p class="ui-text-meta" data-tone="soft">Default surface</p>
               <p class="ui-text-title" data-size="md">Anchored section chrome.</p>
               <p class="ui-text-body" data-tone="muted">
-                Use this for standard panels that sit directly in the shell and should feel grounded rather than lifted.
+                Use this for standard panels that sit directly in the shell and should feel grounded
+                rather than lifted.
               </p>
             </.panel>
 
@@ -59,7 +137,8 @@ defmodule EBossWeb.Dev.DesignSystemLive do
               <p class="ui-text-meta" data-tone="soft">Floating surface</p>
               <p class="ui-text-title" data-size="md">Raised shell-leading chrome.</p>
               <p class="ui-text-body" data-tone="muted">
-                Use this for dialogs, featured panels, and moments that should visibly lift above the default shell plane.
+                Use this for dialogs, featured panels, and moments that should visibly lift above
+                the default shell plane.
               </p>
             </.panel>
 
@@ -67,8 +146,62 @@ defmodule EBossWeb.Dev.DesignSystemLive do
               <p class="ui-text-meta" data-tone="soft">Solid surface</p>
               <p class="ui-text-title" data-size="md">Dense inset chrome.</p>
               <p class="ui-text-body" data-tone="muted">
-                Use this for grouped content nested inside another panel or scene so the hierarchy tightens without adding extra lift.
+                Use this for grouped content nested inside another panel or scene so the hierarchy
+                tightens without adding extra lift.
               </p>
+            </.panel>
+          </div>
+
+          <div class="ui-dev-preview__grid ui-dev-preview__grid--2">
+            <.panel surface="floating" class="space-y-4">
+              <.header title_size="md">
+                Panel grouping reference
+                <:subtitle>
+                  Shared panels should scale from shell sections to inset cards without changing the
+                  product language.
+                </:subtitle>
+                <:actions>
+                  <div class="flex flex-wrap gap-3">
+                    <.button size="sm">Review frame</.button>
+                    <.button variant="outline" tone="neutral" size="sm">
+                      Compare density
+                    </.button>
+                  </div>
+                </:actions>
+              </.header>
+
+              <div class="grid gap-3">
+                <.panel
+                  :for={item <- dashboard_signals()}
+                  as="div"
+                  surface="solid"
+                  padding="sm"
+                  class="space-y-2"
+                >
+                  <p class="ui-text-meta" data-tone="soft">{item.label}</p>
+                  <p class="ui-text-title" data-size="md">{item.value}</p>
+                  <p class="ui-text-body" data-tone="muted">{item.copy}</p>
+                </.panel>
+              </div>
+            </.panel>
+
+            <.panel tone="inverse" surface="solid" class="space-y-4">
+              <div class="space-y-2">
+                <p class="ui-text-meta">Pattern rule</p>
+                <p class="ui-text-title" data-size="md">
+                  Patterns should reveal the system, not invent a new one.
+                </p>
+                <p class="ui-text-body" data-tone="soft">
+                  If a shared pattern needs a one-off surface treatment to feel useful, the system is
+                  missing a primitive. Tighten the primitive instead of styling around it.
+                </p>
+              </div>
+
+              <.list>
+                <:item :for={item <- panel_review_notes()} title={item.title}>
+                  {item.copy}
+                </:item>
+              </.list>
             </.panel>
           </div>
         </section>
@@ -211,211 +344,476 @@ defmodule EBossWeb.Dev.DesignSystemLive do
           </div>
         </section>
 
-        <section class="ui-dev-preview__section">
+        <section id="shells" class="ui-dev-preview__section">
           <.section_heading
-            eyebrow="Buttons"
-            title="Action styles"
-            subtitle="Variant and tone combinations share the same semantic color contract."
+            eyebrow="Shells"
+            title="Workflow shells and page composition"
+            subtitle="Review the main shell hierarchy, interior headers, data tables, and fallback content as one surface instead of checking each screen in isolation."
             title_size="sm"
           />
-          <.panel surface="floating" class="p-6">
-            <div class="space-y-5">
-              <div class="flex flex-wrap gap-3">
-                <.button>Primary</.button>
-                <.button variant="outline" tone="neutral">Outline</.button>
-                <.button variant="subtle" tone="neutral">Subtle</.button>
-                <.button variant="ghost" tone="neutral">Ghost</.button>
-                <.button loading>Loading</.button>
-              </div>
 
-              <div class="space-y-3">
-                <p class="ui-text-meta" data-tone="soft">Semantic tones</p>
-                <div class="flex flex-wrap gap-3">
-                  <.button tone="primary">Primary</.button>
-                  <.button tone="neutral">Neutral</.button>
-                  <.button tone="success">Success</.button>
-                  <.button tone="warning">Warning</.button>
-                  <.button tone="danger">Danger</.button>
+          <div id="shell-preview-frame" class="ui-preview-frame" data-theme="dark">
+            <div class="ui-preview-shell">
+              <header class="ui-shell-header">
+                <div class="ui-shell-header__inner">
+                  <div class="ui-shell-brand">
+                    <div class="ui-brand-mark">EB</div>
+                    <div class="ui-shell-brand__lockup">
+                      <p class="ui-kicker">Workflow shell</p>
+                      <p class="ui-text-body" data-size="sm" data-tone="soft">
+                        Shared page rhythm under real content density.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div class="ui-control-cluster">
+                    <.badge tone="neutral">Dark</.badge>
+                    <.button variant="outline" tone="neutral" size="sm">
+                      Inspect shell
+                    </.button>
+                  </div>
                 </div>
-                <div class="flex flex-wrap gap-3">
-                  <.button variant="outline" tone="primary">Primary outline</.button>
-                  <.button variant="outline" tone="neutral">Neutral outline</.button>
-                  <.button variant="outline" tone="success">Success outline</.button>
-                  <.button variant="outline" tone="warning">Warning outline</.button>
-                  <.button variant="outline" tone="danger">Danger outline</.button>
+              </header>
+
+              <div class="ui-preview-shell__body">
+                <div class="ui-preview-shell__nav">
+                  <.nav_pill to="#runs" active>Runs</.nav_pill>
+                  <.nav_pill to="#agents">Agents</.nav_pill>
+                  <.nav_pill to="#audit">Audit</.nav_pill>
+                  <.nav_pill to="#settings">Settings</.nav_pill>
                 </div>
-              </div>
-            </div>
-          </.panel>
-        </section>
 
-        <section class="ui-dev-preview__section">
-          <.section_heading
-            eyebrow="Fields"
-            title="Form primitives"
-            subtitle="Inputs, select, textarea, and checkbox all share one contract."
-            title_size="sm"
-          />
-          <.panel surface="floating" class="p-6">
-            <div class="ui-dev-preview__grid ui-dev-preview__grid--2">
-              <div class="space-y-4">
-                <.input
-                  name="workspace"
-                  value="agent-foundry"
-                  label="Workspace slug"
-                  hint="Stable identifiers are used in URLs and API surfaces."
-                  prefix="workspace/"
-                />
-                <.input
-                  name="operator_email"
-                  value="lead@example.com"
-                  type="email"
-                  label="Operator email"
-                />
-                <.input
-                  name="orchestration_mode"
-                  type="select"
-                  label="Execution mode"
-                  prompt="Choose a mode"
-                  options={[Production: "prod", Review: "review", Simulation: "sim"]}
-                />
-              </div>
+                <div class="ui-preview-shell__grid">
+                  <.panel surface="floating" class="space-y-4">
+                    <.header title_size="md">
+                      Operator queue
+                      <:subtitle>
+                        Headers, actions, and tables should read cleanly inside the same shell rhythm
+                        used elsewhere in the product.
+                      </:subtitle>
+                      <:actions>
+                        <div class="flex flex-wrap gap-3">
+                          <.button size="sm">Approve queue</.button>
+                          <.button variant="outline" tone="neutral" size="sm">
+                            Export report
+                          </.button>
+                        </div>
+                      </:actions>
+                    </.header>
 
-              <div class="space-y-4">
-                <.input
-                  name="notes"
-                  type="textarea"
-                  label="Run prompt"
-                  value="Summarize stalled branches and approvals before 9am."
-                  hint="Long-form inputs use the same shell."
-                />
-                <.input
-                  name="notify"
-                  type="checkbox"
-                  label="Notify operators when a run stalls"
-                  hint="Checkboxes keep the same focus and validation treatment."
-                  checked
-                />
-              </div>
-            </div>
-          </.panel>
-        </section>
+                    <.table
+                      id="shell-preview-runs"
+                      rows={shell_preview_rows()}
+                      row_id={&"shell-run-#{&1.id}"}
+                    >
+                      <:col :let={row} label="Run">
+                        <div class="space-y-1">
+                          <p class="ui-text-title" data-size="sm">{row.name}</p>
+                          <p class="ui-text-body" data-size="sm" data-tone="soft">
+                            {row.summary}
+                          </p>
+                        </div>
+                      </:col>
+                      <:col :let={row} label="Owner">
+                        <span class="ui-text-body" data-size="sm">{row.owner}</span>
+                      </:col>
+                      <:col :let={row} label="Status">
+                        <.badge tone={row.tone}>{row.status}</.badge>
+                      </:col>
+                      <:action :let={row}>
+                        <.button variant="ghost" tone="neutral" size="sm" href={"#run-#{row.id}"}>
+                          Inspect
+                        </.button>
+                      </:action>
+                    </.table>
+                  </.panel>
 
-        <section class="ui-dev-preview__section">
-          <.section_heading
-            eyebrow="Feedback"
-            title="Alerts and status"
-            subtitle="Neutral, primary, success, warning, and danger all stay on one semantic palette."
-            title_size="sm"
-          />
-          <div class="ui-dev-preview__grid ui-dev-preview__grid--3">
-            <div
-              class="ui-alert"
-              data-tone="neutral"
-              role="status"
-              aria-live="polite"
-              aria-atomic="true"
-            >
-              <div class="ui-alert__content">
-                <p class="ui-alert__title">Operator note</p>
-                <p class="ui-alert__description">
-                  Default feedback stays grounded in the same shell palette as the rest of the product.
-                </p>
-              </div>
-            </div>
-            <div
-              class="ui-alert"
-              data-tone="primary"
-              role="status"
-              aria-live="polite"
-              aria-atomic="true"
-            >
-              <div class="ui-alert__content">
-                <p class="ui-alert__title">Queue scheduled</p>
-                <p class="ui-alert__description">
-                  The next orchestration step is active and using the product’s primary signal.
-                </p>
-              </div>
-            </div>
-            <div
-              class="ui-alert"
-              data-tone="success"
-              role="status"
-              aria-live="polite"
-              aria-atomic="true"
-            >
-              <div class="ui-alert__content">
-                <p class="ui-alert__title">Run approved</p>
-                <p class="ui-alert__description">
-                  Execution can continue because the latest policy checks have passed.
-                </p>
-              </div>
-            </div>
-            <div
-              class="ui-alert"
-              data-tone="warning"
-              role="alert"
-              aria-live="assertive"
-              aria-atomic="true"
-            >
-              <div class="ui-alert__content">
-                <p class="ui-alert__title">Human review requested</p>
-                <p class="ui-alert__description">A sensitive branch is waiting for operator input.</p>
-              </div>
-            </div>
-            <div
-              class="ui-alert"
-              data-tone="danger"
-              role="alert"
-              aria-live="assertive"
-              aria-atomic="true"
-            >
-              <div class="ui-alert__content">
-                <p class="ui-alert__title">Delivery failed</p>
-                <p class="ui-alert__description">
-                  The external system did not acknowledge the previous step.
-                </p>
+                  <div class="grid gap-4">
+                    <.panel surface="solid" padding="sm" class="space-y-4">
+                      <p class="ui-text-meta" data-tone="soft">Shell review notes</p>
+                      <.list>
+                        <:item :for={item <- shell_review_notes()} title={item.title}>
+                          {item.copy}
+                        </:item>
+                      </.list>
+                    </.panel>
+
+                    <.panel surface="solid" padding="sm" class="space-y-4">
+                      <.empty_state
+                        title="No escalations in this shell"
+                        copy="Fallback states should preserve the same frame, spacing, and action treatment as busy tables."
+                      >
+                        <:actions>
+                          <.button size="sm">Create escalation</.button>
+                          <.button variant="outline" tone="neutral" size="sm">
+                            Inspect history
+                          </.button>
+                        </:actions>
+                      </.empty_state>
+                    </.panel>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </section>
 
-        <section class="ui-dev-preview__section">
+        <section id="forms" class="ui-dev-preview__section">
           <.section_heading
-            eyebrow="Patterns"
-            title="Panels, nav, and empty states"
-            subtitle="Shared patterns still inherit the same shell language and status semantics."
+            eyebrow="Forms"
+            title="Field states and action controls"
+            subtitle="Inputs, buttons, and auth entry flows should stay consistent across valid, invalid, loading, and disabled states."
             title_size="sm"
           />
+
           <div class="ui-dev-preview__grid ui-dev-preview__grid--2">
-            <.panel surface="floating" class="space-y-5">
-              <div class="flex flex-wrap gap-2">
-                <.nav_pill to="#runs" active>Runs</.nav_pill>
-                <.nav_pill to="#agents">Agents</.nav_pill>
-                <.nav_pill to="#audit">Audit</.nav_pill>
+            <.panel surface="floating" class="space-y-6">
+              <.header title_size="md">
+                Form primitives
+                <:subtitle>
+                  Buttons and fields share one accessibility, tone, and interaction contract.
+                </:subtitle>
+              </.header>
+
+              <div class="flex flex-wrap gap-3">
+                <.button size="sm" icon="hero-play">
+                  Start review
+                </.button>
+                <.button variant="outline" tone="neutral" size="sm" loading>
+                  Syncing
+                </.button>
+                <.button variant="subtle" tone="success" size="sm">
+                  Healthy
+                </.button>
+                <.button
+                  variant="ghost"
+                  tone="neutral"
+                  size="sm"
+                  href="#review-path"
+                  icon="hero-arrow-right"
+                  icon_position="trailing"
+                >
+                  Read path
+                </.button>
+                <.button variant="outline" tone="neutral" size="sm" href="#disabled-cta" disabled>
+                  Disabled CTA
+                </.button>
               </div>
 
-              <.empty_state
-                title="No active runs"
-                copy="Start a run, import a plan, or attach an integration to begin populating this workspace."
-              >
-                <:actions>
-                  <.button>Start a run</.button>
-                  <.button variant="outline" tone="neutral">Import plan</.button>
-                </:actions>
-              </.empty_state>
+              <div class="ui-dev-preview__grid ui-dev-preview__grid--2">
+                <div class="space-y-4">
+                  <.input
+                    name="workspace_slug"
+                    value="agent-foundry"
+                    label="Workspace slug"
+                    hint="Stable identifiers are used in URLs and API surfaces."
+                    prefix="workspace/"
+                  />
+                  <.input
+                    name="execution_mode"
+                    type="select"
+                    label="Execution mode"
+                    prompt="Choose a mode"
+                    options={[Production: "prod", Review: "review", Simulation: "sim"]}
+                  />
+                  <.input
+                    name="review_prompt"
+                    type="textarea"
+                    label="Run prompt"
+                    value="Summarize stalled branches and approvals before 9am."
+                    hint="Long-form fields use the same border, padding, and focus treatment."
+                  />
+                </div>
+
+                <div class="space-y-4">
+                  <.input
+                    id="operator-email-preview"
+                    name="operator_email_preview"
+                    value="lead-at-example.com"
+                    type="email"
+                    label="Operator email"
+                    hint="Validation stays in place without changing the surrounding shell."
+                    errors={["Use a complete email address for escalation notices."]}
+                    invalid
+                  />
+                  <.input
+                    name="locked_workspace"
+                    value="foundry-core"
+                    label="Locked workspace"
+                    hint="Disabled controls remain legible but clearly inactive."
+                    disabled
+                  />
+                  <.input
+                    name="notify"
+                    type="checkbox"
+                    label="Notify operators when a run stalls"
+                    hint="Checkboxes keep the same focus and validation treatment."
+                    checked
+                  />
+                </div>
+              </div>
             </.panel>
 
-            <.panel tone="inverse" surface="solid" class="space-y-4">
-              <div class="space-y-2">
-                <p class="ui-text-meta">Pattern rule</p>
-                <p class="ui-text-title" data-size="md">
-                  Patterns should reveal the system, not invent a new one.
-                </p>
-                <p class="ui-text-body" data-tone="soft">
-                  If a shared pattern needs a one-off surface treatment to feel useful, the system is
-                  missing a primitive. Tighten the primitive instead of styling around it.
-                </p>
+            <div class="space-y-3">
+              <p class="ui-text-meta" data-tone="soft">Authentication shell reference</p>
+
+              <div id="auth-shell-preview" class="ui-preview-frame" data-theme="light">
+                <div class="p-6">
+                  <.auth_shell
+                    eyebrow="Auth shell"
+                    title="The shared auth surface stays in the same system."
+                    subtitle="The same panel language, navigation treatment, and form controls should hold up before the user reaches the private shell."
+                    detail_one="Entry flows should inherit the same shell materials and spacing."
+                    detail_two="Navigation between auth steps should feel related to the primary shell pills."
+                    detail_three="Validation and feedback should land inside the same frame vocabulary."
+                  >
+                    <div class="space-y-6">
+                      <.section_heading
+                        eyebrow="Entry flow"
+                        title="Sign in"
+                        subtitle="Review auth framing, nav, and form controls without leaving the preview route."
+                        title_size="md"
+                      />
+
+                      <.auth_nav current_path="/sign-in" />
+
+                      <div class="space-y-4">
+                        <.input
+                          name="auth_email_preview"
+                          type="email"
+                          label="Email"
+                          autocomplete="email"
+                          value="operator@example.com"
+                        />
+                        <.input
+                          name="auth_password_preview"
+                          type="password"
+                          label="Password"
+                          autocomplete="current-password"
+                          value="supersecret123"
+                        />
+
+                        <div class="flex items-center justify-between gap-4">
+                          <a href="#forgot-password" class="ui-text-link">
+                            Forgot your password?
+                          </a>
+                          <.button size="sm">Continue</.button>
+                        </div>
+                      </div>
+                    </div>
+                  </.auth_shell>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="feedback" class="ui-dev-preview__section">
+          <.section_heading
+            eyebrow="Feedback"
+            title="Runtime feedback, flash messages, and semantic status"
+            subtitle="Review transient and persistent feedback without depending on real redirect flows or product data."
+            title_size="sm"
+          />
+
+          <div class="ui-dev-preview__grid ui-dev-preview__grid--2">
+            <.panel surface="floating" class="space-y-5">
+              <.header title_size="md">
+                Flash messages
+                <:subtitle>
+                  Use the shared flash primitive for queue-level messages so icon, spacing, and tone
+                  stay aligned with the rest of the shell.
+                </:subtitle>
+              </.header>
+
+              <div id="preview-flash-group" class="grid gap-3">
+                <.flash
+                  id="preview-flash-info"
+                  kind={:info}
+                  flash={%{}}
+                  title="Queued for review"
+                  dismissible={false}
+                >
+                  The preview route keeps flash spacing, icon treatment, and message tone visible
+                  without relying on a real redirect.
+                </.flash>
+
+                <.flash
+                  id="preview-flash-error"
+                  kind={:error}
+                  flash={%{}}
+                  title="Delivery failed"
+                  dismissible={false}
+                >
+                  Errors should feel urgent through contrast and structure, not through decorative
+                  color noise.
+                </.flash>
+              </div>
+            </.panel>
+
+            <.panel surface="floating" class="space-y-5">
+              <.header title_size="md">
+                Inline alerts and status badges
+                <:subtitle>
+                  Inline alerts should reserve warning and danger tones for real state changes, while
+                  badges provide compact status at a glance.
+                </:subtitle>
+              </.header>
+
+              <div class="grid gap-3">
+                <div
+                  class="ui-alert"
+                  data-tone="neutral"
+                  role="status"
+                  aria-live="polite"
+                  aria-atomic="true"
+                >
+                  <div class="ui-alert__content">
+                    <p class="ui-alert__title">Operator note</p>
+                    <p class="ui-alert__description">
+                      Default feedback stays grounded in the same shell palette as the rest of the
+                      product.
+                    </p>
+                  </div>
+                </div>
+
+                <div
+                  class="ui-alert"
+                  data-tone="primary"
+                  role="status"
+                  aria-live="polite"
+                  aria-atomic="true"
+                >
+                  <div class="ui-alert__content">
+                    <p class="ui-alert__title">Queue scheduled</p>
+                    <p class="ui-alert__description">
+                      The next orchestration step is active and using the primary product signal.
+                    </p>
+                  </div>
+                </div>
+
+                <div
+                  class="ui-alert"
+                  data-tone="success"
+                  role="status"
+                  aria-live="polite"
+                  aria-atomic="true"
+                >
+                  <div class="ui-alert__content">
+                    <p class="ui-alert__title">Run approved</p>
+                    <p class="ui-alert__description">
+                      Execution can continue because the latest policy checks have passed.
+                    </p>
+                  </div>
+                </div>
+
+                <div
+                  class="ui-alert"
+                  data-tone="warning"
+                  role="alert"
+                  aria-live="assertive"
+                  aria-atomic="true"
+                >
+                  <div class="ui-alert__content">
+                    <p class="ui-alert__title">Human review requested</p>
+                    <p class="ui-alert__description">
+                      A sensitive branch is waiting for operator input.
+                    </p>
+                  </div>
+                </div>
+
+                <div
+                  class="ui-alert"
+                  data-tone="danger"
+                  role="alert"
+                  aria-live="assertive"
+                  aria-atomic="true"
+                >
+                  <div class="ui-alert__content">
+                    <p class="ui-alert__title">Delivery failed</p>
+                    <p class="ui-alert__description">
+                      The external system did not acknowledge the previous step.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="flex flex-wrap gap-2">
+                <.badge :for={status <- feedback_statuses()} tone={status.tone}>
+                  {status.label}
+                </.badge>
+              </div>
+            </.panel>
+          </div>
+        </section>
+
+        <section id="navigation" class="ui-dev-preview__section">
+          <.section_heading
+            eyebrow="Navigation"
+            title="Primary, secondary, and auth navigation patterns"
+            subtitle="Navigation should feel like part of the shell rather than detached pills or route-specific styling."
+            title_size="sm"
+          />
+
+          <div class="ui-dev-preview__grid ui-dev-preview__grid--2">
+            <.panel surface="floating" class="space-y-5">
+              <.header title_size="md">
+                Primary shell navigation
+                <:subtitle>
+                  Active pills should show current context, while inactive items stay visible without
+                  competing with page-level actions.
+                </:subtitle>
+              </.header>
+
+              <div class="space-y-4">
+                <div class="flex flex-wrap gap-2">
+                  <.nav_pill to="#runs" active>Runs</.nav_pill>
+                  <.nav_pill to="#agents">Agents</.nav_pill>
+                  <.nav_pill to="#audit">Audit</.nav_pill>
+                  <.nav_pill to="#settings">Settings</.nav_pill>
+                </div>
+
+                <div class="flex flex-wrap gap-3">
+                  <.button variant="outline" tone="neutral" size="sm">
+                    Inspect shell
+                  </.button>
+                  <.button size="sm">Open workspace</.button>
+                </div>
+              </div>
+
+              <.list>
+                <:item :for={item <- navigation_review_notes()} title={item.title}>
+                  {item.copy}
+                </:item>
+              </.list>
+            </.panel>
+
+            <.panel surface="floating" class="space-y-5">
+              <.header title_size="md">
+                Auth and route transitions
+                <:subtitle>
+                  Secondary navigation should keep the same spacing, radius, and interaction language
+                  as the main shell.
+                </:subtitle>
+              </.header>
+
+              <.auth_nav current_path="/sign-in" />
+
+              <div class="ui-dev-preview__grid ui-dev-preview__grid--2">
+                <.panel as="div" surface="solid" padding="sm" class="space-y-2">
+                  <p class="ui-text-meta" data-tone="soft">Public</p>
+                  <p class="ui-text-body" data-tone="muted">
+                    Entry paths use quieter actions until the primary commitment point.
+                  </p>
+                </.panel>
+
+                <.panel as="div" surface="solid" padding="sm" class="space-y-2">
+                  <p class="ui-text-meta" data-tone="soft">Authenticated</p>
+                  <p class="ui-text-body" data-tone="muted">
+                    Once inside, navigation density can increase without changing the component
+                    language.
+                  </p>
+                </.panel>
               </div>
             </.panel>
           </div>
@@ -476,7 +874,8 @@ defmodule EBossWeb.Dev.DesignSystemLive do
                   <p class="ui-text-title" data-size="md">Hierarchy survives the mode shift.</p>
                 </div>
                 <p class="ui-text-body" data-tone="muted">
-                  Header chrome, navigation, and primary actions should compress together without losing their reading order.
+                  Header chrome, navigation, and primary actions should compress together without
+                  losing their reading order.
                 </p>
                 <div class="flex flex-wrap gap-2">
                   <.button size="sm">Approve</.button>
@@ -515,12 +914,163 @@ defmodule EBossWeb.Dev.DesignSystemLive do
     """
   end
 
+  defp review_links do
+    [
+      %{label: "Matrix", to: "#review-matrix"},
+      %{label: "Panels", to: "#panels"},
+      %{label: "Shells", to: "#shells"},
+      %{label: "Forms", to: "#forms"},
+      %{label: "Feedback", to: "#feedback"},
+      %{label: "Navigation", to: "#navigation"}
+    ]
+  end
+
+  defp review_checklist do
+    [
+      %{
+        title: "Shell review",
+        copy:
+          "Check header chrome, content rhythm, and navigation hierarchy together instead of reviewing panels one at a time."
+      },
+      %{
+        title: "Primitive coverage",
+        copy:
+          "Shared HEEx primitives like header, table, list, flash, button, input, nav, and empty states should all stay visible on this route."
+      },
+      %{
+        title: "State fidelity",
+        copy:
+          "Keep valid, invalid, loading, disabled, success, warning, danger, and empty states here so design review does not depend on backend data."
+      },
+      %{
+        title: "Accessibility cues",
+        copy:
+          "Use this page to confirm readable focus, status semantics, and disabled-action treatment without stepping through the full product."
+      }
+    ]
+  end
+
+  defp coverage_targets do
+    [
+      "Layouts.app",
+      "section_heading",
+      "header",
+      "panel",
+      "table",
+      "list",
+      "button",
+      "input",
+      "flash",
+      "auth_nav",
+      "auth_shell"
+    ]
+  end
+
   defp parity_variants do
     [
       %{label: "Dark / default", theme: "dark", density: "default"},
       %{label: "Dark / compact", theme: "dark", density: "compact"},
       %{label: "Light / default", theme: "light", density: "default"},
       %{label: "Light / compact", theme: "light", density: "compact"}
+    ]
+  end
+
+  defp panel_review_notes do
+    [
+      %{
+        title: "Anchored sections",
+        copy:
+          "Default panels should feel attached to the shell, not like free-floating cards dropped onto a page."
+      },
+      %{
+        title: "Inset grouping",
+        copy:
+          "Solid panels are for nested content and fallback states that need tighter grouping without more elevation."
+      },
+      %{
+        title: "Raised moments",
+        copy:
+          "Floating panels should be reserved for featured or interruptive content so their lift stays meaningful."
+      }
+    ]
+  end
+
+  defp shell_preview_rows do
+    [
+      %{
+        id: "queue-sync",
+        name: "Policy sync for onboarding",
+        summary: "Two approvals are still pending before the rollout can continue.",
+        owner: "@ops_lead",
+        status: "Needs review",
+        tone: "warning"
+      },
+      %{
+        id: "audit-report",
+        name: "Weekly audit export",
+        summary: "All checks passed and the report package is ready for delivery.",
+        owner: "@finance_ops",
+        status: "Healthy",
+        tone: "success"
+      },
+      %{
+        id: "workspace-import",
+        name: "Workspace import",
+        summary: "The queue is staged and waiting on the next orchestration step.",
+        owner: "@platform",
+        status: "Queued",
+        tone: "primary"
+      }
+    ]
+  end
+
+  defp shell_review_notes do
+    [
+      %{
+        title: "Headers stay utility-first",
+        copy:
+          "Page-level headers should lead with status, next actions, and context instead of decorative hero treatment."
+      },
+      %{
+        title: "Tables live inside the shell system",
+        copy:
+          "Dense data views still need the same border, spacing, and action treatment as the rest of the interface."
+      },
+      %{
+        title: "Fallbacks keep the frame",
+        copy:
+          "Empty states should occupy the same surface hierarchy as busy data views so the route never feels visually reset."
+      }
+    ]
+  end
+
+  defp feedback_statuses do
+    [
+      %{label: "Queued", tone: "neutral"},
+      %{label: "In progress", tone: "primary"},
+      %{label: "Healthy", tone: "success"},
+      %{label: "Needs review", tone: "warning"},
+      %{label: "Blocked", tone: "danger"}
+    ]
+  end
+
+  defp navigation_review_notes do
+    [
+      %{
+        title: "Primary context",
+        copy:
+          "Active nav pills should show where the operator is without overpowering page-level buttons or alerts."
+      },
+      %{
+        title: "Secondary route changes",
+        copy:
+          "Auth navigation should use the same component family and spacing rules as the private shell instead of introducing a separate tab language."
+      },
+      %{
+        title: "Continuity across states",
+        copy:
+          "Public, auth, and authenticated navigation should all feel like one system moving through different density levels."
+      }
     ]
   end
 

@@ -465,3 +465,129 @@ Running ExUnit with seed: 320513, max_cases: 20
 ................................................
 Finished in 7.4 seconds (0.2s async, 7.1s sync)
 48 tests, 0 failures
+1. changed files
+
+- [design_system_live.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/live/dev/design_system_live.ex#L12) expands `/dev/design-system` into anchored review sections for panels, shells, forms, feedback, and navigation, while keeping the parity matrix and visual-language sections current.
+- [design_system_live_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/eboss_web/live/dev/design_system_live_test.exs#L1) replaces the old source-string check with route-level LiveView assertions for section anchors, rendered primitives, and common states.
+
+2. tests/commands executed
+
+- `MIX_ENV=test MIX_OS_CONCURRENCY_LOCK=0 elixir -r /tmp/mix_sync_pubsub_stub.ex $(which mix) compile --warnings-as-errors`  
+  Passed.
+- `MIX_OS_CONCURRENCY_LOCK=0 elixir -r /tmp/mix_sync_pubsub_stub.ex $(which mix) format --check-formatted apps/eboss_web/lib/eboss_web/live/dev/design_system_live.ex apps/eboss_web/test/eboss_web/live/dev/design_system_live_test.exs`  
+  Passed.
+- `MIX_ENV=test MIX_OS_CONCURRENCY_LOCK=0 elixir -r /tmp/mix_sync_pubsub_stub.ex $(which mix) run --no-start /tmp/run_design_system_test.exs`  
+  Passed. `2 tests, 0 failures`.
+- `PATH="/tmp/mix_wrapper:$PATH" mix precommit`  
+  Attempted, but failed when the repo test alias hit DB bootstrap: `tcp connect (localhost:5432): not owner - :eperm`.
+
+3. acceptance criteria coverage
+
+- `/dev/design-system` now demonstrates the main shared HEEx primitives and states in one route: `section_heading`, `header`, `panel`, `table`, `list`, `button`, `input`, `flash`, `empty_state`, `nav_pill`, `auth_nav`, and `auth_shell`.
+- Shared HEEx patterns can be reviewed without navigating the product because the page now includes a workflow shell preview, auth-shell preview, panel grouping references, form states, feedback states, and navigation patterns in one place.
+- The preview still carries the current design language through the existing visual-DNA and surface-expression sections, plus the theme/density parity matrix.
+- LiveView coverage now exercises the actual `/dev/design-system` route render instead of checking source text only.
+
+4. blockers/assumptions
+
+- No code blocker remains for `ST-DSN-007`.
+- `mix precommit` could not be left passing in this sandbox because the repo’s `test` aliases run `ecto.create`/`ecto.migrate`, and local TCP connections to PostgreSQL are blocked here with `:eperm`.
+- I used temporary `/tmp` verification shims only to get Mix past its own PubSub/lock socket requirements and to run the route-level LiveView test without starting the full app stack; no repo code depends on those shims.
+==> eboss_data
+There are no tests to run
+==> eboss_accounts
+Running ExUnit with seed: 755986, max_cases: 20
+
+............
+Finished in 8.0 seconds (0.00s async, 8.0s sync)
+12 tests, 0 failures
+==> eboss_tenancy
+Running ExUnit with seed: 121544, max_cases: 20
+
+............
+Finished in 6.7 seconds (0.00s async, 6.7s sync)
+12 tests, 0 failures
+==> eboss_workspaces
+Running ExUnit with seed: 282881, max_cases: 20
+
+............
+Finished in 6.2 seconds (0.00s async, 6.2s sync)
+12 tests, 0 failures
+==> eboss_folio
+Running ExUnit with seed: 170821, max_cases: 20
+
+...........
+Finished in 4.1 seconds (0.00s async, 4.1s sync)
+11 tests, 0 failures
+==> eboss_web
+Running ExUnit with seed: 973444, max_cases: 20
+
+.....
+
+  1) test shared HEEx and Vue primitives expose explicit accessibility contracts (EBossWeb.DesignAccessibilityTest)
+     test/design_accessibility_test.exs:27
+     Assertion with =~ failed
+     code:  assert design_system_live =~ "aria-live=\"assertive\""
+     left:  "defmodule EBossWeb.Dev.DesignSystemLive do\n  use EBossWeb, :live_view\n\n  import EBossWeb.AuthComponents, only: [auth_nav: 1, auth_shell: 1]\n\n  @impl true\n  def mount(_params, _session, socket) do\n    {:ok, assign(socket, :page_title, \"Design System\")}\n  end\n\n  @impl true\n  def render(assigns) do\n    ~H\"\"\"\n    <Layouts.app\n      flash={@flash}\n      current_scope={assigns[:current_scope]}\n      current_user={assigns[:current_user]}\n    >\n      <div class=\"ui-dev-preview\" id=\"design-system-preview\">\n        <.section_heading\n          eyebrow=\"Development route\"\n          title=\"EBoss design system\"\n          subtitle=\"Use this route as the in-app review surface for shared HEEx primitives, shells, and state treatments instead of checking them page by page across the product.\"\n          title_size=\"lg\"\n        >\n          <:actions>\n            <div class=\"flex flex-wrap gap-2\">\n              <.nav_pill :for={link <- review_links()} to={link.to}>\n                {link.label}\n              </.nav_pill>\n            </div>\n          </:actions>\n        </.section_heading>\n\n        <section id=\"review-index\" class=\"ui-dev-preview__section\">\n          <div class=\"ui-dev-preview__grid ui-dev-preview__grid--2\">\n            <.panel surface=\"floating\" class=\"space-y-5\">\n              <.header title_size=\"md\">\n                Shared HEEx review index\n                <:subtitle>\n                  Review the shell, panel, form, feedback, and navigation vocabulary here before\n                  checking individual product routes.\n                </:subtitle>\n                <:actions>\n                  <div class=\"flex flex-wrap gap-3\">\n                    <.button size=\"sm\" href=\"#shells\">\n                      Inspect shells\n                    </.button>\n                    <.button\n                      variant=\"outline\"\n                      tone=\"neutral\"\n                      size=\"sm\"\n                      href=\"#forms\"\n                      icon=\"hero-arrow-right\"\n                      icon_position=\"trailing\"\n                    >\n                      Inspect forms\n                    </.button>\n                  </div>\n                </:actions>\n              </.header>\n\n              <.list>\n                <:item :for={item <- review_checklist()} title={item.title}>\n                  {item.copy}\n                </:item>\n              </.list>\n            </.panel>\n\n            <.panel tone=\"inverse\" surface=\"solid\" class=\"space-y-5\">\n              <div class=\"space-y-3\">\n                <p class=\"ui-text-meta\" data-tone=\"soft\">Coverage targets</p>\n                <div class=\"flex flex-wrap gap-2\">\n                  <.badge :for={target <- coverage_targets()} tone=\"neutral\">\n                    {target}\n                  </.badge>\n                </div>\n              </div>\n\n              <div class=\"ui-dev-preview__grid ui-dev-preview__grid--2\">\n                <.panel as=\"div\" surface=\"solid\" padding=\"sm\" class=\"space-y-3\">\n                  <p class=\"ui-text-meta\" data-tone=\"soft\">Review states</p>\n                  <p class=\"ui-text-body\" data-tone=\"muted\">\n                    Valid, invalid, loading, disabled, empty, success, warning, and danger states\n                    should remain visible on this page as the shared primitives evolve.\n                  </p>\n                </.panel>\n\n                <.panel as=\"div\" surface=\"solid\" padding=\"sm\" class=\"space-y-3\">\n                  <p class=\"ui-text-meta\" data-tone=\"soft\">Drift guard</p>\n                  <p class=\"ui-text-body\" data-tone=\"muted\">\n                    If a shared HEEx primitive changes in the product, update this route in the same\n                    pass so design review stays current.\n                  </p>\n                </.panel>\n              </div>\n            </.panel>\n          </div>\n        </section>\n\n        <section id=\"review-matrix\" class=\"ui-dev-preview__section\">\n          <.section_heading\n            eyebrow=\"Parity review\"\n            title=\"Theme and density review matrix\"\n            subtitle=\"Review shared shell and primitive " <> ...
+     right: "aria-live=\"assertive\""
+     stacktrace:
+       test/design_accessibility_test.exs:48: (test)
+
+........
+
+  2) test shared surfaces reserve warning and danger tones for actual state cues (EBossWeb.DesignToneTest)
+     test/design_tone_test.exs:76
+     Assertion with =~ failed
+     code:  assert design_system_live =~ ~r/<div\s+class="ui-alert"\s+data-tone="warning"[\s\S]*?>/
+     left:  "defmodule EBossWeb.Dev.DesignSystemLive do\n  use EBossWeb, :live_view\n\n  import EBossWeb.AuthComponents, only: [auth_nav: 1, auth_shell: 1]\n\n  @impl true\n  def mount(_params, _session, socket) do\n    {:ok, assign(socket, :page_title, \"Design System\")}\n  end\n\n  @impl true\n  def render(assigns) do\n    ~H\"\"\"\n    <Layouts.app\n      flash={@flash}\n      current_scope={assigns[:current_scope]}\n      current_user={assigns[:current_user]}\n    >\n      <div class=\"ui-dev-preview\" id=\"design-system-preview\">\n        <.section_heading\n          eyebrow=\"Development route\"\n          title=\"EBoss design system\"\n          subtitle=\"Use this route as the in-app review surface for shared HEEx primitives, shells, and state treatments instead of checking them page by page across the product.\"\n          title_size=\"lg\"\n        >\n          <:actions>\n            <div class=\"flex flex-wrap gap-2\">\n              <.nav_pill :for={link <- review_links()} to={link.to}>\n                {link.label}\n              </.nav_pill>\n            </div>\n          </:actions>\n        </.section_heading>\n\n        <section id=\"review-index\" class=\"ui-dev-preview__section\">\n          <div class=\"ui-dev-preview__grid ui-dev-preview__grid--2\">\n            <.panel surface=\"floating\" class=\"space-y-5\">\n              <.header title_size=\"md\">\n                Shared HEEx review index\n                <:subtitle>\n                  Review the shell, panel, form, feedback, and navigation vocabulary here before\n                  checking individual product routes.\n                </:subtitle>\n                <:actions>\n                  <div class=\"flex flex-wrap gap-3\">\n                    <.button size=\"sm\" href=\"#shells\">\n                      Inspect shells\n                    </.button>\n                    <.button\n                      variant=\"outline\"\n                      tone=\"neutral\"\n                      size=\"sm\"\n                      href=\"#forms\"\n                      icon=\"hero-arrow-right\"\n                      icon_position=\"trailing\"\n                    >\n                      Inspect forms\n                    </.button>\n                  </div>\n                </:actions>\n              </.header>\n\n              <.list>\n                <:item :for={item <- review_checklist()} title={item.title}>\n                  {item.copy}\n                </:item>\n              </.list>\n            </.panel>\n\n            <.panel tone=\"inverse\" surface=\"solid\" class=\"space-y-5\">\n              <div class=\"space-y-3\">\n                <p class=\"ui-text-meta\" data-tone=\"soft\">Coverage targets</p>\n                <div class=\"flex flex-wrap gap-2\">\n                  <.badge :for={target <- coverage_targets()} tone=\"neutral\">\n                    {target}\n                  </.badge>\n                </div>\n              </div>\n\n              <div class=\"ui-dev-preview__grid ui-dev-preview__grid--2\">\n                <.panel as=\"div\" surface=\"solid\" padding=\"sm\" class=\"space-y-3\">\n                  <p class=\"ui-text-meta\" data-tone=\"soft\">Review states</p>\n                  <p class=\"ui-text-body\" data-tone=\"muted\">\n                    Valid, invalid, loading, disabled, empty, success, warning, and danger states\n                    should remain visible on this page as the shared primitives evolve.\n                  </p>\n                </.panel>\n\n                <.panel as=\"div\" surface=\"solid\" padding=\"sm\" class=\"space-y-3\">\n                  <p class=\"ui-text-meta\" data-tone=\"soft\">Drift guard</p>\n                  <p class=\"ui-text-body\" data-tone=\"muted\">\n                    If a shared HEEx primitive changes in the product, update this route in the same\n                    pass so design review stays current.\n                  </p>\n                </.panel>\n              </div>\n            </.panel>\n          </div>\n        </section>\n\n        <section id=\"review-matrix\" class=\"ui-dev-preview__section\">\n          <.section_heading\n            eyebrow=\"Parity review\"\n            title=\"Theme and density review matrix\"\n            subtitle=\"Review shared shell and primitive " <> ...
+     right: ~r/<div\s+class="ui-alert"\s+data-tone="warning"[\s\S]*?>/
+     stacktrace:
+       test/design_tone_test.exs:90: (test)
+
+..................................
+Finished in 6.4 seconds (0.2s async, 6.2s sync)
+49 tests, 2 failures
+** (exit) 2
+    (mix 1.19.5) lib/mix/tasks/cmd.ex:135: Mix.Tasks.Cmd.run/1
+    (mix 1.19.5) lib/mix/task.ex:499: anonymous fn/3 in Mix.Task.run_task/5
+    (mix 1.19.5) lib/mix/project.ex:557: Mix.Project.in_project/4
+    (elixir 1.19.5) lib/file.ex:2013: File.cd!/2
+    (mix 1.19.5) lib/mix/task.ex:671: anonymous fn/4 in Mix.Task.run_in_children_projects/2
+    (elixir 1.19.5) lib/enum.ex:2520: Enum."-reduce/3-lists^foldl/2-0-"/3
+    (mix 1.19.5) lib/mix/task.ex:670: Mix.Task.run_in_children_projects/2
+    (mix 1.19.5) lib/mix/project_stack.ex:241: Mix.ProjectStack.recur/1
+I updated the inline alert preview in [design_system_live.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/live/dev/design_system_live.ex#L710) so the HEEx source now contains explicit warning and danger `.ui-alert` examples with literal `aria-live="assertive"` values. That restores the exact source-level contracts the reported failures were asserting.
+
+`mix format --check-formatted` and `mix compile --warnings-as-errors` both passed. I also attempted full `mix precommit`, but this sandbox blocks the child app test alias from connecting to Postgres over TCP, so it stops at `tcp connect (localhost:5432): not owner - :eperm` while trying to create `EBoss.Repo`’s test database. I did not commit or push.
+==> eboss_data
+There are no tests to run
+==> eboss_accounts
+Running ExUnit with seed: 438659, max_cases: 20
+
+............
+Finished in 7.5 seconds (0.00s async, 7.5s sync)
+12 tests, 0 failures
+==> eboss_tenancy
+Running ExUnit with seed: 288208, max_cases: 20
+
+............
+Finished in 6.6 seconds (0.00s async, 6.6s sync)
+12 tests, 0 failures
+==> eboss_workspaces
+Running ExUnit with seed: 430892, max_cases: 20
+
+............
+Finished in 5.7 seconds (0.00s async, 5.7s sync)
+12 tests, 0 failures
+==> eboss_folio
+Running ExUnit with seed: 639913, max_cases: 20
+
+...........
+Finished in 3.9 seconds (0.00s async, 3.9s sync)
+11 tests, 0 failures
+==> eboss_web
+Running ExUnit with seed: 280194, max_cases: 20
+
+.................................................
+Finished in 6.5 seconds (0.2s async, 6.2s sync)
+49 tests, 0 failures
