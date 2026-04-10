@@ -53,7 +53,8 @@ const environmentOptions = [
               <UiSelect
                 model-value=""
                 label="Approval route"
-                error="Choose a route before continuing."
+                invalid
+                :errors="['Choose a route before continuing.']"
                 prompt="Select a route"
                 :options="[
                   { label: 'Human review', value: 'human' },

@@ -661,81 +661,45 @@ defmodule EBossWeb.Dev.DesignSystemLive do
               </.header>
 
               <div class="grid gap-3">
-                <div
-                  class="ui-alert"
-                  data-tone="neutral"
+                <.alert
+                  tone="neutral"
                   role="status"
-                  aria-live="polite"
-                  aria-atomic="true"
-                >
-                  <div class="ui-alert__content">
-                    <p class="ui-alert__title">Operator note</p>
-                    <p class="ui-alert__description">
-                      Default feedback stays grounded in the same shell palette as the rest of the
-                      product.
-                    </p>
-                  </div>
-                </div>
+                  live="polite"
+                  title="Operator note"
+                  description="Default feedback stays grounded in the same shell palette as the rest of the product."
+                />
 
-                <div
-                  class="ui-alert"
-                  data-tone="primary"
+                <.alert
+                  tone="primary"
                   role="status"
-                  aria-live="polite"
-                  aria-atomic="true"
-                >
-                  <div class="ui-alert__content">
-                    <p class="ui-alert__title">Queue scheduled</p>
-                    <p class="ui-alert__description">
-                      The next orchestration step is active and using the primary product signal.
-                    </p>
-                  </div>
-                </div>
+                  live="polite"
+                  title="Queue scheduled"
+                  description="The next orchestration step is active and using the primary product signal."
+                />
 
-                <div
-                  class="ui-alert"
-                  data-tone="success"
+                <.alert
+                  tone="success"
                   role="status"
-                  aria-live="polite"
-                  aria-atomic="true"
-                >
-                  <div class="ui-alert__content">
-                    <p class="ui-alert__title">Run approved</p>
-                    <p class="ui-alert__description">
-                      Execution can continue because the latest policy checks have passed.
-                    </p>
-                  </div>
-                </div>
+                  live="polite"
+                  title="Run approved"
+                  description="Execution can continue because the latest policy checks have passed."
+                />
 
-                <div
-                  class="ui-alert"
-                  data-tone="warning"
+                <.alert
+                  tone="warning"
                   role="alert"
-                  aria-live="assertive"
-                  aria-atomic="true"
-                >
-                  <div class="ui-alert__content">
-                    <p class="ui-alert__title">Human review requested</p>
-                    <p class="ui-alert__description">
-                      A sensitive branch is waiting for operator input.
-                    </p>
-                  </div>
-                </div>
+                  live="assertive"
+                  title="Human review requested"
+                  description="A sensitive branch is waiting for operator input."
+                />
 
-                <div
-                  class="ui-alert"
-                  data-tone="danger"
+                <.alert
+                  tone="danger"
                   role="alert"
-                  aria-live="assertive"
-                  aria-atomic="true"
-                >
-                  <div class="ui-alert__content">
-                    <p class="ui-alert__title">Delivery failed</p>
-                    <p class="ui-alert__description">
-                      The external system did not acknowledge the previous step.
-                    </p>
-                  </div>
-                </div>
+                  live="assertive"
+                  title="Delivery failed"
+                  description="The external system did not acknowledge the previous step."
+                />
               </div>
 
               <div class="flex flex-wrap gap-2">
@@ -891,20 +855,13 @@ defmodule EBossWeb.Dev.DesignSystemLive do
                   value="Parity holds across the supported shell states."
                   hint="Fields, badges, alerts, and panel framing move together across theme and density."
                 />
-                <div
-                  class="ui-alert"
-                  data-tone="success"
+                <.alert
+                  tone="success"
                   role="status"
-                  aria-live="polite"
-                  aria-atomic="true"
-                >
-                  <div class="ui-alert__content">
-                    <p class="ui-alert__title">Review ready</p>
-                    <p class="ui-alert__description">
-                      Contrast, spacing, and state cues stay legible in this combination.
-                    </p>
-                  </div>
-                </div>
+                  live="polite"
+                  title="Review ready"
+                  description="Contrast, spacing, and state cues stay legible in this combination."
+                />
               </.panel>
             </div>
           </div>

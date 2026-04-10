@@ -48,20 +48,17 @@ defmodule EBossWeb.AuthComponents do
       )
 
     ~H"""
-    <div
+    <.alert
       :if={@messages != []}
-      class="ui-alert"
-      data-tone="danger"
+      tone="danger"
       role="alert"
-      aria-live="assertive"
-      aria-atomic="true"
+      live="assertive"
+      title="We need a quick fix before continuing."
     >
-      <.icon name="hero-exclamation-circle" class="mt-0.5 size-5 shrink-0" />
-      <div class="ui-alert__content">
-        <p class="ui-alert__title">We need a quick fix before continuing.</p>
-        <p :for={message <- @messages} class="ui-alert__description">{message}</p>
+      <div class="grid gap-2">
+        <p :for={message <- @messages}>{message}</p>
       </div>
-    </div>
+    </.alert>
     """
   end
 

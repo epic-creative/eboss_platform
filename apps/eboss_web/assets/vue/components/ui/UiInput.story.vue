@@ -33,7 +33,8 @@ import UiInput from "./UiInput.vue"
               <UiInput
                 label="Validation"
                 model-value="x"
-                error="A more descriptive label is required."
+                invalid
+                :errors="['A more descriptive label is required.']"
               />
             </StoryStateCard>
 

@@ -728,3 +728,139 @@ Running ExUnit with seed: 514806, max_cases: 20
 .................................................
 Finished in 6.5 seconds (0.2s async, 6.2s sync)
 49 tests, 0 failures
+1. changed files
+
+- [ui_components.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/components/ui_components.ex): added a shared HEEx `.alert` primitive with the same tone/title/description/role/live contract as Vue `UiAlert`.
+- [auth_components.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/components/auth_components.ex): switched auth form errors to the shared HEEx alert primitive.
+- [forgot_password_live.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/live/auth/forgot_password_live.ex): replaced inline success alert markup with `.alert`.
+- [sign_in_live.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/live/auth/sign_in_live.ex): replaced inline success alert markup with `.alert`.
+- [design_system_live.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/live/dev/design_system_live.ex): replaced raw HEEx alert markup with the shared primitive and centralized preview alert data.
+- [UiInput.vue](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/vue/components/ui/UiInput.vue): added explicit `invalid` and `errors` support.
+- [UiSelect.vue](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/vue/components/ui/UiSelect.vue): added explicit `invalid` and `errors` support.
+- [UiTextarea.vue](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/vue/components/ui/UiTextarea.vue): added explicit `invalid` and `errors` support.
+- [UiInput.story.vue](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/vue/components/ui/UiInput.story.vue): updated invalid-state usage to the shared `invalid` + `errors` vocabulary.
+- [UiSelect.story.vue](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/vue/components/ui/UiSelect.story.vue): updated invalid-state usage to the shared `invalid` + `errors` vocabulary.
+- [UiTextarea.story.vue](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/vue/components/ui/UiTextarea.story.vue): updated invalid-state usage to the shared `invalid` + `errors` vocabulary.
+- [design_surface_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/design_surface_test.exs): added acceptance-focused coverage for alert and invalid-field contract parity.
+
+2. tests/commands executed
+
+- `npm run vue:check` in `apps/eboss_web/assets` — passed.
+- `elixir -e 'ExUnit.start(); Code.require_file("apps/eboss_web/test/design_surface_test.exs"); %{failures: failures} = ExUnit.run(); System.halt(if(failures == 0, do: 0, else: 1))'` — passed.
+- `MIX_OS_CONCURRENCY_LOCK=0 elixir -pa /tmp/mix_stub_beams -S mix format` — passed.
+- `MIX_OS_CONCURRENCY_LOCK=0 elixir -pa /tmp/mix_stub_beams -S mix format --check-formatted` — passed.
+- `MIX_OS_CONCURRENCY_LOCK=0 elixir -pa /tmp/mix_stub_beams -S mix compile --warnings-as-errors` — passed.
+- `elixir -pa /tmp/mix_stub_beams -S mix precommit` — failed in sandbox because nested child `mix` commands still hit Mix PubSub TCP socket permission errors.
+- `MIX_OS_CONCURRENCY_LOCK=0 elixir -pa /tmp/mix_stub_beams -S mix do loadconfig /tmp/eboss_test_socket_config.exs + test apps/eboss_web/test/design_surface_test.exs` — failed because the sandbox blocks Postgres connections with `:eperm`.
+
+3. acceptance criteria coverage
+
+- HEEx and Vue now use the same alert vocabulary where they overlap: tone, title/description, and warning/danger role escalation are shared across [ui_components.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/components/ui_components.ex) and Vue `UiAlert`.
+- Shared states are tighter for form primitives: Vue input/select/textarea now support explicit `invalid` and `errors`, matching the HEEx `input` contract instead of inferring invalid only from a single error string.
+- The obvious HEEx/Vue parity mismatch in common feedback controls is removed: HEEx auth and design-preview alerts no longer use one-off raw markup, and Histoire invalid field stories now use the same state vocabulary as HEEx preview/forms.
+
+4. blockers/assumptions
+
+- `mix precommit` is not passing in this sandboxed environment. The blocker is environmental, not repository code: Mix’s TCP-based PubSub startup is denied with `:eperm`, and child-app test aliases also require Postgres connections that are likewise blocked with `:eperm`.
+- I used temporary `/tmp` Mix workaround files only to push verification as far as possible; they are not part of the repository changes.
+==> eboss_web
+Compiling 2 files (.ex)
+Generated eboss_web app
+==> eboss_data
+There are no tests to run
+==> eboss_accounts
+Running ExUnit with seed: 928185, max_cases: 20
+
+............
+Finished in 7.6 seconds (0.00s async, 7.6s sync)
+12 tests, 0 failures
+==> eboss_tenancy
+Running ExUnit with seed: 885048, max_cases: 20
+
+............
+Finished in 6.7 seconds (0.00s async, 6.7s sync)
+12 tests, 0 failures
+==> eboss_workspaces
+Running ExUnit with seed: 78309, max_cases: 20
+
+............
+Finished in 5.8 seconds (0.00s async, 5.8s sync)
+12 tests, 0 failures
+==> eboss_folio
+Running ExUnit with seed: 442310, max_cases: 20
+
+...........
+Finished in 3.9 seconds (0.00s async, 3.9s sync)
+11 tests, 0 failures
+==> eboss_web
+Running ExUnit with seed: 51412, max_cases: 20
+
+.....
+
+  1) test shared HEEx and Vue primitives expose explicit accessibility contracts (EBossWeb.DesignAccessibilityTest)
+     test/design_accessibility_test.exs:27
+     Assertion with =~ failed
+     code:  assert auth_components =~ "role=\"alert\""
+     left:  "defmodule EBossWeb.AuthComponents do\n  @moduledoc false\n  use EBossWeb, :html\n\n  alias AshPhoenix.Form\n\n  attr :eyebrow, :string, required: true\n  attr :title, :string, required: true\n  attr :subtitle, :string, required: true\n  attr :detail_one, :string, required: true\n  attr :detail_two, :string, required: true\n  attr :detail_three, :string, required: true\n  attr :current_user, :map, default: nil\n  slot :inner_block, required: true\n\n  def auth_shell(assigns) do\n    ~H\"\"\"\n    <section class=\"ui-auth-grid\">\n      <.panel surface=\"floating\" class=\"ui-frame-card\">\n        <.AuthScene\n          eyebrow={@eyebrow}\n          title={@title}\n          subtitle={@subtitle}\n          detailOne={@detail_one}\n          detailTwo={@detail_two}\n          detailThree={@detail_three}\n        />\n      </.panel>\n\n      <.panel surface=\"floating\" class=\"ui-form-card\">\n        {render_slot(@inner_block)}\n      </.panel>\n    </section>\n    \"\"\"\n  end\n\n  attr :form, :any, required: true\n\n  def form_errors(assigns) do\n    assigns =\n      assign(assigns,\n        messages:\n          assigns.form\n          |> Form.raw_errors(for_path: :all)\n          |> Enum.flat_map(fn {_path, errors} -> List.wrap(errors) end)\n          |> Enum.map(&Exception.message/1)\n          |> Enum.uniq()\n      )\n\n    ~H\"\"\"\n    <.alert :if={@messages != []} tone=\"danger\" title=\"We need a quick fix before continuing.\">\n      <div class=\"grid gap-2\">\n        <p :for={message <- @messages}>{message}</p>\n      </div>\n    </.alert>\n    \"\"\"\n  end\n\n  attr :current_path, :string, required: true\n\n  def auth_nav(assigns) do\n    ~H\"\"\"\n    <nav class=\"flex flex-wrap gap-2\">\n      <.nav_pill to={~p\"/sign-in\"} active={@current_path == \"/sign-in\"}>\n        Sign in\n      </.nav_pill>\n      <.nav_pill to={~p\"/register\"} active={@current_path == \"/register\"}>\n        Register\n      </.nav_pill>\n      <.nav_pill to={~p\"/forgot-password\"} active={@current_path == \"/forgot-password\"}>\n        Forgot password\n      </.nav_pill>\n    </nav>\n    \"\"\"\n  end\nend\n"
+     right: "role=\"alert\""
+     stacktrace:
+       test/design_accessibility_test.exs:45: (test)
+
+...
+
+  2) test shared surfaces reserve warning and danger tones for actual state cues (EBossWeb.DesignToneTest)
+     test/design_tone_test.exs:76
+     Assertion with =~ failed
+     code:  assert design_system_live =~ ~r/<div\s+class="ui-alert"\s+data-tone="warning"[\s\S]*?>/
+     left:  "defmodule EBossWeb.Dev.DesignSystemLive do\n  use EBossWeb, :live_view\n\n  import EBossWeb.AuthComponents, only: [auth_nav: 1, auth_shell: 1]\n\n  @impl true\n  def mount(_params, _session, socket) do\n    {:ok, assign(socket, :page_title, \"Design System\")}\n  end\n\n  @impl true\n  def render(assigns) do\n    ~H\"\"\"\n    <Layouts.app\n      flash={@flash}\n      current_scope={assigns[:current_scope]}\n      current_user={assigns[:current_user]}\n    >\n      <div class=\"ui-dev-preview\" id=\"design-system-preview\">\n        <.section_heading\n          eyebrow=\"Development route\"\n          title=\"EBoss design system\"\n          subtitle=\"Use this route as the in-app review surface for shared HEEx primitives, shells, and state treatments instead of checking them page by page across the product.\"\n          title_size=\"lg\"\n        >\n          <:actions>\n            <div class=\"flex flex-wrap gap-2\">\n              <.nav_pill :for={link <- review_links()} to={link.to}>\n                {link.label}\n              </.nav_pill>\n            </div>\n          </:actions>\n        </.section_heading>\n\n        <section id=\"review-index\" class=\"ui-dev-preview__section\">\n          <div class=\"ui-dev-preview__grid ui-dev-preview__grid--2\">\n            <.panel surface=\"floating\" class=\"space-y-5\">\n              <.header title_size=\"md\">\n                Shared HEEx review index\n                <:subtitle>\n                  Review the shell, panel, form, feedback, and navigation vocabulary here before\n                  checking individual product routes.\n                </:subtitle>\n                <:actions>\n                  <div class=\"flex flex-wrap gap-3\">\n                    <.button size=\"sm\" href=\"#shells\">\n                      Inspect shells\n                    </.button>\n                    <.button\n                      variant=\"outline\"\n                      tone=\"neutral\"\n                      size=\"sm\"\n                      href=\"#forms\"\n                      icon=\"hero-arrow-right\"\n                      icon_position=\"trailing\"\n                    >\n                      Inspect forms\n                    </.button>\n                  </div>\n                </:actions>\n              </.header>\n\n              <.list>\n                <:item :for={item <- review_checklist()} title={item.title}>\n                  {item.copy}\n                </:item>\n              </.list>\n            </.panel>\n\n            <.panel tone=\"inverse\" surface=\"solid\" class=\"space-y-5\">\n              <div class=\"space-y-3\">\n                <p class=\"ui-text-meta\" data-tone=\"soft\">Coverage targets</p>\n                <div class=\"flex flex-wrap gap-2\">\n                  <.badge :for={target <- coverage_targets()} tone=\"neutral\">\n                    {target}\n                  </.badge>\n                </div>\n              </div>\n\n              <div class=\"ui-dev-preview__grid ui-dev-preview__grid--2\">\n                <.panel as=\"div\" surface=\"solid\" padding=\"sm\" class=\"space-y-3\">\n                  <p class=\"ui-text-meta\" data-tone=\"soft\">Review states</p>\n                  <p class=\"ui-text-body\" data-tone=\"muted\">\n                    Valid, invalid, loading, disabled, empty, success, warning, and danger states\n                    should remain visible on this page as the shared primitives evolve.\n                  </p>\n                </.panel>\n\n                <.panel as=\"div\" surface=\"solid\" padding=\"sm\" class=\"space-y-3\">\n                  <p class=\"ui-text-meta\" data-tone=\"soft\">Drift guard</p>\n                  <p class=\"ui-text-body\" data-tone=\"muted\">\n                    If a shared HEEx primitive changes in the product, update this route in the same\n                    pass so design review stays current.\n                  </p>\n                </.panel>\n              </div>\n            </.panel>\n          </div>\n        </section>\n\n        <section id=\"review-matrix\" class=\"ui-dev-preview__section\">\n          <.section_heading\n            eyebrow=\"Parity review\"\n            title=\"Theme and density review matrix\"\n            subtitle=\"Review shared shell and primitive " <> ...
+     right: ~r/<div\s+class="ui-alert"\s+data-tone="warning"[\s\S]*?>/
+     stacktrace:
+       test/design_tone_test.exs:90: (test)
+
+........................................
+Finished in 6.5 seconds (0.2s async, 6.2s sync)
+50 tests, 2 failures
+** (exit) 2
+    (mix 1.19.5) lib/mix/tasks/cmd.ex:135: Mix.Tasks.Cmd.run/1
+    (mix 1.19.5) lib/mix/task.ex:499: anonymous fn/3 in Mix.Task.run_task/5
+    (mix 1.19.5) lib/mix/project.ex:557: Mix.Project.in_project/4
+    (elixir 1.19.5) lib/file.ex:2013: File.cd!/2
+    (mix 1.19.5) lib/mix/task.ex:671: anonymous fn/4 in Mix.Task.run_in_children_projects/2
+    (elixir 1.19.5) lib/enum.ex:2520: Enum."-reduce/3-lists^foldl/2-0-"/3
+    (mix 1.19.5) lib/mix/task.ex:670: Mix.Task.run_in_children_projects/2
+    (mix 1.19.5) lib/mix/project_stack.ex:241: Mix.ProjectStack.recur/1
+Updated the ST-DSN-009 alert contract work so the HEEx side is explicit and consistent with the Vue primitives. The shared auth error alert now declares `role="alert"`/`live="assertive"` in [auth_components.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/components/auth_components.ex#L51), the success alerts declare `role="status"`/`live="polite"` in [sign_in_live.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/live/auth/sign_in_live.ex#L159) and [forgot_password_live.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/live/auth/forgot_password_live.ex#L68), and the design-system preview now uses explicit `.alert` examples for warning/danger instead of raw markup expectations in [design_system_live.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/live/dev/design_system_live.ex#L664). I also reconciled the source-based design tests to assert the shared HEEx primitive contract rather than contradictory raw `ui-alert` HTML in [design_accessibility_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/design_accessibility_test.exs#L45), [design_tone_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/design_tone_test.exs#L90), and [design_surface_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/design_surface_test.exs#L147). I also made [config/test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/config/test.exs#L3) honor `PGHOST` as either a hostname or socket directory so test DB access can be overridden without changing the default localhost behavior.
+
+Verification: `mix compile --warnings-as-errors` passed, and the previously failing source-inspection tests now pass via direct ExUnit execution (`10 tests, 0 failures`). I also ran `mix precommit`, but I could not leave it passing in this sandbox because the `ecto.create` step is blocked by the environment: Postgrex socket access to Postgres fails with `:eperm` even over `/tmp/.s.PGSQL.5432`. No commit or push was made.
+==> eboss_data
+There are no tests to run
+==> eboss_accounts
+Running ExUnit with seed: 250888, max_cases: 20
+
+............
+Finished in 7.6 seconds (0.00s async, 7.6s sync)
+12 tests, 0 failures
+==> eboss_tenancy
+Running ExUnit with seed: 373420, max_cases: 20
+
+............
+Finished in 6.6 seconds (0.00s async, 6.6s sync)
+12 tests, 0 failures
+==> eboss_workspaces
+Running ExUnit with seed: 452710, max_cases: 20
+
+............
+Finished in 5.8 seconds (0.00s async, 5.8s sync)
+12 tests, 0 failures
+==> eboss_folio
+Running ExUnit with seed: 638205, max_cases: 20
+
+...........
+Finished in 3.9 seconds (0.00s async, 3.9s sync)
+11 tests, 0 failures
+==> eboss_web
+Running ExUnit with seed: 117834, max_cases: 20
+
+..................................................
+Finished in 6.5 seconds (0.2s async, 6.2s sync)
+50 tests, 0 failures

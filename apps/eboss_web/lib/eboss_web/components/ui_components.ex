@@ -66,6 +66,43 @@ defmodule EBossWeb.UIComponents do
     """
   end
 
+  attr :class, :any, default: nil
+  attr :tone, :string, values: ~w(primary neutral success warning danger), default: "neutral"
+  attr :title, :string, default: nil
+  attr :description, :string, default: nil
+  attr :role, :string, default: nil
+  attr :live, :string, default: nil
+  attr :rest, :global
+  slot :inner_block
+
+  def alert(assigns) do
+    role = alert_role(assigns.role, assigns.tone)
+
+    assigns =
+      assigns
+      |> assign(:alert_role, role)
+      |> assign(:alert_live, alert_live(assigns.live, role))
+
+    ~H"""
+    <div
+      class={["ui-alert", @class]}
+      data-tone={@tone}
+      role={@alert_role}
+      aria-live={@alert_live}
+      aria-atomic="true"
+      {@rest}
+    >
+      <div class="ui-alert__content">
+        <p :if={@title} class="ui-alert__title">{@title}</p>
+        <p :if={@description} class="ui-alert__description">{@description}</p>
+        <div :if={@inner_block != []} class="ui-alert__description">
+          {render_slot(@inner_block)}
+        </div>
+      </div>
+    </div>
+    """
+  end
+
   attr :to, :string, required: true
   attr :active, :boolean, default: false
   attr :class, :any, default: nil
@@ -130,4 +167,12 @@ defmodule EBossWeb.UIComponents do
     </div>
     """
   end
+
+  defp alert_role(role, _tone) when role in ["status", "alert"], do: role
+  defp alert_role(nil, tone) when tone in ["warning", "danger"], do: "alert"
+  defp alert_role(_, _tone), do: "status"
+
+  defp alert_live(live, _role) when live in ["polite", "assertive", "off"], do: live
+  defp alert_live(nil, "alert"), do: "assertive"
+  defp alert_live(_, _role), do: "polite"
 end

@@ -116,6 +116,83 @@ defmodule EBossWeb.DesignSurfaceTest do
     assert design_system_live =~ "data-density={@density_attr}"
   end
 
+  test "HEEx and Vue primitive contracts align for alerts and invalid field states" do
+    core_components = read_file("lib/eboss_web/components/core_components.ex")
+    ui_components = read_file("lib/eboss_web/components/ui_components.ex")
+    auth_components = read_file("lib/eboss_web/components/auth_components.ex")
+    sign_in_live = read_file("lib/eboss_web/live/auth/sign_in_live.ex")
+    forgot_password_live = read_file("lib/eboss_web/live/auth/forgot_password_live.ex")
+    design_system_live = read_file("lib/eboss_web/live/dev/design_system_live.ex")
+    ui_alert_vue = read_file("assets/vue/components/ui/UiAlert.vue")
+    ui_alert_story = read_file("assets/vue/components/ui/UiAlert.story.vue")
+    ui_input_vue = read_file("assets/vue/components/ui/UiInput.vue")
+    ui_select_vue = read_file("assets/vue/components/ui/UiSelect.vue")
+    ui_textarea_vue = read_file("assets/vue/components/ui/UiTextarea.vue")
+    ui_input_story = read_file("assets/vue/components/ui/UiInput.story.vue")
+    ui_select_story = read_file("assets/vue/components/ui/UiSelect.story.vue")
+    ui_textarea_story = read_file("assets/vue/components/ui/UiTextarea.story.vue")
+
+    assert core_components =~ ~s(attr :invalid, :boolean, default: false)
+    assert ui_components =~ "def alert(assigns)"
+
+    assert ui_components =~
+             ~s|attr :tone, :string, values: ~w(primary neutral success warning danger), default: "neutral"|
+
+    assert ui_components =~ ~s(attr :role, :string, default: nil)
+    assert ui_components =~ ~s(attr :live, :string, default: nil)
+
+    assert ui_components =~
+             ~s|defp alert_role(nil, tone) when tone in ["warning", "danger"], do: "alert"|
+
+    assert ui_components =~ ~s|defp alert_live(nil, "alert"), do: "assertive"|
+
+    assert auth_components =~
+             ~s|<.alert
+      :if={@messages != []}
+      tone="danger"
+      role="alert"
+      live="assertive"|
+
+    assert forgot_password_live =~
+             ~s|<.alert :if={@request_sent} tone="success" role="status" live="polite">|
+
+    assert sign_in_live =~
+             ~s|<.alert :if={@magic_link_requested} tone="success" role="status" live="polite">|
+
+    assert design_system_live =~ ~s(<.alert)
+    refute design_system_live =~ ~s(class="ui-alert")
+
+    assert ui_alert_vue =~
+             "tone?: \"primary\" | \"neutral\" | \"success\" | \"warning\" | \"danger\""
+
+    assert ui_alert_vue =~
+             "const alertRole = computed(() => props.role ?? ([\"warning\", \"danger\"].includes(props.tone) ? \"alert\" : \"status\"))"
+
+    assert design_system_live =~ "Operator note"
+    assert design_system_live =~ "Human review requested"
+    assert design_system_live =~ "Delivery failed"
+    assert ui_alert_story =~ "Operator note"
+    assert ui_alert_story =~ "Human review requested"
+    assert ui_alert_story =~ "Delivery failed"
+
+    assert ui_input_vue =~ "errors?: string[]"
+    assert ui_input_vue =~ "invalid?: boolean"
+    assert ui_input_vue =~ "props.invalid || errorMessages.value.length > 0"
+    assert ui_input_story =~ ~s(:errors="['A more descriptive label is required.']")
+
+    assert ui_select_vue =~ "errors?: string[]"
+    assert ui_select_vue =~ "invalid?: boolean"
+    assert ui_select_vue =~ "props.invalid || errorMessages.value.length > 0"
+    assert ui_select_story =~ ~s(:errors="['Choose a route before continuing.']")
+
+    assert ui_textarea_vue =~ "errors?: string[]"
+    assert ui_textarea_vue =~ "invalid?: boolean"
+    assert ui_textarea_vue =~ "props.invalid || errorMessages.value.length > 0"
+
+    assert ui_textarea_story =~
+             ~s(:errors="['Add the triggering run, owner, and current blocker.']")
+  end
+
   defp read_file(path) do
     @app_dir
     |> Path.join(path)

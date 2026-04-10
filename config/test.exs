@@ -1,17 +1,29 @@
 import Config
 
+pg_host = System.get_env("PGHOST")
+
+repo_endpoint =
+  if is_binary(pg_host) and String.starts_with?(pg_host, "/") do
+    [socket_dir: pg_host]
+  else
+    [hostname: pg_host || "localhost"]
+  end
+
 # Configure your database
 #
 # The MIX_TEST_PARTITION environment variable can be used
 # to provide built-in test partitioning in CI environment.
 # Run `mix help test` for more information.
-config :eboss_data, EBoss.Repo,
-  username: "postgres",
-  password: "postgres",
-  hostname: "localhost",
-  database: "eboss_test#{System.get_env("MIX_TEST_PARTITION")}",
-  pool: Ecto.Adapters.SQL.Sandbox,
-  pool_size: System.schedulers_online() * 2
+config :eboss_data,
+       EBoss.Repo,
+       [
+         username: "postgres",
+         password: "postgres",
+         port: String.to_integer(System.get_env("PGPORT", "5432")),
+         database: "eboss_test#{System.get_env("MIX_TEST_PARTITION")}",
+         pool: Ecto.Adapters.SQL.Sandbox,
+         pool_size: System.schedulers_online() * 2
+       ] ++ repo_endpoint
 
 # We don't run a server during test. If one is required,
 # you can enable the server option below.

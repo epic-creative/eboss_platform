@@ -43,9 +43,13 @@ defmodule EBossWeb.DesignAccessibilityTest do
     assert core_components =~ "aria-live=\"assertive\""
 
     assert auth_components =~ "role=\"alert\""
+    assert auth_components =~ "live=\"assertive\""
     assert sign_in_live =~ "role=\"status\""
+    assert sign_in_live =~ "live=\"polite\""
     assert forgot_password_live =~ "role=\"status\""
-    assert design_system_live =~ "aria-live=\"assertive\""
+    assert forgot_password_live =~ "live=\"polite\""
+    assert design_system_live =~ "role=\"alert\""
+    assert design_system_live =~ "live=\"assertive\""
 
     assert ui_button_vue =~ "props.href && disabledState.value"
     assert ui_button_vue =~ ":aria-busy=\"loading ? 'true' : undefined\""

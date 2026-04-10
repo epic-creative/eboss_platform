@@ -32,7 +32,8 @@ import UiTextarea from "./UiTextarea.vue"
               <UiTextarea
                 label="Escalation summary"
                 model-value="Need help"
-                error="Add the triggering run, owner, and current blocker."
+                invalid
+                :errors="['Add the triggering run, owner, and current blocker.']"
               />
             </StoryStateCard>
 

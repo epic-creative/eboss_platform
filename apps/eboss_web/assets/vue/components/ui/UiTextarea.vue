@@ -9,6 +9,8 @@ const props = withDefaults(
     label?: string
     hint?: string
     error?: string
+    errors?: string[]
+    invalid?: boolean
     prefix?: string
     suffix?: string
     placeholder?: string
@@ -23,6 +25,8 @@ const props = withDefaults(
     label: undefined,
     hint: undefined,
     error: undefined,
+    errors: () => [],
+    invalid: false,
     prefix: undefined,
     suffix: undefined,
     placeholder: undefined,
@@ -40,10 +44,15 @@ const emit = defineEmits<{
 
 const attrs = useAttrs()
 const generatedId = useId()
-const invalidState = computed(() => Boolean(props.error))
+const errorMessages = computed(() => {
+  if (props.errors.length > 0) return props.errors
+  if (props.error) return [props.error]
+  return []
+})
+const invalidState = computed(() => props.invalid || errorMessages.value.length > 0)
 const fieldId = computed(() => props.id ?? `${generatedId}-field`)
 const hintId = computed(() => (props.hint ? `${fieldId.value}-hint` : undefined))
-const errorId = computed(() => (props.error ? `${fieldId.value}-error` : undefined))
+const errorId = computed(() => (errorMessages.value.length > 0 ? `${fieldId.value}-error` : undefined))
 const describedBy = computed(() => {
   const ids = [attrs["aria-describedby"] as string | undefined, hintId.value, errorId.value].filter(Boolean)
   return ids.length > 0 ? ids.join(" ") : undefined
@@ -71,8 +80,14 @@ const describedBy = computed(() => {
       <span v-if="suffix" class="ui-field-affix">{{ suffix }}</span>
     </div>
     <p v-if="hint" :id="hintId" class="ui-field-hint">{{ hint }}</p>
-    <p v-if="error" :id="errorId" class="ui-field-error" aria-live="polite">
-      <span>{{ error }}</span>
-    </p>
+    <div v-if="errorMessages.length" :id="errorId" class="grid gap-2" aria-live="polite">
+      <p
+        v-for="(message, index) in errorMessages"
+        :key="`${fieldId}-error-${index}`"
+        class="ui-field-error"
+      >
+        <span>{{ message }}</span>
+      </p>
+    </div>
   </label>
 </template>
