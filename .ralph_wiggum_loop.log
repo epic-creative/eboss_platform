@@ -2754,3 +2754,72 @@ Running ExUnit with seed: 351736, max_cases: 20
 ................................................................................
 Finished in 8.6 seconds (0.2s async, 8.3s sync)
 80 tests, 0 failures
+1) changed files
+
+- Added dashboard smoke coverage in [apps/eboss_web/assets/tests/playwright/smoke/dashboard-shell.spec.ts](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/tests/playwright/smoke/dashboard-shell.spec.ts#L1)
+- Added a dedicated dashboard smoke command in [apps/eboss_web/assets/package.json](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/package.json#L2)
+- Documented the dashboard smoke subset in [apps/eboss_web/assets/tests/playwright/README.md](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/tests/playwright/README.md#L5)
+- Extended tooling assertions for the new smoke subset in [apps/eboss_web/test/eboss_web/playwright_tooling_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/eboss_web/playwright_tooling_test.exs#L8)
+
+2) tests/commands executed
+
+Passed:
+- `elixir ... Code.require_file("apps/eboss_web/test/eboss_web/playwright_tooling_test.exs"); ExUnit.run()`
+- `elixir ... Code.require_file("apps/eboss_web/test/eboss_web/live/dashboard_contract_smoke_test.exs"); ExUnit.run()`
+
+Attempted but blocked by environment:
+- `npm run playwright:setup`
+  - failed because `mix` could not start `Mix.PubSub`: `failed to open a TCP socket ... reason: :eperm`
+- `npm run playwright:smoke:dashboard`
+  - failed because `npm exec` could not fetch `playwright@1.59.1`: `ENOTFOUND registry.npmjs.org`
+- `mix precommit`
+  - failed immediately with the same `Mix.PubSub` TCP socket `:eperm` error
+
+3) acceptance criteria coverage
+
+- Minimal but meaningful dashboard smoke suite:
+  - shell landmarks and authenticated render
+  - launch/structure/state surfaces
+  - empty/loading/error state presence
+  - route-local shell interactions
+  - shell sign-out handoff back to public routes
+- Coverage stays route-focused and avoids speculative workflow automation.
+- Selectors lean on the existing stable dashboard contracts and accessible landmarks instead of incidental markup.
+
+4) blockers/assumptions
+
+- Blocker: this sandbox prevents Mix from opening the localhost TCP socket Elixir 1.19 uses for `Mix.Sync.PubSub`, so `mix precommit` could not be completed here.
+- Blocker: network access to `registry.npmjs.org` is unavailable, so the pinned Playwright package could not be fetched and the dashboard smoke subset could not be executed here.
+- Assumption: the stable dashboard contracts from `ST-TST-006` remain the intended browser hooks for this story.
+==> eboss_data
+There are no tests to run
+==> eboss_accounts
+Running ExUnit with seed: 968073, max_cases: 20
+
+............
+Finished in 7.5 seconds (0.00s async, 7.5s sync)
+12 tests, 0 failures
+==> eboss_tenancy
+Running ExUnit with seed: 753871, max_cases: 20
+
+............
+Finished in 6.4 seconds (0.00s async, 6.4s sync)
+12 tests, 0 failures
+==> eboss_workspaces
+Running ExUnit with seed: 509165, max_cases: 20
+
+............
+Finished in 5.6 seconds (0.00s async, 5.6s sync)
+12 tests, 0 failures
+==> eboss_folio
+Running ExUnit with seed: 562719, max_cases: 20
+
+...........
+Finished in 3.8 seconds (0.00s async, 3.8s sync)
+11 tests, 0 failures
+==> eboss_web
+Running ExUnit with seed: 987543, max_cases: 20
+
+................................................................................
+Finished in 8.4 seconds (0.2s async, 8.2s sync)
+80 tests, 0 failures

@@ -21,6 +21,9 @@ defmodule EBossWeb.PlaywrightToolingTest do
     assert get_in(package_json, ["scripts", "playwright:smoke"]) ==
              "npm exec --yes --package=playwright@1.59.1 playwright test tests/playwright/smoke"
 
+    assert get_in(package_json, ["scripts", "playwright:smoke:dashboard"]) ==
+             "npm exec --yes --package=playwright@1.59.1 playwright test tests/playwright/smoke/dashboard-shell.spec.ts"
+
     assert get_in(package_json, ["scripts", "playwright:report"]) ==
              "npm exec --yes --package=playwright@1.59.1 playwright show-report test-results/playwright/report"
 
@@ -32,6 +35,7 @@ defmodule EBossWeb.PlaywrightToolingTest do
 
     assert File.exists?(Path.join(@playwright_dir, "smoke/auth-public.spec.ts"))
     assert File.exists?(Path.join(@playwright_dir, "smoke/bootstrap.spec.ts"))
+    assert File.exists?(Path.join(@playwright_dir, "smoke/dashboard-shell.spec.ts"))
     assert File.exists?(Path.join(@playwright_dir, "regression/.gitkeep"))
     assert File.exists?(Path.join(@playwright_dir, "fixtures/bootstrap.html"))
     assert File.exists?(Path.join(@playwright_dir, "setup/state-ready.spec.ts"))
@@ -57,10 +61,12 @@ defmodule EBossWeb.PlaywrightToolingTest do
     assert readme =~ "tests/playwright/.auth"
     assert readme =~ "test-results/playwright"
     assert readme =~ "npm run playwright:smoke"
+    assert readme =~ "npm run playwright:smoke:dashboard"
     assert readme =~ "npm run playwright:setup"
     assert readme =~ "npm run playwright:verify-setup"
     assert readme =~ "checked-in HTML fixture"
     assert readme =~ "auth boundary"
     assert readme =~ "dashboard handoff"
+    assert readme =~ "dashboard shell smoke"
   end
 end
