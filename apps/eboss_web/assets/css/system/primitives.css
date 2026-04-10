@@ -545,6 +545,15 @@ select {
     0 0 0 1px color-mix(in srgb, var(--color-danger) 28%, transparent);
 }
 
+.ui-field-control:has(.ui-input:disabled),
+.ui-field-control:has(.ui-select:disabled),
+.ui-field-control:has(.ui-textarea:disabled) {
+  border-color: color-mix(in srgb, var(--color-border-subtle) 96%, transparent);
+  background: color-mix(in srgb, var(--color-surface-elevated) 84%, transparent);
+  box-shadow: none;
+  opacity: 0.72;
+}
+
 .ui-field-affix {
   color: var(--color-text-soft);
   font-family: var(--font-mono);
@@ -568,6 +577,13 @@ select {
 .ui-input::placeholder,
 .ui-textarea::placeholder {
   color: color-mix(in srgb, var(--color-text-soft) 84%, transparent);
+}
+
+.ui-input:disabled,
+.ui-select:disabled,
+.ui-textarea:disabled {
+  color: var(--color-text-soft);
+  cursor: not-allowed;
 }
 
 .ui-select {
@@ -608,6 +624,11 @@ select {
     background-color var(--motion-fast) var(--ease-standard),
     border-color var(--motion-fast) var(--ease-standard),
     box-shadow var(--motion-fast) var(--ease-standard);
+}
+
+.ui-checkbox:disabled {
+  opacity: 0.68;
+  cursor: not-allowed;
 }
 
 .ui-checkbox:checked {

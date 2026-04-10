@@ -71,34 +71,34 @@ defmodule EBossWeb.Auth.ResetPasswordLive do
         >
           <.form_errors form={@form} />
 
-          <.form
+          <.auth_form
             :let={form}
             for={@form}
             id="reset-password-form"
             phx-change="change"
             phx-submit="submit"
-            class="space-y-4"
           >
             <input type="hidden" name={form[:reset_token].name} value={@token} />
-            <.input
+            <.auth_password_input
               field={form[:password]}
-              type="password"
               label="New password"
+              hint="Use at least 8 characters."
               autocomplete="new-password"
             />
-            <.input
+            <.auth_password_input
               field={form[:password_confirmation]}
-              type="password"
               label="Confirm new password"
+              hint="Repeat the same password exactly."
               autocomplete="new-password"
             />
 
-            <div class="flex justify-end">
-              <.button type="submit">
-                Reset password
-              </.button>
-            </div>
-          </.form>
+            <:actions>
+              <.auth_submit
+                label="Reset password"
+                busy_label="Resetting password..."
+              />
+            </:actions>
+          </.auth_form>
 
           <:footer>
             <.auth_page_footer

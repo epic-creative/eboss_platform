@@ -94,6 +94,28 @@ defmodule EBossWeb.AuthLiveTest do
     assert html =~ ~s(autocomplete="section-magic-link email")
   end
 
+  test "auth forms expose shared hints and submit-state markup", %{conn: conn} do
+    {:ok, sign_in, _html} = live(conn, ~p"/sign-in")
+    sign_in_html = render(sign_in)
+
+    assert has_element?(sign_in, ".ui-auth-form")
+    assert sign_in_html =~ "Use the email address tied to your account."
+    assert sign_in_html =~ "Passwords are case sensitive."
+    assert sign_in_html =~ "We only send sign-in links when it exists."
+    assert sign_in_html =~ ~s(phx-disable-with="Signing in...")
+    assert sign_in_html =~ ~s(phx-disable-with="Sending link...")
+
+    {:ok, register, _html} = live(conn, ~p"/register")
+    register_html = render(register)
+
+    assert register_html =~
+             "4-30 characters. Use lowercase letters, numbers, hyphens, or underscores."
+
+    assert register_html =~ "Use at least 8 characters."
+    assert register_html =~ "Repeat the same password exactly."
+    assert register_html =~ ~s(phx-disable-with="Creating account...")
+  end
+
   test "registration succeeds, signs the user in, and sends confirmation email", %{conn: conn} do
     params = %{
       "email" => "register-live@example.com",
@@ -134,8 +156,9 @@ defmodule EBossWeb.AuthLiveTest do
       )
       |> render_submit()
 
-    assert html =~ "We need a quick fix before continuing."
+    assert html =~ "Review the highlighted fields."
     assert html =~ "must"
+    assert html =~ ~s(data-feedback="danger")
     assert html =~ ~s(role="alert")
     assert html =~ ~s(aria-invalid="true")
     assert html =~ ~s(aria-live="polite")
@@ -175,7 +198,8 @@ defmodule EBossWeb.AuthLiveTest do
       )
       |> render_submit()
 
-    assert html =~ "We need a quick fix before continuing."
+    assert html =~ "Review the highlighted fields."
+    assert html =~ ~s(data-feedback="danger")
     assert html =~ ~s(role="alert")
     assert html =~ ~s(aria-live="assertive")
   end
@@ -191,9 +215,12 @@ defmodule EBossWeb.AuthLiveTest do
       |> form("#forgot-password-form", user: %{"email" => to_string(user.email)})
       |> render_submit()
 
-    assert html =~ "Reset instructions are on the way"
+    assert html =~ "Request received."
+    assert html =~ "If the account exists, reset instructions are on the way."
+    assert html =~ ~s(data-feedback="success")
     assert html =~ ~s(role="status")
     assert html =~ ~s(aria-live="polite")
+    refute html =~ ~s(id="flash-info")
 
     assert_received {:email, email}
     assert email.html_body =~ "/reset/"
@@ -210,7 +237,10 @@ defmodule EBossWeb.AuthLiveTest do
       |> form("#sign-in-magic-link-form", magic_link_user: %{"email" => to_string(user.email)})
       |> render_submit()
 
-    assert html =~ "Check your email for the sign-in link."
+    assert html =~ "Request received."
+    assert html =~ "If the account exists, a sign-in link is on the way."
+    assert html =~ ~s(data-feedback="success")
+    refute html =~ ~s(id="flash-info")
 
     assert_received {:email, email}
     assert email.html_body =~ "/magic_link/"

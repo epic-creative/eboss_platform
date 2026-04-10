@@ -936,3 +936,68 @@ Running ExUnit with seed: 481711, max_cases: 20
 ....................................................
 Finished in 6.8 seconds (0.2s async, 6.6s sync)
 52 tests, 0 failures
+1) changed files
+- [apps/eboss_web/lib/eboss_web/components/auth_components.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/components/auth_components.ex): added shared auth feedback, form, submit, and field helper components.
+- [apps/eboss_web/assets/css/system/patterns.css](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/css/system/patterns.css): added auth-form layout, pending-state, and feedback styling.
+- [apps/eboss_web/assets/css/system/primitives.css](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/css/system/primitives.css): added disabled field styling to align auth inputs with primitive rules.
+- [apps/eboss_web/lib/eboss_web/live/auth/sign_in_live.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/live/auth/sign_in_live.ex): moved both sign-in forms to the shared contract, unified success feedback, and cleared stale request state on edit/error.
+- [apps/eboss_web/lib/eboss_web/live/auth/register_live.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/live/auth/register_live.ex): switched to shared auth fields and submit state.
+- [apps/eboss_web/lib/eboss_web/live/auth/forgot_password_live.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/live/auth/forgot_password_live.ex): replaced duplicate flash + inline success with one shared inline feedback contract.
+- [apps/eboss_web/lib/eboss_web/live/auth/reset_password_live.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/live/auth/reset_password_live.ex): switched to shared password fields and submit state.
+- [apps/eboss_web/lib/eboss_web/live/auth/confirm_live.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/live/auth/confirm_live.ex): switched to shared submit contract.
+- [apps/eboss_web/lib/eboss_web/live/auth/magic_link_live.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/live/auth/magic_link_live.ex): switched to shared submit contract.
+- [apps/eboss_web/test/eboss_web/live/auth/auth_live_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/eboss_web/live/auth/auth_live_test.exs): updated auth expectations and added coverage for shared hints, feedback, and submit markup.
+- [apps/eboss_web/test/design_surface_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/design_surface_test.exs): updated source-contract assertions for the new shared auth components and CSS.
+- [apps/eboss_web/test/design_accessibility_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/design_accessibility_test.exs): updated accessibility/source assertions for disabled fields and auth submit feedback wiring.
+
+2) tests/commands executed
+- `mix format`
+- `mix format --check-formatted`
+- `MIX_ENV=test mix compile --warnings-as-errors`
+- `elixir -e 'ExUnit.start(); Code.require_file("apps/eboss_web/test/design_surface_test.exs"); Code.require_file("apps/eboss_web/test/design_accessibility_test.exs"); ExUnit.run()'`
+  Result: passed, 8 tests, 0 failures
+- Attempted: `mix test apps/eboss_web/test/eboss_web/live/auth/auth_live_test.exs apps/eboss_web/test/design_surface_test.exs apps/eboss_web/test/design_accessibility_test.exs`
+  Result: blocked before test execution by PostgreSQL socket connect `:eperm`
+- Attempted: `mix precommit`
+  Result: blocked before completion by the same PostgreSQL socket connect `:eperm`
+
+3) acceptance criteria coverage
+- Auth forms now use one shared field and submit contract across sign-in, register, forgot-password, reset, confirm, and magic-link surfaces via `auth_form`, `auth_submit`, and shared auth field helpers.
+- Error and success feedback now use one inline visual contract via `auth_feedback`; request forms no longer also emit duplicate success flash messages.
+- Focus/invalid behavior continues through the shared primitives, and loading/disabled states were tightened with auth-form submit loading styling plus disabled field styling in the primitive layer.
+
+4) blockers/assumptions
+- The remaining blocker is environment-level: DB-backed auth LiveView tests and `mix precommit` cannot complete in this sandbox because PostgreSQL socket connections fail with `DBConnection.ConnectionError ... :eperm`, even when targeting `/private/tmp/.s.PGSQL.5432`.
+- Manual browser review was not completed for the same reason: starting the app in a way that exercises these routes requires the blocked database connection.
+==> eboss_data
+There are no tests to run
+==> eboss_accounts
+Running ExUnit with seed: 231971, max_cases: 20
+
+............
+Finished in 7.8 seconds (0.00s async, 7.8s sync)
+12 tests, 0 failures
+==> eboss_tenancy
+Running ExUnit with seed: 607179, max_cases: 20
+
+............
+Finished in 6.6 seconds (0.00s async, 6.6s sync)
+12 tests, 0 failures
+==> eboss_workspaces
+Running ExUnit with seed: 737435, max_cases: 20
+
+............
+Finished in 5.8 seconds (0.00s async, 5.8s sync)
+12 tests, 0 failures
+==> eboss_folio
+Running ExUnit with seed: 48738, max_cases: 20
+
+...........
+Finished in 4.0 seconds (0.00s async, 4.0s sync)
+11 tests, 0 failures
+==> eboss_web
+Running ExUnit with seed: 727099, max_cases: 20
+
+.....................................................
+Finished in 6.8 seconds (0.2s async, 6.5s sync)
+53 tests, 0 failures

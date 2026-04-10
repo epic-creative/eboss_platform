@@ -147,17 +147,34 @@ defmodule EBossWeb.DesignSurfaceTest do
     assert ui_components =~ ~s|defp alert_live(nil, "alert"), do: "assertive"|
 
     assert auth_components =~
-             ~s|<.alert
+             ~s|<.auth_feedback
       :if={@messages != []}
       tone="danger"
+      data-feedback="danger"
       role="alert"
       live="assertive"|
 
-    assert forgot_password_live =~
-             ~s|<.alert :if={@request_sent} tone="success" role="status" live="polite">|
+    assert auth_components =~ "def auth_feedback(assigns)"
+    assert auth_components =~ "def auth_form(assigns)"
+    assert auth_components =~ "def auth_submit(assigns)"
+    assert auth_components =~ "def auth_email_input(assigns)"
+    assert auth_components =~ "def auth_username_input(assigns)"
+    assert auth_components =~ "def auth_password_input(assigns)"
 
-    assert sign_in_live =~
-             ~s|<.alert :if={@magic_link_requested} tone="success" role="status" live="polite">|
+    assert forgot_password_live =~ ~s|<.auth_feedback|
+    assert forgot_password_live =~ ~s|title="Request received."|
+
+    assert forgot_password_live =~
+             ~s|message="If the account exists, reset instructions are on the way."|
+
+    refute forgot_password_live =~
+             ~s|put_flash(:info, "If that account exists, we just emailed reset instructions.")|
+
+    assert sign_in_live =~ ~s|<.auth_feedback|
+    assert sign_in_live =~ ~s|message="If the account exists, a sign-in link is on the way."|
+
+    refute sign_in_live =~
+             ~s|put_flash(:info, "If that account exists, we just sent a magic link.")|
 
     assert design_system_live =~ ~s(<.alert)
     refute design_system_live =~ ~s(class="ui-alert")
@@ -209,18 +226,29 @@ defmodule EBossWeb.DesignSurfaceTest do
     assert patterns_css =~ ".ui-auth-page__body"
     assert patterns_css =~ ".ui-auth-page__footer"
     assert patterns_css =~ ".ui-auth-flow-stack"
+    assert patterns_css =~ ".ui-auth-form"
+    assert patterns_css =~ ".ui-auth-form__fieldset"
+    assert patterns_css =~ ".ui-auth-form.phx-submit-loading .ui-auth-submit::after"
 
     assert auth_components =~ "def auth_page(assigns)"
     assert auth_components =~ "def auth_page_footer(assigns)"
     assert auth_components =~ ~s(aria-label="Authentication routes")
+    assert auth_components =~ "def auth_form(assigns)"
+    assert auth_components =~ "def auth_submit(assigns)"
 
     assert design_system_live =~ "<.auth_page"
     assert sign_in_live =~ "<.auth_page"
+    assert sign_in_live =~ "<.auth_form"
     assert register_live =~ "<.auth_page"
+    assert register_live =~ "<.auth_form"
     assert forgot_password_live =~ "<.auth_page"
+    assert forgot_password_live =~ "<.auth_form"
     assert reset_password_live =~ "<.auth_page"
+    assert reset_password_live =~ "<.auth_form"
     assert confirm_live =~ "<.auth_page"
+    assert confirm_live =~ "<.auth_form"
     assert magic_link_live =~ "<.auth_page"
+    assert magic_link_live =~ "<.auth_form"
   end
 
   defp read_file(path) do

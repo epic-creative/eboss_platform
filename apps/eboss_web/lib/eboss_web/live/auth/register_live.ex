@@ -61,35 +61,34 @@ defmodule EBossWeb.Auth.RegisterLive do
         >
           <.form_errors form={@form} />
 
-          <.form
+          <.auth_form
             :let={form}
             for={@form}
             id="register-form"
             phx-change="validate"
             phx-submit="submit"
-            class="space-y-4"
           >
-            <.input field={form[:email]} type="email" label="Email" autocomplete="email" />
-            <.input field={form[:username]} type="text" label="Username" autocomplete="username" />
-            <.input
+            <.auth_email_input field={form[:email]} autocomplete="email" />
+            <.auth_username_input field={form[:username]} />
+            <.auth_password_input
               field={form[:password]}
-              type="password"
-              label="Password"
               autocomplete="new-password"
+              hint="Use at least 8 characters."
             />
-            <.input
+            <.auth_password_input
               field={form[:password_confirmation]}
-              type="password"
               label="Confirm password"
+              hint="Repeat the same password exactly."
               autocomplete="new-password"
             />
 
-            <div class="flex justify-end">
-              <.button type="submit">
-                Create account
-              </.button>
-            </div>
-          </.form>
+            <:actions>
+              <.auth_submit
+                label="Create account"
+                busy_label="Creating account..."
+              />
+            </:actions>
+          </.auth_form>
 
           <:footer>
             <.auth_page_footer

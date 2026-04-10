@@ -45,7 +45,11 @@ defmodule EBossWeb.Auth.SignInLive do
 
   def handle_event("validate_magic_link", %{"magic_link_user" => params}, socket) do
     form = Form.validate(socket.assigns.magic_link_form, params, errors: false)
-    {:noreply, assign(socket, :magic_link_form, form)}
+
+    {:noreply,
+     socket
+     |> assign(:magic_link_form, form)
+     |> assign(:magic_link_requested, false)}
   end
 
   def handle_event("submit_magic_link", %{"magic_link_user" => params}, socket) do
@@ -57,8 +61,7 @@ defmodule EBossWeb.Auth.SignInLive do
            :magic_link_form,
            AuthForms.magic_link_request_form(nil, %{}, as: "magic_link_user")
          )
-         |> assign(:magic_link_requested, true)
-         |> put_flash(:info, "If that account exists, we just sent a magic link.")}
+         |> assign(:magic_link_requested, true)}
 
       {:ok, _result} ->
         {:noreply,
@@ -67,11 +70,13 @@ defmodule EBossWeb.Auth.SignInLive do
            :magic_link_form,
            AuthForms.magic_link_request_form(nil, %{}, as: "magic_link_user")
          )
-         |> assign(:magic_link_requested, true)
-         |> put_flash(:info, "If that account exists, we just sent a magic link.")}
+         |> assign(:magic_link_requested, true)}
 
       {:error, form} ->
-        {:noreply, assign(socket, :magic_link_form, form)}
+        {:noreply,
+         socket
+         |> assign(:magic_link_form, form)
+         |> assign(:magic_link_requested, false)}
     end
   end
 
@@ -110,39 +115,36 @@ defmodule EBossWeb.Auth.SignInLive do
 
               <.form_errors form={@password_form} />
 
-              <.form
+              <.auth_form
                 :let={form}
                 for={@password_form}
                 id="sign-in-password-form"
                 phx-change="validate_password"
                 phx-submit="submit_password"
-                class="space-y-4"
+                actions_layout="between"
               >
-                <.input
+                <.auth_email_input
                   field={form[:email]}
-                  type="email"
-                  label="Email"
                   autocomplete="section-password email"
                 />
-                <.input
+                <.auth_password_input
                   field={form[:password]}
-                  type="password"
-                  label="Password"
                   autocomplete="section-password current-password"
                 />
 
-                <div class="flex items-center justify-between gap-4">
+                <:actions>
                   <a
                     href={~p"/forgot-password"}
                     class="ui-text-link"
                   >
                     Forgot your password?
                   </a>
-                  <.button type="submit">
-                    Continue
-                  </.button>
-                </div>
-              </.form>
+                  <.auth_submit
+                    label="Continue"
+                    busy_label="Signing in..."
+                  />
+                </:actions>
+              </.auth_form>
             </section>
 
             <div class="ui-auth-flow-divider" />
@@ -157,33 +159,38 @@ defmodule EBossWeb.Auth.SignInLive do
                 </p>
               </div>
 
-              <.alert :if={@magic_link_requested} tone="success" role="status" live="polite">
-                Check your email for the sign-in link.
-              </.alert>
+              <.auth_feedback
+                :if={@magic_link_requested}
+                tone="success"
+                data-feedback="success"
+                title="Request received."
+                message="If the account exists, a sign-in link is on the way."
+              />
 
               <.form_errors form={@magic_link_form} />
 
-              <.form
+              <.auth_form
                 :let={form}
                 for={@magic_link_form}
                 id="sign-in-magic-link-form"
                 phx-change="validate_magic_link"
                 phx-submit="submit_magic_link"
-                class="space-y-4"
               >
-                <.input
+                <.auth_email_input
                   field={form[:email]}
-                  type="email"
-                  label="Email"
                   autocomplete="section-magic-link email"
+                  hint="Use the email address tied to your account. We only send sign-in links when it exists."
                 />
 
-                <div class="flex justify-end">
-                  <.button type="submit" variant="outline" tone="neutral">
-                    Email me a magic link
-                  </.button>
-                </div>
-              </.form>
+                <:actions>
+                  <.auth_submit
+                    label="Email me a magic link"
+                    busy_label="Sending link..."
+                    variant="outline"
+                    tone="neutral"
+                  />
+                </:actions>
+              </.auth_form>
             </section>
           </div>
 

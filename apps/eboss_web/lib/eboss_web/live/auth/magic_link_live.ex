@@ -44,7 +44,7 @@ defmodule EBossWeb.Auth.MagicLinkLive do
         >
           <.form_errors form={@form} />
 
-          <.form
+          <.auth_form
             :let={form}
             for={@form}
             id="magic-link-form"
@@ -52,16 +52,16 @@ defmodule EBossWeb.Auth.MagicLinkLive do
             phx-trigger-action={@trigger_action}
             action={AuthForms.auth_path(@socket, AuthForms.magic_link_strategy!(), :sign_in)}
             method="post"
-            class="space-y-5"
           >
             <input type="hidden" name={form[:token].name} value={@token} />
 
-            <div class="flex justify-end">
-              <.button type="submit">
-                Sign me in
-              </.button>
-            </div>
-          </.form>
+            <:actions>
+              <.auth_submit
+                label="Sign me in"
+                busy_label="Signing you in..."
+              />
+            </:actions>
+          </.auth_form>
 
           <:footer>
             <.auth_page_footer

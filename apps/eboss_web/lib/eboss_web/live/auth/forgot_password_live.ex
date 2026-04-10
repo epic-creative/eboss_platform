@@ -16,7 +16,10 @@ defmodule EBossWeb.Auth.ForgotPasswordLive do
 
   @impl true
   def handle_event("validate", %{"user" => params}, socket) do
-    {:noreply, assign(socket, :form, Form.validate(socket.assigns.form, params, errors: false))}
+    {:noreply,
+     socket
+     |> assign(:form, Form.validate(socket.assigns.form, params, errors: false))
+     |> assign(:request_sent, false)}
   end
 
   def handle_event("submit", %{"user" => params}, socket) do
@@ -25,18 +28,16 @@ defmodule EBossWeb.Auth.ForgotPasswordLive do
         {:noreply,
          socket
          |> assign(:form, AuthForms.forgot_password_form())
-         |> assign(:request_sent, true)
-         |> put_flash(:info, "If that account exists, we just emailed reset instructions.")}
+         |> assign(:request_sent, true)}
 
       {:ok, _result} ->
         {:noreply,
          socket
          |> assign(:form, AuthForms.forgot_password_form())
-         |> assign(:request_sent, true)
-         |> put_flash(:info, "If that account exists, we just emailed reset instructions.")}
+         |> assign(:request_sent, true)}
 
       {:error, form} ->
-        {:noreply, assign(socket, :form, form)}
+        {:noreply, socket |> assign(:form, form) |> assign(:request_sent, false)}
     end
   end
 
@@ -62,28 +63,36 @@ defmodule EBossWeb.Auth.ForgotPasswordLive do
           subtitle="Enter the email for your account and we will send a reset link if it exists."
           current_path="/forgot-password"
         >
-          <.alert :if={@request_sent} tone="success" role="status" live="polite">
-            Reset instructions are on the way if the account exists.
-          </.alert>
+          <.auth_feedback
+            :if={@request_sent}
+            tone="success"
+            data-feedback="success"
+            title="Request received."
+            message="If the account exists, reset instructions are on the way."
+          />
 
           <.form_errors form={@form} />
 
-          <.form
+          <.auth_form
             :let={form}
             for={@form}
             id="forgot-password-form"
             phx-change="validate"
             phx-submit="submit"
-            class="space-y-4"
           >
-            <.input field={form[:email]} type="email" label="Email" autocomplete="email" />
+            <.auth_email_input
+              field={form[:email]}
+              autocomplete="email"
+              hint="Use the email address tied to your account. We only send reset links when it exists."
+            />
 
-            <div class="flex justify-end">
-              <.button type="submit">
-                Email reset link
-              </.button>
-            </div>
-          </.form>
+            <:actions>
+              <.auth_submit
+                label="Email reset link"
+                busy_label="Sending reset link..."
+              />
+            </:actions>
+          </.auth_form>
 
           <:footer>
             <.auth_page_footer

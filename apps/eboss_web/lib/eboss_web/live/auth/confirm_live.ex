@@ -44,7 +44,7 @@ defmodule EBossWeb.Auth.ConfirmLive do
         >
           <.form_errors form={@form} />
 
-          <.form
+          <.auth_form
             :let={form}
             for={@form}
             id="confirm-form"
@@ -52,16 +52,16 @@ defmodule EBossWeb.Auth.ConfirmLive do
             phx-trigger-action={@trigger_action}
             action={AuthForms.auth_path(@socket, AuthForms.confirmation_strategy!(), :confirm)}
             method="post"
-            class="space-y-5"
           >
             <input type="hidden" name={form[:confirm].name} value={@token} />
 
-            <div class="flex justify-end">
-              <.button type="submit">
-                Confirm email
-              </.button>
-            </div>
-          </.form>
+            <:actions>
+              <.auth_submit
+                label="Confirm email"
+                busy_label="Confirming email..."
+              />
+            </:actions>
+          </.auth_form>
 
           <:footer>
             <.auth_page_footer

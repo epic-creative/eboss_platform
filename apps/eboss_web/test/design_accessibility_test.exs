@@ -20,6 +20,8 @@ defmodule EBossWeb.DesignAccessibilityTest do
 
     assert primitives_css =~ ".ui-text-link:focus-visible"
     assert primitives_css =~ ~s(.ui-field-control[data-invalid="true"]:focus-within)
+    assert primitives_css =~ ".ui-input:disabled"
+    assert primitives_css =~ ".ui-field-control:has(.ui-input:disabled)"
     assert primitives_css =~ "@media (prefers-reduced-motion: reduce)"
     assert primitives_css =~ ".ui-spinner"
   end
@@ -44,10 +46,9 @@ defmodule EBossWeb.DesignAccessibilityTest do
 
     assert auth_components =~ "role=\"alert\""
     assert auth_components =~ "live=\"assertive\""
-    assert sign_in_live =~ "role=\"status\""
-    assert sign_in_live =~ "live=\"polite\""
-    assert forgot_password_live =~ "role=\"status\""
-    assert forgot_password_live =~ "live=\"polite\""
+    assert auth_components =~ "phx-disable-with={@busy_label}"
+    assert sign_in_live =~ "data-feedback=\"success\""
+    assert forgot_password_live =~ "data-feedback=\"success\""
     assert design_system_live =~ "role=\"alert\""
     assert design_system_live =~ "live=\"assertive\""
 
