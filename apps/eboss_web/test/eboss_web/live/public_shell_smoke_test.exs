@@ -54,6 +54,12 @@ defmodule EBossWeb.PublicShellSmokeTest do
   test "home route renders the reframed landing narrative" do
     assert {:ok, view, _html} = live(build_conn(), ~p"/")
 
+    assert has_element?(view, "[data-public-section-pattern='hero']")
+    assert has_element?(view, "[data-public-section-pattern='proof-band']")
+    assert has_element?(view, "[data-public-section-pattern='feature-row']")
+    assert has_element?(view, "[data-public-section-pattern='cta-band']")
+    assert has_element?(view, "[data-public-section-pattern='closing-section']")
+
     assert has_element?(view, "[data-home-hero]")
     assert has_element?(view, "[data-home-proof-strip]")
     assert has_element?(view, "[data-home-story='continuity']")

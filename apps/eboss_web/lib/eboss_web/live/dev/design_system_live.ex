@@ -4,6 +4,8 @@ defmodule EBossWeb.Dev.DesignSystemLive do
   import EBossWeb.AuthComponents,
     only: [auth_nav: 1, auth_page: 1, auth_page_footer: 1, auth_shell: 1]
 
+  @public_section_patterns EBossWeb.PublicPagePatterns
+
   @impl true
   def mount(_params, _session, socket) do
     {:ok, assign(socket, :page_title, "Design System")}
@@ -341,6 +343,128 @@ defmodule EBossWeb.Dev.DesignSystemLive do
                   <p class="ui-text-body" data-tone="muted">{item.copy}</p>
                 </.panel>
               </div>
+            </.panel>
+          </div>
+        </section>
+
+        <section id="public-patterns" class="ui-dev-preview__section" data-public-pattern-catalog>
+          <.section_heading
+            eyebrow="Public patterns"
+            title="Reusable public section patterns"
+            subtitle="Name the recurring public section types once here, then migrate individual routes onto the same vocabulary without redefining the layout contract each time."
+            title_size="sm"
+          />
+
+          <div class="ui-public-pattern-catalog">
+            <.panel
+              :for={pattern <- public_section_patterns()}
+              surface="floating"
+              class="ui-public-pattern-card"
+              data-public-pattern-definition={pattern.slug}
+            >
+              <div class="ui-public-pattern-card__header">
+                <div class="space-y-3">
+                  <div class="flex flex-wrap gap-2">
+                    <.badge tone="neutral">{pattern.label}</.badge>
+                    <.badge tone={public_pattern_badge_tone(pattern.repeatability)}>
+                      {public_pattern_badge_label(pattern.repeatability)}
+                    </.badge>
+                  </div>
+                  <div class="space-y-2">
+                    <h3 class="ui-text-title" data-size="lg">{pattern.summary}</h3>
+                    <p class="ui-text-body" data-tone="muted">{pattern.use_when}</p>
+                  </div>
+                </div>
+
+                <.panel as="div" surface="solid" padding="sm" class="space-y-2">
+                  <p class="ui-text-meta" data-tone="soft">Variants</p>
+                  <div class="flex flex-wrap gap-2">
+                    <.badge :for={variant <- pattern.variants} tone="neutral">
+                      {variant}
+                    </.badge>
+                  </div>
+                </.panel>
+              </div>
+
+              <div class="ui-public-pattern-card__slots">
+                <.panel
+                  :for={slot <- pattern.required_slots}
+                  as="div"
+                  surface="solid"
+                  padding="sm"
+                  class="ui-public-pattern-card__slot"
+                >
+                  <p class="ui-text-meta" data-tone="primary">Required: {slot.label}</p>
+                  <p class="ui-text-body" data-size="sm" data-tone="muted">{slot.description}</p>
+                </.panel>
+
+                <.panel
+                  :for={slot <- pattern.optional_slots}
+                  as="div"
+                  surface="solid"
+                  padding="sm"
+                  class="ui-public-pattern-card__slot"
+                >
+                  <p class="ui-text-meta" data-tone="soft">Optional: {slot.label}</p>
+                  <p class="ui-text-body" data-size="sm" data-tone="muted">{slot.description}</p>
+                </.panel>
+              </div>
+            </.panel>
+          </div>
+
+          <div class="ui-dev-preview__grid ui-dev-preview__grid--2">
+            <.panel surface="floating" class="space-y-4">
+              <div class="space-y-2">
+                <p class="ui-text-meta" data-tone="soft">Current home-page mapping</p>
+                <h3 class="ui-text-title" data-size="md">
+                  The existing home route now points at the standardized pattern names.
+                </h3>
+                <p class="ui-text-body" data-tone="muted">
+                  The page keeps its current markup, but each major section now advertises the
+                  target pattern name for later migration work.
+                </p>
+              </div>
+
+              <div class="ui-public-pattern-map">
+                <.panel
+                  :for={section <- public_home_page_sections()}
+                  as="div"
+                  surface="solid"
+                  padding="sm"
+                  class="space-y-2"
+                >
+                  <p class="ui-text-meta" data-tone="soft">{section.label}</p>
+                  <p class="ui-text-title" data-size="sm">
+                    {public_section_pattern_label(section.pattern)}
+                  </p>
+                  <p class="ui-text-body" data-size="sm" data-tone="muted">
+                    {section.selector} - {section.variant}
+                  </p>
+                </.panel>
+              </div>
+            </.panel>
+
+            <.panel tone="inverse" surface="solid" class="space-y-4">
+              <div class="space-y-2">
+                <p class="ui-text-meta">Composition rules</p>
+                <h3 class="ui-text-title" data-size="md">
+                  Repeat proof, feature, and CTA patterns. Keep hero and closing anchored.
+                </h3>
+              </div>
+
+              <.list>
+                <:item title="Anchor patterns">
+                  Hero and closing section should appear once so the page opens and resolves cleanly.
+                </:item>
+                <:item title="Repeatable patterns">
+                  Proof band, feature row, and CTA band can be reused across public routes without
+                  inventing one-off layouts.
+                </:item>
+                <:item title="Review language">
+                  Public review can now talk about hero, proof band, feature row, CTA band, and
+                  closing section directly in code and in the browser.
+                </:item>
+              </.list>
             </.panel>
           </div>
         </section>
@@ -793,9 +917,9 @@ defmodule EBossWeb.Dev.DesignSystemLive do
     """
   end
 
-  attr :label, :string, required: true
-  attr :theme, :string, values: ~w(light dark), required: true
-  attr :density, :string, values: ~w(default compact), required: true
+  attr(:label, :string, required: true)
+  attr(:theme, :string, values: ~w(light dark), required: true)
+  attr(:density, :string, values: ~w(default compact), required: true)
 
   defp parity_review_card(assigns) do
     density_attr = if assigns.density == "compact", do: "compact", else: nil
@@ -881,6 +1005,7 @@ defmodule EBossWeb.Dev.DesignSystemLive do
     [
       %{label: "Matrix", to: "#review-matrix"},
       %{label: "Panels", to: "#panels"},
+      %{label: "Public patterns", to: "#public-patterns"},
       %{label: "Shells", to: "#shells"},
       %{label: "Forms", to: "#forms"},
       %{label: "Feedback", to: "#feedback"},
@@ -1067,6 +1192,12 @@ defmodule EBossWeb.Dev.DesignSystemLive do
     ]
   end
 
+  defp public_pattern_badge_label(:anchor), do: "Anchor"
+  defp public_pattern_badge_label(:repeatable), do: "Repeatable"
+
+  defp public_pattern_badge_tone(:anchor), do: "primary"
+  defp public_pattern_badge_tone(:repeatable), do: "neutral"
+
   defp dashboard_signals do
     [
       %{
@@ -1111,5 +1242,19 @@ defmodule EBossWeb.Dev.DesignSystemLive do
           "A visitor should feel the same product family when they reach sign-in or the dashboard."
       }
     ]
+  end
+
+  defp public_section_patterns do
+    apply(@public_section_patterns, :all, [])
+  end
+
+  defp public_home_page_sections do
+    apply(@public_section_patterns, :home_page_sections, [])
+  end
+
+  defp public_section_pattern_label(id) do
+    @public_section_patterns
+    |> apply(:fetch!, [id])
+    |> Map.fetch!(:label)
   end
 end

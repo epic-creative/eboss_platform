@@ -124,6 +124,8 @@ defmodule EBossWeb.DesignSurfaceTest do
     patterns_css = File.read!(@patterns_css)
     layouts = read_file("lib/eboss_web/components/layouts.ex")
     home_live = read_file("lib/eboss_web/live/home_live.ex")
+    design_system_live = read_file("lib/eboss_web/live/dev/design_system_live.ex")
+    public_page_patterns = read_file("lib/eboss_web/public_page_patterns.ex")
     sign_in_live = read_file("lib/eboss_web/live/auth/sign_in_live.ex")
     register_live = read_file("lib/eboss_web/live/auth/register_live.ex")
     forgot_password_live = read_file("lib/eboss_web/live/auth/forgot_password_live.ex")
@@ -141,14 +143,18 @@ defmodule EBossWeb.DesignSurfaceTest do
     assert patterns_css =~ ".ui-home-story"
     assert patterns_css =~ ".ui-home-story--reverse"
     assert patterns_css =~ ".ui-home-route-sequence__step-inner"
+    assert patterns_css =~ ".ui-public-pattern-catalog"
+    assert patterns_css =~ ".ui-public-pattern-card"
+    assert patterns_css =~ ".ui-public-pattern-map"
 
     assert layouts =~
-             ~s|attr :shell_mode, :string, values: ~w(product public), default: "product"|
+             ~s|attr(:shell_mode, :string, values: ~w(product public), default: "product")|
 
     assert layouts =~ ~s(data-shell-mode={@shell_mode_attr})
     assert layouts =~ ~s(data-public-shell-nav)
     assert layouts =~ ~s(data-public-shell-footer)
     assert layouts =~ "def public_cta_frame(assigns)"
+    assert layouts =~ ~s(data-public-section-pattern={@section_pattern})
 
     assert home_live =~ ~s(shell_mode="public")
     assert home_live =~ ~s(current_path="/")
@@ -156,8 +162,39 @@ defmodule EBossWeb.DesignSurfaceTest do
     assert home_live =~ ~s(data-home-proof-strip)
     assert home_live =~ ~s(data-home-story="continuity")
     assert home_live =~ ~s(data-home-story="tempo")
+    assert home_live =~ ~s(data-home-closing)
+    assert home_live =~ ~s|data-public-section-pattern={public_section_pattern_slug(:hero)}|
+    assert home_live =~ ~s|data-public-section-pattern={public_section_pattern_slug(:proof_band)}|
+
+    assert home_live =~
+             ~s|data-public-section-pattern={public_section_pattern_slug(:feature_row)}|
+
+    assert home_live =~
+             ~s|data-public-section-pattern={public_section_pattern_slug(:closing_section)}|
+
+    assert home_live =~ ~s|section_pattern={public_section_pattern_slug(:cta_band)}|
     assert home_live =~ "<:shell_footer>"
     assert home_live =~ "<Layouts.public_cta_frame"
+    assert home_live =~ "defp public_section_pattern_slug(id)"
+
+    assert public_page_patterns =~ "defmodule EBossWeb.PublicPagePatterns"
+    assert public_page_patterns =~ ~s(id: :hero)
+    assert public_page_patterns =~ ~s(id: :proof_band)
+    assert public_page_patterns =~ ~s(id: :feature_row)
+    assert public_page_patterns =~ ~s(id: :cta_band)
+    assert public_page_patterns =~ ~s(id: :closing_section)
+    assert public_page_patterns =~ "def home_page_sections"
+
+    assert design_system_live =~ ~s(id="public-patterns")
+    assert design_system_live =~ "Reusable public section patterns"
+    assert design_system_live =~ "Current home-page mapping"
+
+    assert design_system_live =~
+             "Repeat proof, feature, and CTA patterns. Keep hero and closing anchored."
+
+    assert design_system_live =~ "public_section_patterns()"
+    assert design_system_live =~ "public_home_page_sections()"
+    assert design_system_live =~ "defp public_section_pattern_label(id)"
 
     assert sign_in_live =~ ~s(shell_mode="public")
     assert register_live =~ ~s(shell_mode="public")

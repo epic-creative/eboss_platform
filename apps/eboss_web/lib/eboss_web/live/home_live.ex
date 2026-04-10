@@ -1,6 +1,8 @@
 defmodule EBossWeb.HomeLive do
   use EBossWeb, :live_view
 
+  @public_section_patterns EBossWeb.PublicPagePatterns
+
   @impl true
   def mount(_params, _session, socket) do
     socket =
@@ -25,7 +27,11 @@ defmodule EBossWeb.HomeLive do
       current_path="/"
     >
       <div class="ui-home-page">
-        <section class="ui-home-hero" data-home-hero>
+        <section
+          class="ui-home-hero"
+          data-home-hero
+          data-public-section-pattern={public_section_pattern_slug(:hero)}
+        >
           <div class="ui-home-hero__copy">
             <div class="space-y-6">
               <.section_heading
@@ -115,7 +121,11 @@ defmodule EBossWeb.HomeLive do
           </.panel>
         </section>
 
-        <section class="ui-home-proof-strip" data-home-proof-strip>
+        <section
+          class="ui-home-proof-strip"
+          data-home-proof-strip
+          data-public-section-pattern={public_section_pattern_slug(:proof_band)}
+        >
           <div class="space-y-3 max-w-3xl">
             <p class="ui-kicker" data-tone="primary">Narrative proof</p>
             <h2 class="ui-text-display" data-size="xl">
@@ -142,7 +152,11 @@ defmodule EBossWeb.HomeLive do
           </div>
         </section>
 
-        <section class="ui-home-story" data-home-story="continuity">
+        <section
+          class="ui-home-story"
+          data-home-story="continuity"
+          data-public-section-pattern={public_section_pattern_slug(:feature_row)}
+        >
           <div class="ui-home-story__copy">
             <p class="ui-kicker" data-tone="primary">Route continuity</p>
             <h2 class="ui-text-display" data-size="xl">
@@ -189,7 +203,11 @@ defmodule EBossWeb.HomeLive do
           </.panel>
         </section>
 
-        <section class="ui-home-story ui-home-story--reverse" data-home-story="tempo">
+        <section
+          class="ui-home-story ui-home-story--reverse"
+          data-home-story="tempo"
+          data-public-section-pattern={public_section_pattern_slug(:feature_row)}
+        >
           <div class="ui-home-story__copy">
             <p class="ui-kicker" data-tone="primary">Narrative rhythm</p>
             <h2 class="ui-text-display" data-size="xl">
@@ -233,22 +251,28 @@ defmodule EBossWeb.HomeLive do
       </div>
 
       <:shell_footer>
-        <Layouts.public_cta_frame
-          eyebrow="Working-shell handoff"
-          title="Enter the product from a page that already speaks the same language."
-          subtitle="Registration, sign-in, recovery, and dashboard entry stay inside one route family, one material system, and one operator-grade posture."
-          primary_label="Create your account"
-          primary_to={~p"/register"}
-          secondary_label="Sign in"
-          secondary_to={~p"/sign-in"}
+        <section
+          data-home-closing
+          data-public-section-pattern={public_section_pattern_slug(:closing_section)}
         >
-          <:details :for={detail <- cta_details()}>
-            <.panel as="div" surface="solid" padding="sm" class="space-y-2">
-              <p class="ui-text-meta" data-tone="soft">{detail.label}</p>
-              <p class="ui-text-body" data-size="sm" data-tone="muted">{detail.copy}</p>
-            </.panel>
-          </:details>
-        </Layouts.public_cta_frame>
+          <Layouts.public_cta_frame
+            eyebrow="Working-shell handoff"
+            title="Enter the product from a page that already speaks the same language."
+            subtitle="Registration, sign-in, recovery, and dashboard entry stay inside one route family, one material system, and one operator-grade posture."
+            primary_label="Create your account"
+            primary_to={~p"/register"}
+            secondary_label="Sign in"
+            secondary_to={~p"/sign-in"}
+            section_pattern={public_section_pattern_slug(:cta_band)}
+          >
+            <:details :for={detail <- cta_details()}>
+              <.panel as="div" surface="solid" padding="sm" class="space-y-2">
+                <p class="ui-text-meta" data-tone="soft">{detail.label}</p>
+                <p class="ui-text-body" data-size="sm" data-tone="muted">{detail.copy}</p>
+              </.panel>
+            </:details>
+          </Layouts.public_cta_frame>
+        </section>
       </:shell_footer>
     </Layouts.app>
     """
@@ -378,5 +402,9 @@ defmodule EBossWeb.HomeLive do
           "The final transition still resolves directly into the authenticated dashboard instead of detouring through another launch page."
       }
     ]
+  end
+
+  defp public_section_pattern_slug(id) do
+    apply(@public_section_patterns, :slug, [id])
   end
 end

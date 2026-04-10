@@ -5,23 +5,25 @@ defmodule EBossWeb.Layouts do
 
   use EBossWeb, :html
 
-  embed_templates "layouts/*"
+  embed_templates("layouts/*")
 
-  attr :flash, :map, required: true
+  attr(:flash, :map, required: true)
 
-  attr :current_scope, :map,
+  attr(:current_scope, :map,
     default: nil,
     doc: "the current scope"
+  )
 
-  attr :current_user, :map,
+  attr(:current_user, :map,
     default: nil,
     doc: "the authenticated user when present"
+  )
 
-  attr :shell_mode, :string, values: ~w(product public), default: "product"
-  attr :current_path, :string, default: nil
+  attr(:shell_mode, :string, values: ~w(product public), default: "product")
+  attr(:current_path, :string, default: nil)
 
-  slot :inner_block, required: true
-  slot :shell_footer
+  slot(:inner_block, required: true)
+  slot(:shell_footer)
 
   def app(assigns) do
     assigns =
@@ -160,8 +162,8 @@ defmodule EBossWeb.Layouts do
     """
   end
 
-  attr :flash, :map, required: true
-  attr :id, :string, default: "flash-group"
+  attr(:flash, :map, required: true)
+  attr(:id, :string, default: "flash-group")
 
   def flash_group(assigns) do
     ~H"""
@@ -246,7 +248,7 @@ defmodule EBossWeb.Layouts do
     """
   end
 
-  attr :current_path, :string, default: nil
+  attr(:current_path, :string, default: nil)
 
   def public_footer(assigns) do
     ~H"""
@@ -321,15 +323,16 @@ defmodule EBossWeb.Layouts do
     """
   end
 
-  attr :eyebrow, :string, required: true
-  attr :title, :string, required: true
-  attr :subtitle, :string, required: true
-  attr :primary_label, :string, required: true
-  attr :primary_to, :string, required: true
-  attr :secondary_label, :string, default: nil
-  attr :secondary_to, :string, default: nil
-  attr :class, :any, default: nil
-  slot :details
+  attr(:eyebrow, :string, required: true)
+  attr(:title, :string, required: true)
+  attr(:subtitle, :string, required: true)
+  attr(:primary_label, :string, required: true)
+  attr(:primary_to, :string, required: true)
+  attr(:secondary_label, :string, default: nil)
+  attr(:secondary_to, :string, default: nil)
+  attr(:section_pattern, :string, default: nil)
+  attr(:class, :any, default: nil)
+  slot(:details)
 
   def public_cta_frame(assigns) do
     ~H"""
@@ -338,6 +341,7 @@ defmodule EBossWeb.Layouts do
       padding="lg"
       class={["ui-public-cta", @class]}
       data-public-cta-frame
+      data-public-section-pattern={@section_pattern}
     >
       <div class="ui-public-cta__copy">
         <p class="ui-kicker" data-tone="primary">{@eyebrow}</p>
