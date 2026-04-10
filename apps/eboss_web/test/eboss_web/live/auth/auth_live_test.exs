@@ -50,6 +50,43 @@ defmodule EBossWeb.AuthLiveTest do
     end
   end
 
+  test "public routes share the public shell chrome and CTA framing", %{conn: conn} do
+    user = register_user(%{email: "public-shell@example.com", username: "public_shell_user"})
+    confirm_token = extract_token_from_latest_email("confirm")
+
+    EBoss.Accounts.request_password_reset_token!(%{email: user.email}, authorize?: false)
+    reset_token = extract_token_from_latest_email("reset")
+
+    EBoss.Accounts.request_magic_link!(%{email: user.email}, authorize?: false)
+    magic_token = extract_token_from_latest_email("magic_link")
+
+    routes = [
+      %{path: ~p"/", cta?: true},
+      %{path: ~p"/sign-in", cta?: false},
+      %{path: ~p"/register", cta?: false},
+      %{path: ~p"/forgot-password", cta?: false},
+      %{path: "/reset/#{reset_token}", cta?: false},
+      %{path: "/confirm/#{confirm_token}", cta?: false},
+      %{path: "/magic_link/#{magic_token}", cta?: false}
+    ]
+
+    for %{path: route, cta?: cta?} <- routes do
+      assert {:ok, view, _html} = live(conn, route)
+      assert has_element?(view, ".ui-shell[data-shell-mode='public']")
+      assert has_element?(view, ".ui-shell-header[data-public-shell-header]")
+      assert has_element?(view, "[data-public-shell-nav]")
+      assert has_element?(view, "[data-public-shell-nav] .ui-nav-pill[data-active='true']")
+      assert has_element?(view, "[data-public-shell-footer]")
+      assert has_element?(view, ".ui-theme-toggle")
+
+      if cta? do
+        assert has_element?(view, "[data-public-cta-frame]")
+      else
+        refute has_element?(view, "[data-public-cta-frame]")
+      end
+    end
+  end
+
   test "signed-in visitors are redirected away from home and anonymous-only auth pages",
        context do
     %{conn: conn} = register_and_log_in_user(context)
@@ -62,6 +99,16 @@ defmodule EBossWeb.AuthLiveTest do
 
   test "anonymous visitors are redirected to sign-in for the dashboard", %{conn: conn} do
     assert {:error, {:redirect, %{to: "/sign-in"}}} = live(conn, ~p"/dashboard")
+  end
+
+  test "dashboard keeps the product shell without public footer chrome", context do
+    %{conn: conn} = register_and_log_in_user(context)
+
+    assert {:ok, dashboard, _html} = live(conn, ~p"/dashboard")
+    assert has_element?(dashboard, ".ui-shell[data-shell-mode='product']")
+    refute has_element?(dashboard, "[data-public-shell-nav]")
+    refute has_element?(dashboard, "[data-public-shell-footer]")
+    refute has_element?(dashboard, "[data-public-cta-frame]")
   end
 
   test "custom pages render the shared LiveVue shell", %{conn: conn} do

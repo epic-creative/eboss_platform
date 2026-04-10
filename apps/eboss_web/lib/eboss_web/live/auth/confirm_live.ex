@@ -28,6 +28,8 @@ defmodule EBossWeb.Auth.ConfirmLive do
       flash={@flash}
       current_scope={assigns[:current_scope]}
       current_user={assigns[:current_user]}
+      shell_mode="public"
+      current_path="/confirm"
     >
       <.auth_shell
         eyebrow="Account confirmation"

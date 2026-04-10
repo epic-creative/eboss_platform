@@ -48,6 +48,8 @@ defmodule EBossWeb.Auth.ForgotPasswordLive do
       flash={@flash}
       current_scope={assigns[:current_scope]}
       current_user={assigns[:current_user]}
+      shell_mode="public"
+      current_path="/forgot-password"
     >
       <.auth_shell
         eyebrow="Password recovery"

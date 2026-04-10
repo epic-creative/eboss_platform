@@ -21,6 +21,8 @@ defmodule EBossWeb.HomeLive do
       flash={@flash}
       current_scope={assigns[:current_scope]}
       current_user={assigns[:current_user]}
+      shell_mode="public"
+      current_path="/"
     >
       <section class="ui-hero-grid">
         <div class="space-y-8">
@@ -74,6 +76,41 @@ defmodule EBossWeb.HomeLive do
           />
         </.panel>
       </section>
+
+      <:shell_footer>
+        <Layouts.public_cta_frame
+          eyebrow="Public launch frame"
+          title="Move from public access into the working shell without changing products."
+          subtitle="Registration, sign-in, recovery, and dashboard handoff now sit inside the same frame, materials, and interaction posture."
+          primary_label="Create your account"
+          primary_to={~p"/register"}
+          secondary_label="Sign in"
+          secondary_to={~p"/sign-in"}
+        >
+          <:details>
+            <.panel as="div" surface="solid" padding="sm" class="space-y-2">
+              <p class="ui-text-meta" data-tone="soft">Route family</p>
+              <p class="ui-text-body" data-size="sm" data-tone="muted">
+                Home, sign-in, registration, recovery, and token confirmation stay visually aligned.
+              </p>
+            </.panel>
+
+            <.panel as="div" surface="solid" padding="sm" class="space-y-2">
+              <p class="ui-text-meta" data-tone="soft">State parity</p>
+              <p class="ui-text-body" data-size="sm" data-tone="muted">
+                Theme changes and compact density use the same system tokens as the dashboard and auth cards.
+              </p>
+            </.panel>
+
+            <.panel as="div" surface="solid" padding="sm" class="space-y-2">
+              <p class="ui-text-meta" data-tone="soft">Session handoff</p>
+              <p class="ui-text-body" data-size="sm" data-tone="muted">
+                The final transition still resolves directly into the authenticated dashboard shell.
+              </p>
+            </.panel>
+          </:details>
+        </Layouts.public_cta_frame>
+      </:shell_footer>
     </Layouts.app>
     """
   end

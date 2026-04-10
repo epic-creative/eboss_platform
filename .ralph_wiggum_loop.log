@@ -1224,3 +1224,124 @@ Running ExUnit with seed: 597077, max_cases: 20
 ........................................................
 Finished in 7.2 seconds (0.2s async, 6.9s sync)
 56 tests, 0 failures
+1. changed files
+
+- [patterns.css](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/css/system/patterns.css)
+- [layouts.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/components/layouts.ex)
+- [home_live.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/live/home_live.ex)
+- [sign_in_live.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/live/auth/sign_in_live.ex)
+- [register_live.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/live/auth/register_live.ex)
+- [forgot_password_live.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/live/auth/forgot_password_live.ex)
+- [reset_password_live.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/live/auth/reset_password_live.ex)
+- [confirm_live.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/live/auth/confirm_live.ex)
+- [magic_link_live.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/live/auth/magic_link_live.ex)
+- [design_surface_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/design_surface_test.exs)
+- [auth_live_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/eboss_web/live/auth/auth_live_test.exs)
+- [public_shell_smoke_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/eboss_web/live/public_shell_smoke_test.exs)
+
+2. tests/commands executed
+
+- `PATH=/tmp/codex-bin:$PATH MIX_OS_CONCURRENCY_LOCK=0 mix format ...` for all touched Elixir files: passed
+- `PATH=/tmp/codex-bin:$PATH MIX_ENV=test MIX_OS_CONCURRENCY_LOCK=0 mix compile --warnings-as-errors`: passed
+- `PATH=/tmp/codex-bin:$PATH MIX_ENV=test MIX_OS_CONCURRENCY_LOCK=0 mix run --no-start -e 'ExUnit.start(); Code.require_file("apps/eboss_web/test/design_surface_test.exs"); Code.require_file("apps/eboss_web/test/eboss_web/live/public_shell_smoke_test.exs"); ...'`: passed, `8 tests, 0 failures`
+- `PATH=/tmp/codex-bin:$PATH PGHOST=/private/tmp MIX_OS_CONCURRENCY_LOCK=0 mix precommit`: failed in `ecto.create`/repo setup because sandboxed socket access to `EBoss.Repo` is denied with `tcp connect (/private/tmp/.s.PGSQL.5432): not owner - :eperm`
+
+3. acceptance criteria coverage
+
+- Public shell chrome now uses a dedicated public mode in [layouts.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/components/layouts.ex) with product-native nav framing, shared footer chrome, and a reusable CTA frame instead of generic marketing-shell patterns.
+- Navigation and CTA framing were unified by wiring home and all public auth routes through the same `shell_mode="public"` and `current_path` contract in [home_live.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/live/home_live.ex) and the public auth LiveViews.
+- Footer and shell elements now stay attached to the same panel, badge, nav-pill, and token vocabulary as the rest of the system through [patterns.css](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/css/system/patterns.css).
+- Desktop/mobile behavior is covered by the new responsive shell/footer/CTA CSS and the executable smoke coverage in [public_shell_smoke_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/eboss_web/live/public_shell_smoke_test.exs) for `/`, `/sign-in`, `/register`, and `/forgot-password`.
+- Theme/density coherence is preserved by building the new shell pieces on existing shared tokens and by extending the design-contract coverage in [design_surface_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/design_surface_test.exs).
+
+4. blockers/assumptions
+
+- `mix precommit` could not be left passing in this sandbox. The blocker is external to the code change: child-app test aliases try to create/connect to `EBoss.Repo`, and all socket access to Postgres is denied here with `:eperm`.
+- I added fuller repo-backed public shell assertions in [auth_live_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/eboss_web/live/auth/auth_live_test.exs), but I could not execute that file end-to-end for the same database reason.
+- A temporary `/tmp/codex-bin/mix` wrapper was used only to bypass Mix PubSub/lock socket restrictions in this environment; it is not part of the repository.
+==> eboss_data
+There are no tests to run
+==> eboss_accounts
+Running ExUnit with seed: 963479, max_cases: 20
+
+............
+Finished in 7.8 seconds (0.00s async, 7.8s sync)
+12 tests, 0 failures
+==> eboss_tenancy
+Running ExUnit with seed: 294583, max_cases: 20
+
+............
+Finished in 6.9 seconds (0.00s async, 6.9s sync)
+12 tests, 0 failures
+==> eboss_workspaces
+Running ExUnit with seed: 644857, max_cases: 20
+
+............
+Finished in 6.0 seconds (0.00s async, 6.0s sync)
+12 tests, 0 failures
+==> eboss_folio
+Running ExUnit with seed: 247471, max_cases: 20
+
+...........
+Finished in 4.3 seconds (0.00s async, 4.3s sync)
+11 tests, 0 failures
+==> eboss_web
+Running ExUnit with seed: 462764, max_cases: 20
+
+.........................??
+
+  0) EBossWeb.PublicShellSmokeTest: failure on setup_all callback, all tests have been invalidated
+     ** (RuntimeError) failed to start child with the spec {Phoenix.PubSub, [name: EBoss.PubSub]}.
+     Reason: bad child specification, got: {:already_started, #PID<0.507.0>}
+     stacktrace:
+       (ex_unit 1.19.5) lib/ex_unit/callbacks.ex:597: ExUnit.Callbacks.start_supervised!/2
+       test/eboss_web/live/public_shell_smoke_test.exs:15: EBossWeb.PublicShellSmokeTest.__ex_unit_setup_all_0/1
+       test/eboss_web/live/public_shell_smoke_test.exs:1: EBossWeb.PublicShellSmokeTest.__ex_unit__/2
+
+..................................
+Finished in 7.8 seconds (0.2s async, 7.5s sync)
+61 tests, 0 failures, 2 invalid
+** (exit) 2
+    (mix 1.19.5) lib/mix/tasks/cmd.ex:135: Mix.Tasks.Cmd.run/1
+    (mix 1.19.5) lib/mix/task.ex:499: anonymous fn/3 in Mix.Task.run_task/5
+    (mix 1.19.5) lib/mix/project.ex:557: Mix.Project.in_project/4
+    (elixir 1.19.5) lib/file.ex:2013: File.cd!/2
+    (mix 1.19.5) lib/mix/task.ex:671: anonymous fn/4 in Mix.Task.run_in_children_projects/2
+    (elixir 1.19.5) lib/enum.ex:2520: Enum."-reduce/3-lists^foldl/2-0-"/3
+    (mix 1.19.5) lib/mix/task.ex:670: Mix.Task.run_in_children_projects/2
+    (mix 1.19.5) lib/mix/project_stack.ex:241: Mix.ProjectStack.recur/1
+Updated [public_shell_smoke_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/eboss_web/live/public_shell_smoke_test.exs#L1) to remove the manual `setup_all` supervisor boot. The smoke test now stays as a plain LiveView case using `build_conn/0`, which avoids the duplicate `EBoss.PubSub` startup that was invalidating the `eboss_web` test run.
+
+I verified the changed file is syntactically valid and formatter-stable. I could not run `mix precommit` in this sandbox because BEAM TCP listens are blocked here (`:gen_tcp.listen(...)= {:error, :eperm}`), and `mix` itself relies on a loopback socket before tests even start. No commit or push was performed.
+==> eboss_data
+There are no tests to run
+==> eboss_accounts
+Running ExUnit with seed: 195595, max_cases: 20
+
+............
+Finished in 7.8 seconds (0.00s async, 7.8s sync)
+12 tests, 0 failures
+==> eboss_tenancy
+Running ExUnit with seed: 387869, max_cases: 20
+
+............
+Finished in 6.7 seconds (0.00s async, 6.7s sync)
+12 tests, 0 failures
+==> eboss_workspaces
+Running ExUnit with seed: 720405, max_cases: 20
+
+............
+Finished in 5.9 seconds (0.00s async, 5.9s sync)
+12 tests, 0 failures
+==> eboss_folio
+Running ExUnit with seed: 129826, max_cases: 20
+
+...........
+Finished in 4.1 seconds (0.00s async, 4.1s sync)
+11 tests, 0 failures
+==> eboss_web
+Running ExUnit with seed: 21151, max_cases: 20
+
+.............................................................
+Finished in 7.5 seconds (0.3s async, 7.2s sync)
+61 tests, 0 failures
