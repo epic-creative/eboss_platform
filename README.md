@@ -47,3 +47,18 @@ npm run playwright:smoke
 ```
 
 The bootstrap smoke stays self-contained on a checked-in fixture page so the runner is proven before auth/public browser coverage lands. Smoke specs live in `apps/eboss_web/assets/tests/playwright/smoke`, future regression coverage lives in `apps/eboss_web/assets/tests/playwright/regression`, and generated traces, screenshots, and reports stay under `apps/eboss_web/assets/test-results/playwright/`.
+
+For deterministic auth/public browser setup, prepare the dedicated browser-test user and storage states from `apps/eboss_web/assets`:
+
+```bash
+npm run playwright:setup
+```
+
+The default browser-test account is `playwright-auth@localhost` / `playwright-pass-123`.
+
+Then start the test server and run the setup verification subset:
+
+```bash
+npm run playwright:server:test
+npm run playwright:verify-setup
+```

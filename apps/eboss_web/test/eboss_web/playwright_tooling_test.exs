@@ -24,9 +24,20 @@ defmodule EBossWeb.PlaywrightToolingTest do
     assert get_in(package_json, ["scripts", "playwright:report"]) ==
              "npm exec --yes --package=playwright@1.59.1 playwright show-report test-results/playwright/report"
 
+    assert get_in(package_json, ["scripts", "playwright:server:test"]) ==
+             "cd .. && EBOSS_ENV=test PHX_HOST=localhost MIX_ENV=test mix phx.server"
+
+    assert get_in(package_json, ["scripts", "playwright:setup"]) ==
+             "cd .. && EBOSS_ENV=test PHX_HOST=localhost MIX_ENV=test mix eboss.playwright.setup"
+
     assert File.exists?(Path.join(@playwright_dir, "smoke/bootstrap.spec.ts"))
     assert File.exists?(Path.join(@playwright_dir, "regression/.gitkeep"))
     assert File.exists?(Path.join(@playwright_dir, "fixtures/bootstrap.html"))
+    assert File.exists?(Path.join(@playwright_dir, "setup/state-ready.spec.ts"))
+    assert File.exists?(Path.join(@playwright_dir, ".auth/.gitignore"))
+
+    assert get_in(package_json, ["scripts", "playwright:verify-setup"]) ==
+             "npm exec --yes --package=playwright@1.59.1 playwright test tests/playwright/setup"
 
     assert config =~ ~s(testDir: "./tests/playwright")
     assert config =~ ~s(outputDir: "test-results/playwright/results")
@@ -35,10 +46,14 @@ defmodule EBossWeb.PlaywrightToolingTest do
     assert config =~ ~s(channel: browserChannel)
 
     assert readme =~ "tests/playwright/smoke"
+    assert readme =~ "tests/playwright/setup"
     assert readme =~ "tests/playwright/regression"
     assert readme =~ "tests/playwright/fixtures"
+    assert readme =~ "tests/playwright/.auth"
     assert readme =~ "test-results/playwright"
     assert readme =~ "npm run playwright:smoke"
+    assert readme =~ "npm run playwright:setup"
+    assert readme =~ "npm run playwright:verify-setup"
     assert readme =~ "checked-in HTML fixture"
   end
 end

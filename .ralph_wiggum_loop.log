@@ -1813,3 +1813,161 @@ Running ExUnit with seed: 186946, max_cases: 20
 ....................................................................
 Finished in 8.1 seconds (0.3s async, 7.8s sync)
 68 tests, 0 failures
+1) changed files
+
+- [.gitignore](/Users/mhostetler/Source/EBoss/eboss_platform/.gitignore)
+- [README.md](/Users/mhostetler/Source/EBoss/eboss_platform/README.md)
+- [apps/eboss_web/assets/package.json](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/package.json)
+- [apps/eboss_web/assets/tests/playwright/README.md](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/tests/playwright/README.md)
+- [apps/eboss_web/assets/tests/playwright/.auth/.gitignore](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/tests/playwright/.auth/.gitignore)
+- [apps/eboss_web/assets/tests/playwright/setup/state-ready.spec.ts](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/tests/playwright/setup/state-ready.spec.ts)
+- [apps/eboss_web/test/eboss_web/playwright_tooling_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/eboss_web/playwright_tooling_test.exs)
+- [apps/eboss_web/test/eboss_web/playwright_setup_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/eboss_web/playwright_setup_test.exs)
+- [apps/eboss_web/test/support/playwright_setup.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/support/playwright_setup.ex)
+- [apps/eboss_web/test/support/mix/tasks/eboss.playwright.setup.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/support/mix/tasks/eboss.playwright.setup.ex)
+
+2) tests/commands executed
+
+- `elixirc ... apps/eboss_web/test/support/playwright_setup.ex apps/eboss_web/test/support/mix/tasks/eboss.playwright.setup.ex apps/eboss_web/test/eboss_web/playwright_setup_test.exs`
+  - Passed. This compiled the new Elixir setup/task/test files against the existing test build.
+- `./node_modules/.bin/tsc --noEmit --project tsconfig.json` from `apps/eboss_web/assets`
+  - Passed.
+- `mix test apps/eboss_web/test/eboss_web/playwright_tooling_test.exs apps/eboss_web/test/eboss_web/playwright_setup_test.exs`
+  - Failed immediately in this sandbox: `Mix.PubSub` could not open its loopback TCP socket (`:eperm`).
+- `mix precommit`
+  - Failed for the same sandbox reason before running project checks.
+- I also attempted direct runtime verification under plain `elixir`, but PostgreSQL connections are blocked here with `:eperm`, so database-backed setup/runtime verification could not complete in this environment.
+
+3) acceptance criteria coverage
+
+- Auth and public browser tests can run against deterministic state.
+  - Added a test-only setup module and task that prepare a fixed browser-test account plus generated public/authenticated Playwright storage-state files.
+  - Added a Playwright verification spec for the prepared public `/` and authenticated `/dashboard` states.
+- The setup path does not depend on ad hoc manual data.
+  - Added `mix eboss.playwright.setup`, exposed through `npm run playwright:setup`, which upserts the deterministic user and writes the session artifacts into `tests/playwright/.auth`.
+- The repo has a clear path for preparing required browser-test users or sessions.
+  - Added `playwright:setup`, `playwright:server:test`, and `playwright:verify-setup` scripts.
+  - Updated the repo README and Playwright README with the preparation and verification flow.
+- Added/updated tests.
+  - Added `playwright_setup_test.exs`.
+  - Extended `playwright_tooling_test.exs`.
+
+4) blockers/assumptions
+
+- Blocker: this sandbox denies the loopback TCP socket Mix uses for `Mix.PubSub`, so `mix test` and `mix precommit` cannot run here.
+- Blocker: this sandbox also denies PostgreSQL TCP connections, so the database-backed setup task and Playwright runtime flow could not be executed here end to end.
+- Assumption: in a normal local or CI environment with local sockets and PostgreSQL access, the documented flow is:
+  1. `cd apps/eboss_web/assets && npm run playwright:setup`
+  2. `npm run playwright:server:test`
+  3. `npm run playwright:verify-setup`
+==> eboss_web
+Compiling 2 files (.ex)
+Generated eboss_web app
+==> eboss_data
+There are no tests to run
+==> eboss_accounts
+Running ExUnit with seed: 591929, max_cases: 20
+
+............
+Finished in 8.3 seconds (0.00s async, 8.3s sync)
+12 tests, 0 failures
+==> eboss_tenancy
+Running ExUnit with seed: 410625, max_cases: 20
+
+............
+Finished in 6.9 seconds (0.00s async, 6.9s sync)
+12 tests, 0 failures
+==> eboss_workspaces
+Running ExUnit with seed: 767328, max_cases: 20
+
+............
+Finished in 6.4 seconds (0.00s async, 6.4s sync)
+12 tests, 0 failures
+==> eboss_folio
+Running ExUnit with seed: 599675, max_cases: 20
+
+...........
+Finished in 4.2 seconds (0.00s async, 4.2s sync)
+11 tests, 0 failures
+==> eboss_web
+Compiling 1 file (.ex)
+Generated eboss_web app
+Running ExUnit with seed: 676134, max_cases: 20
+
+.................................
+
+  1) test prepare! writes deterministic public and authenticated storage state (EBossWeb.PlaywrightSetupTest)
+     test/eboss_web/playwright_setup_test.exs:7
+     ** (DBConnection.EncodeError) Postgrex expected a binary of 16 bytes, got "f0864aaa-7ee9-49af-8adf-5085cec5ed87". Please make sure the value you are passing matches the definition in your table or in your query or convert the value accordingly.
+     code: summary = PlaywrightSetup.prepare!(state_dir: state_dir, base_url: base_url)
+     stacktrace:
+       (postgrex 0.22.0) lib/postgrex/type_module.ex:1084: Postgrex.DefaultTypes.encode_params/3
+       (postgrex 0.22.0) lib/postgrex/query.ex:73: DBConnection.Query.Postgrex.Query.encode/3
+       (db_connection 2.9.0) lib/db_connection.ex:1440: DBConnection.encode/5
+       (db_connection 2.9.0) lib/db_connection.ex:1530: DBConnection.run_prepare_execute/5
+       (db_connection 2.9.0) lib/db_connection.ex:1587: DBConnection.run_with_retries/5
+       (db_connection 2.9.0) lib/db_connection.ex:791: DBConnection.parsed_prepare_execute/5
+       (db_connection 2.9.0) lib/db_connection.ex:783: DBConnection.prepare_execute/4
+       (postgrex 0.22.0) lib/postgrex.ex:298: Postgrex.query/4
+       (ecto_sql 3.13.5) lib/ecto/adapters/sql.ex:620: Ecto.Adapters.SQL.query!/4
+       (ecto_sql 3.13.5) lib/ecto/adapters/sql.ex:984: Ecto.Adapters.SQL.insert_all/9
+       (ecto 3.13.5) lib/ecto/repo/schema.ex:84: Ecto.Repo.Schema.do_insert_all/7
+       (eboss_web 0.1.0) test/support/playwright_setup.ex:75: EBossWeb.PlaywrightSetup.ensure_browser_test_user!/1
+       (eboss_web 0.1.0) test/support/playwright_setup.ex:26: EBossWeb.PlaywrightSetup.prepare!/1
+       test/eboss_web/playwright_setup_test.exs:13: (test)
+
+...................................
+Finished in 8.0 seconds (0.3s async, 7.6s sync)
+69 tests, 1 failure
+** (exit) 2
+    (mix 1.19.5) lib/mix/tasks/cmd.ex:135: Mix.Tasks.Cmd.run/1
+    (mix 1.19.5) lib/mix/task.ex:499: anonymous fn/3 in Mix.Task.run_task/5
+    (mix 1.19.5) lib/mix/project.ex:557: Mix.Project.in_project/4
+    (elixir 1.19.5) lib/file.ex:2013: File.cd!/2
+    (mix 1.19.5) lib/mix/task.ex:671: anonymous fn/4 in Mix.Task.run_in_children_projects/2
+    (elixir 1.19.5) lib/enum.ex:2520: Enum."-reduce/3-lists^foldl/2-0-"/3
+    (mix 1.19.5) lib/mix/task.ex:670: Mix.Task.run_in_children_projects/2
+    (mix 1.19.5) lib/mix/project_stack.ex:241: Mix.ProjectStack.recur/1
+Fixed the DB UUID encoding bug in [playwright_setup.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/support/playwright_setup.ex#L75): the helper was using `Repo.insert_all("users", ...)` with a string UUID, which bypasses schema casting and triggers the `Postgrex expected a binary of 16 bytes` failure. I removed the explicit `id` so Postgres uses the table default UUID.
+
+Verification from this sandbox:
+- `mix format --check-formatted` passed
+- clean `mix compile --warnings-as-errors` passed
+- `mix precommit` was run, but it cannot finish here because the sandbox denies DB socket access (`/private/tmp/.s.PGSQL.5432`: `:eperm`)
+
+No commit or push was done.
+==> eboss_web
+Compiling 1 file (.ex)
+Generated eboss_web app
+==> eboss_data
+There are no tests to run
+==> eboss_accounts
+Running ExUnit with seed: 122953, max_cases: 20
+
+............
+Finished in 7.8 seconds (0.00s async, 7.8s sync)
+12 tests, 0 failures
+==> eboss_tenancy
+Running ExUnit with seed: 316196, max_cases: 20
+
+............
+Finished in 6.7 seconds (0.00s async, 6.7s sync)
+12 tests, 0 failures
+==> eboss_workspaces
+Running ExUnit with seed: 506497, max_cases: 20
+
+............
+Finished in 5.9 seconds (0.00s async, 5.9s sync)
+12 tests, 0 failures
+==> eboss_folio
+Running ExUnit with seed: 955310, max_cases: 20
+
+...........
+Finished in 4.0 seconds (0.00s async, 4.0s sync)
+11 tests, 0 failures
+==> eboss_web
+Running ExUnit with seed: 686604, max_cases: 20
+
+.....................................................................
+Finished in 9.0 seconds (0.3s async, 8.6s sync)
+69 tests, 0 failures
