@@ -1,11 +1,12 @@
 defmodule EBossWeb.BrowserTestContracts do
   @moduledoc """
-  Stable browser-test contracts for the auth and public surfaces.
+  Stable browser-test contracts for the auth, public, and dashboard shell surfaces.
 
   Prefer accessible selectors first:
 
   - `navigation` named `"Public routes"`
   - `navigation` named `"Authentication routes"`
+  - `navigation` named `"Dashboard navigation"`
   - `contentinfo` named `"Public shell footer"`
   - `form` landmarks using the labels returned by this module
 
@@ -13,6 +14,7 @@ defmodule EBossWeb.BrowserTestContracts do
   controls without a stable accessible name:
 
   - `auth-shell`
+  - `dashboard-shell`
   - `public-shell-context-action`
   - `home-hero`
   - `home-proof-band`
@@ -23,9 +25,11 @@ defmodule EBossWeb.BrowserTestContracts do
 
   def public_routes_nav_label, do: "Public routes"
   def authentication_routes_nav_label, do: "Authentication routes"
+  def dashboard_navigation_label, do: "Dashboard navigation"
   def public_footer_label, do: "Public shell footer"
 
   def auth_shell, do: "auth-shell"
+  def dashboard_shell, do: "dashboard-shell"
   def public_shell_context_action, do: "public-shell-context-action"
   def home_hero, do: "home-hero"
   def home_proof_band, do: "home-proof-band"

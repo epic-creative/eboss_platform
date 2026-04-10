@@ -90,6 +90,7 @@ defmodule EBossWeb do
       import Phoenix.HTML
       # Core UI components
       import EBossWeb.CoreComponents
+      import EBossWeb.DashboardComponents
       import EBossWeb.UIComponents
 
       # Common modules used in templates

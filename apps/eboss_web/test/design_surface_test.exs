@@ -219,7 +219,7 @@ defmodule EBossWeb.DesignSurfaceTest do
     assert design_system_live =~ "defp public_section_pattern_label(id)"
 
     assert browser_test_contracts =~
-             "Stable browser-test contracts for the auth and public surfaces."
+             "Stable browser-test contracts for the auth, public, and dashboard shell surfaces."
 
     assert browser_test_contracts =~ ~s(- `public-shell-context-action`)
     assert browser_test_contracts =~ ~s(def public_routes_nav_label)
@@ -229,6 +229,39 @@ defmodule EBossWeb.DesignSurfaceTest do
     assert sign_in_live =~ ~s(shell_mode="public")
     assert register_live =~ ~s(shell_mode="public")
     assert forgot_password_live =~ ~s(shell_mode="public")
+  end
+
+  test "dashboard shell pattern defines a reusable authenticated scaffold" do
+    patterns_css = File.read!(@patterns_css)
+    browser_test_contracts = read_file("lib/eboss_web/browser_test_contracts.ex")
+    dashboard_components = read_file("lib/eboss_web/components/dashboard_components.ex")
+    dashboard_live = read_file("lib/eboss_web/live/dashboard_live.ex")
+    eboss_web = read_file("lib/eboss_web.ex")
+
+    assert patterns_css =~ ".ui-dashboard-shell"
+    assert patterns_css =~ ".ui-dashboard-shell__nav"
+    assert patterns_css =~ ".ui-dashboard-nav__item"
+    assert patterns_css =~ ".ui-dashboard-page"
+    assert patterns_css =~ ".ui-dashboard-page__rail"
+
+    assert dashboard_components =~ "def dashboard_shell(assigns)"
+    assert dashboard_components =~ "dashboard_navigation_label()"
+    assert dashboard_components =~ ~s(data-dashboard-shell)
+    assert dashboard_components =~ ~s(data-dashboard-shell-sidebar)
+    assert dashboard_components =~ ~s(data-dashboard-shell-main)
+    assert dashboard_components =~ ~s(data-dashboard-shell-header)
+    assert dashboard_components =~ ~s(data-dashboard-shell-body)
+    assert dashboard_components =~ ~s(data-dashboard-nav-item={@item.id})
+
+    assert dashboard_live =~ "<.dashboard_shell"
+    assert dashboard_live =~ ~s(current_path="/dashboard")
+    assert dashboard_live =~ ~s(data-dashboard-contract="page-header")
+    assert dashboard_live =~ ~s(data-dashboard-contract="page-content")
+
+    assert browser_test_contracts =~ ~s(def dashboard_shell)
+    assert browser_test_contracts =~ ~s(def dashboard_navigation_label)
+
+    assert eboss_web =~ "import EBossWeb.DashboardComponents"
   end
 
   test "HEEx and Vue primitive contracts align for alerts and invalid field states" do

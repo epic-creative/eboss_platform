@@ -2112,3 +2112,74 @@ Running ExUnit with seed: 90266, max_cases: 20
 .....................................................................
 Finished in 9.2 seconds (0.3s async, 8.9s sync)
 69 tests, 0 failures
+1. changed files
+
+- [apps/eboss_web/lib/eboss_web/components/dashboard_components.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/components/dashboard_components.ex)
+- [apps/eboss_web/lib/eboss_web/live/dashboard_live.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/live/dashboard_live.ex)
+- [apps/eboss_web/assets/css/system/patterns.css](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/css/system/patterns.css)
+- [apps/eboss_web/lib/eboss_web/browser_test_contracts.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/browser_test_contracts.ex)
+- [apps/eboss_web/lib/eboss_web.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web.ex)
+- [apps/eboss_web/test/eboss_web/live/dashboard_live_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/eboss_web/live/dashboard_live_test.exs)
+- [apps/eboss_web/test/eboss_web/live/dashboard_live_render_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/eboss_web/live/dashboard_live_render_test.exs)
+- [apps/eboss_web/test/eboss_web/live/dashboard_auth_gate_smoke_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/eboss_web/live/dashboard_auth_gate_smoke_test.exs)
+- [apps/eboss_web/test/design_surface_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/design_surface_test.exs)
+
+2. tests/commands executed
+
+- Passed: `MIX_ENV=test MIX_OS_CONCURRENCY_LOCK=0 elixir -pa /tmp/mix_shim/ebin -S mix compile --warnings-as-errors`
+- Passed: `elixir -e 'ExUnit.start(); Code.require_file("apps/eboss_web/test/design_surface_test.exs", "..."); ExUnit.run()'`
+- Passed: `MIX_ENV=test MIX_OS_CONCURRENCY_LOCK=0 elixir -pa /tmp/mix_shim/ebin -S mix run --no-start -e 'ExUnit.start(); Code.require_file("...dashboard_live_render_test.exs", "..."); Code.require_file("...dashboard_auth_gate_smoke_test.exs", "..."); ExUnit.run()'`
+- Failed: `MIX_ENV=test MIX_OS_CONCURRENCY_LOCK=0 elixir -pa /tmp/mix_shim/ebin -S mix precommit`
+- Failed earlier while verifying full route test execution: `elixir -pa /tmp/mix_shim/ebin -S mix test ...dashboard_live_test.exs ...design_surface_test.exs`
+
+3. acceptance criteria coverage
+
+- Clear shell identity: added a reusable `dashboard_shell/1` pattern with dedicated sidebar chrome, dashboard nav, operator context, and page header/body split.
+- Operator-oriented/product-specific: the dashboard route now uses a product-shell scaffold distinct from public/auth surfaces, with dashboard-only nav/state framing.
+- Reusable for future authenticated surfaces: the shell is a slot-based shared component, not dashboard-page-only markup.
+- Holds together on desktop/smaller breakpoints: added responsive dashboard shell/page CSS with stacked mobile layout and two-column desktop layout.
+- Coherent across theme/density: the shell uses shared tokens/patterns, and the route now carries explicit theme/density review cues; `design_surface_test` covers the scaffold contract in the shared design system.
+- Verification added:
+  - full authenticated route/auth-gate LiveView coverage in [apps/eboss_web/test/eboss_web/live/dashboard_live_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/eboss_web/live/dashboard_live_test.exs)
+  - direct render contract coverage in [apps/eboss_web/test/eboss_web/live/dashboard_live_render_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/eboss_web/live/dashboard_live_render_test.exs)
+  - anonymous route gate smoke coverage in [apps/eboss_web/test/eboss_web/live/dashboard_auth_gate_smoke_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/eboss_web/live/dashboard_auth_gate_smoke_test.exs)
+
+4. blockers/assumptions
+
+- The sandbox blocks loopback TCP, which breaks both:
+  - Mix’s socket-based PubSub in umbrella child `cmd mix ...` invocations
+  - local Postgres access on `localhost:5432`
+- Because of that, I could not leave `mix precommit` passing in this environment, and I could not execute the full authenticated route test against the real test database.
+- Assumption: [apps/eboss_web/test/eboss_web/live/dashboard_live_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/eboss_web/live/dashboard_live_test.exs) should pass in a normal local/test environment with working Postgres and unrestricted loopback access.
+==> eboss_data
+There are no tests to run
+==> eboss_accounts
+Running ExUnit with seed: 221103, max_cases: 20
+
+............
+Finished in 8.5 seconds (0.00s async, 8.5s sync)
+12 tests, 0 failures
+==> eboss_tenancy
+Running ExUnit with seed: 633644, max_cases: 20
+
+............
+Finished in 7.9 seconds (0.00s async, 7.9s sync)
+12 tests, 0 failures
+==> eboss_workspaces
+Running ExUnit with seed: 857727, max_cases: 20
+
+............
+Finished in 6.7 seconds (0.00s async, 6.7s sync)
+12 tests, 0 failures
+==> eboss_folio
+Running ExUnit with seed: 785344, max_cases: 20
+
+...........
+Finished in 6.3 seconds (0.00s async, 6.3s sync)
+11 tests, 0 failures
+==> eboss_web
+Running ExUnit with seed: 492208, max_cases: 20
+
+..........................................................................
+Finished in 10.6 seconds (0.7s async, 9.9s sync)
+74 tests, 0 failures
