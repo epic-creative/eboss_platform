@@ -1,0 +1,57 @@
+1. changed files
+- [DESIGN.md](/Users/mhostetler/Source/EBoss/eboss_platform/DESIGN.md)
+- [design_system_live.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/live/dev/design_system_live.ex)
+- [VisualDna.story.vue](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/vue/stories/VisualDna.story.vue)
+- [design_doc_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/design_doc_test.exs)
+- [design_system_live_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/eboss_web/live/dev/design_system_live_test.exs)
+
+2. tests/commands executed
+- `MIX_OS_CONCURRENCY_LOCK=0 elixir -pa /tmp/mix_nosync -e 'Mix.CLI.main()' -- format DESIGN.md apps/eboss_web/lib/eboss_web/live/dev/design_system_live.ex apps/eboss_web/assets/vue/stories/VisualDna.story.vue apps/eboss_web/test/design_doc_test.exs apps/eboss_web/test/eboss_web/live/dev/design_system_live_test.exs` passed
+- `MIX_OS_CONCURRENCY_LOCK=0 elixir -pa /tmp/mix_nosync -e 'Mix.CLI.main()' -- compile --warnings-as-errors` passed
+- `npm run vue:check` passed
+- `CHOKIDAR_USEPOLLING=1 npm run histoire:build` passed
+- `elixir -e 'ExUnit.start(); Code.require_file("apps/eboss_web/test/design_doc_test.exs")'` passed
+- `PATH=/tmp/mix_wrapper:$PATH mix precommit` attempted and failed before test execution because PostgreSQL socket access is blocked in this sandbox: `tcp connect (localhost:5432): not owner - :eperm`
+
+3. acceptance criteria coverage
+- `DESIGN.md` now defines a concrete visual thesis, shared visual DNA rules, surface-specific expression for dashboard/auth/public, and explicit off-brand rejection rules.
+- `/dev/design-system` now exposes that direction directly with new “Visual DNA” and “Surface expression” sections instead of leaving it only in prose.
+- Histoire now includes `Foundations/Visual DNA`, using the same vocabulary and showing dashboard/auth/public expression on the Vue preview side.
+- Tests were updated to lock the doc structure and the new `/dev/design-system` language in place.
+
+4. blockers/assumptions
+- The only unresolved blocker is environmental: this sandbox denies local DB socket access, so DB-backed Mix test runs and `mix precommit` cannot complete here. The new LiveView test in [design_system_live_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/eboss_web/live/dev/design_system_live_test.exs) was added but could not be executed end-to-end for that reason.
+- Histoire build emits existing setup export warnings during bundling, but the build completes successfully.
+- The unrelated untracked file `.ralph_wiggum_loop.log` was left untouched.
+==> eboss_data
+There are no tests to run
+==> eboss_accounts
+Running ExUnit with seed: 895307, max_cases: 20
+
+............
+Finished in 8.1 seconds (0.00s async, 8.1s sync)
+12 tests, 0 failures
+==> eboss_tenancy
+Running ExUnit with seed: 578689, max_cases: 20
+
+............
+Finished in 7.0 seconds (0.00s async, 7.0s sync)
+12 tests, 0 failures
+==> eboss_workspaces
+Running ExUnit with seed: 248984, max_cases: 20
+
+............
+Finished in 6.1 seconds (0.00s async, 6.1s sync)
+12 tests, 0 failures
+==> eboss_folio
+Running ExUnit with seed: 273889, max_cases: 20
+
+...........
+Finished in 4.4 seconds (0.00s async, 4.4s sync)
+11 tests, 0 failures
+==> eboss_web
+Running ExUnit with seed: 629728, max_cases: 20
+
+...................................
+Finished in 6.9 seconds (0.2s async, 6.7s sync)
+35 tests, 0 failures

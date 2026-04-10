@@ -19,6 +19,71 @@ Design work in this repository should:
 - prefer repeatable patterns over one-off hero implementations
 - make component states visible in development tooling before they spread through the app
 
+## Visual Thesis
+
+EBoss should feel like an operator console that can stretch into auth and public pages without losing its center of gravity.
+
+The `jido_hub` dashboard reference is useful because it demonstrates the right kind of discipline:
+
+- operator-grade clarity over decorative novelty
+- restrained typography over loud marketing scale shifts
+- cool, controlled surfaces over glossy color blocking
+- strong shell identity over floating page fragments
+- utility-led emphasis over ornament-first composition
+
+We are not copying `jido_hub` screen-for-screen. We are adopting its bias toward calm, high-trust control surfaces and translating that into EBoss.
+
+## Shared Visual DNA
+
+These rules apply across dashboard, auth, and public surfaces.
+
+- Shell-first clarity. Start with the frame, panel hierarchy, border rhythm, and reading order before adding decorative moments. If the shell disappears, the UI will drift off-brand.
+- Restrained typography. Use display type for key product-defining moments, body type for working copy, and mono accents for operator labels, state cues, and metadata. Avoid stacking multiple expressive text treatments in one view.
+- Cool surface discipline. Default to slate, stone, ink, and canvas relationships with subtle gradients and controlled contrast shifts. Accent color is a signal, not a wallpaper.
+- Utility-led emphasis. Create priority through spacing, alignment, density, contrast, and component state before reaching for illustration, oversized icons, or saturated fills.
+- Branded precision. Corners, shadows, and highlights should feel engineered and deliberate. Surfaces may glow softly, but they should never look inflated, gummy, or playful.
+
+## Surface Expression
+
+The shared DNA stays constant, but its expression changes by surface.
+
+### Dashboard surfaces
+
+Dashboard views are the purest expression of the system.
+
+- Keep shell chrome strongest here: stable headers, clear section breaks, deliberate panel boundaries, and dense-but-readable information groupings.
+- Let mono labels, badges, tabs, and status treatments carry more of the hierarchy.
+- Reserve the strongest emphasis for action states, live status, and important panel transitions.
+- Prefer compact confidence over theatrical reveal patterns.
+
+### Auth surfaces
+
+Auth views should feel like a trusted entry point into the same operator environment.
+
+- Keep the same materials, border language, and color family as the dashboard, but loosen the rhythm and reduce simultaneous choices.
+- Use more breathing room, simpler grouping, and one dominant action per step.
+- Let reassurance come from clarity, not friendliness theater. The tone should be calm, direct, and high-trust.
+- Avoid consumer-app tropes like oversized mascots, whimsical empty space, or candy-colored success states.
+
+### Public surfaces
+
+Public pages can be more narrative, but they still belong to the same product family.
+
+- Use larger display moments and more asymmetry than dashboard or auth screens, while keeping the same typography, materials, and shell cues.
+- Pair narrative copy with concrete panels, metrics, or framed content so the page still reads like product infrastructure, not lifestyle marketing.
+- Use accent and warning tones sparingly to create momentum around actions and proof points.
+- Keep the page composed and intentional. Public does not mean soft, generic, or illustration-heavy.
+
+## Off-Brand Rejections
+
+Reject UI directions that conflict with the system, even if they look polished in isolation.
+
+- Neon gradients, candy palettes, or high-saturation fills used as the primary identity
+- Hero sections that read like a startup pitch deck instead of an operator-grade product surface
+- Soft, borderless cards floating without shell structure or panel hierarchy
+- Playful typography mixes, oversized display copy blocks, or trendy editorial treatments in working UI
+- Decorative icons, illustrations, or motion that compete with task flow or state clarity
+
 ## System Shape
 
 The design layer currently has four main levels:
