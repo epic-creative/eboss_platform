@@ -2,7 +2,7 @@ defmodule EBossWeb.Auth.PasswordSignInComponent do
   use EBossWeb, :live_component
 
   alias AshPhoenix.Form
-  alias EBossWeb.{AuthComponents, AuthForms}
+  alias EBossWeb.{AuthComponents, AuthForms, BrowserTestContracts}
   import AuthComponents
 
   @impl true
@@ -59,6 +59,7 @@ defmodule EBossWeb.Auth.PasswordSignInComponent do
         :let={form}
         for={@form}
         id="sign-in-password-form"
+        aria-label={BrowserTestContracts.password_sign_in_form_label()}
         phx-change="validate_password"
         phx-submit="submit_password"
         phx-target={@myself}

@@ -2,7 +2,7 @@ defmodule EBossWeb.Auth.ConfirmLive do
   use EBossWeb, :live_view
 
   alias AshPhoenix.Form
-  alias EBossWeb.{AuthComponents, AuthForms}
+  alias EBossWeb.{AuthComponents, AuthForms, BrowserTestContracts}
   import AuthComponents
 
   @impl true
@@ -50,6 +50,7 @@ defmodule EBossWeb.Auth.ConfirmLive do
             :let={form}
             for={@form}
             id="confirm-form"
+            aria-label={BrowserTestContracts.confirm_email_form_label()}
             phx-submit="submit"
             phx-trigger-action={@trigger_action}
             action={AuthForms.auth_path(@socket, AuthForms.confirmation_strategy!(), :confirm)}

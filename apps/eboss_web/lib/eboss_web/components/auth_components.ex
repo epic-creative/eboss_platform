@@ -3,6 +3,7 @@ defmodule EBossWeb.AuthComponents do
   use EBossWeb, :html
 
   alias AshPhoenix.Form
+  alias EBossWeb.BrowserTestContracts
 
   attr :eyebrow, :string, required: true
   attr :title, :string, required: true
@@ -15,7 +16,7 @@ defmodule EBossWeb.AuthComponents do
 
   def auth_shell(assigns) do
     ~H"""
-    <section class="ui-auth-grid" data-auth-shell>
+    <section class="ui-auth-grid" data-auth-shell data-testid={BrowserTestContracts.auth_shell()}>
       <.panel surface="floating" class="ui-frame-card">
         <.AuthScene
           eyebrow={@eyebrow}
@@ -256,7 +257,10 @@ defmodule EBossWeb.AuthComponents do
 
   def auth_nav(assigns) do
     ~H"""
-    <nav class="ui-auth-nav flex flex-wrap gap-2" aria-label="Authentication routes">
+    <nav
+      class="ui-auth-nav flex flex-wrap gap-2"
+      aria-label={BrowserTestContracts.authentication_routes_nav_label()}
+    >
       <.nav_pill to={~p"/sign-in"} active={@current_path == "/sign-in"}>
         Sign in
       </.nav_pill>

@@ -5,6 +5,8 @@ defmodule EBossWeb.PublicShellSmokeTest do
   import Phoenix.ConnTest
   import Phoenix.LiveViewTest
 
+  alias EBossWeb.BrowserTestContracts
+
   @endpoint EBossWeb.Endpoint
 
   setup do
@@ -43,6 +45,21 @@ defmodule EBossWeb.PublicShellSmokeTest do
       assert has_element?(view, "[data-public-shell-nav]")
       assert has_element?(view, "[data-public-shell-footer]")
       assert has_element?(view, "[data-public-shell-nav] .ui-nav-pill[data-active='true']")
+
+      assert has_element?(
+               view,
+               ~s(nav[aria-label="#{BrowserTestContracts.public_routes_nav_label()}"])
+             )
+
+      assert has_element?(
+               view,
+               ~s(footer[aria-label="#{BrowserTestContracts.public_footer_label()}"])
+             )
+
+      assert has_element?(
+               view,
+               ~s([data-testid="#{BrowserTestContracts.public_shell_context_action()}"])
+             )
     end
   end
 
@@ -68,6 +85,20 @@ defmodule EBossWeb.PublicShellSmokeTest do
     assert has_element?(view, "[data-home-proof-strip]")
     assert has_element?(view, "[data-home-story='continuity']")
     assert has_element?(view, "[data-home-story='tempo']")
+    assert has_element?(view, ~s([data-testid="#{BrowserTestContracts.home_hero()}"]))
+    assert has_element?(view, ~s([data-testid="#{BrowserTestContracts.home_proof_band()}"]))
+
+    assert has_element?(
+             view,
+             ~s([data-testid="#{BrowserTestContracts.home_feature_row_continuity()}"])
+           )
+
+    assert has_element?(
+             view,
+             ~s([data-testid="#{BrowserTestContracts.home_feature_row_tempo()}"])
+           )
+
+    assert has_element?(view, ~s([data-testid="#{BrowserTestContracts.home_closing()}"]))
 
     assert has_element?(
              view,

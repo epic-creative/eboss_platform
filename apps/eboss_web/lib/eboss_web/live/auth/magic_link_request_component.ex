@@ -2,7 +2,7 @@ defmodule EBossWeb.Auth.MagicLinkRequestComponent do
   use EBossWeb, :live_component
 
   alias AshPhoenix.Form
-  alias EBossWeb.{AuthComponents, AuthForms}
+  alias EBossWeb.{AuthComponents, AuthForms, BrowserTestContracts}
   import AuthComponents
 
   @impl true
@@ -77,6 +77,7 @@ defmodule EBossWeb.Auth.MagicLinkRequestComponent do
         :let={form}
         for={@form}
         id="sign-in-magic-link-form"
+        aria-label={BrowserTestContracts.magic_link_request_form_label()}
         phx-change="validate_magic_link"
         phx-submit="submit_magic_link"
         phx-target={@myself}

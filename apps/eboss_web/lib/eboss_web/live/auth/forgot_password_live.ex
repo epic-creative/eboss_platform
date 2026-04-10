@@ -2,7 +2,7 @@ defmodule EBossWeb.Auth.ForgotPasswordLive do
   use EBossWeb, :live_view
 
   alias AshPhoenix.Form
-  alias EBossWeb.{AuthComponents, AuthForms}
+  alias EBossWeb.{AuthComponents, AuthForms, BrowserTestContracts}
   import AuthComponents
 
   @impl true
@@ -79,6 +79,7 @@ defmodule EBossWeb.Auth.ForgotPasswordLive do
             :let={form}
             for={@form}
             id="forgot-password-form"
+            aria-label={BrowserTestContracts.forgot_password_form_label()}
             phx-change="validate"
             phx-submit="submit"
           >

@@ -1,6 +1,8 @@
 defmodule EBossWeb.HomeLive do
   use EBossWeb, :live_view
 
+  alias EBossWeb.BrowserTestContracts
+
   @public_section_patterns EBossWeb.PublicPagePatterns
 
   @impl true
@@ -30,6 +32,7 @@ defmodule EBossWeb.HomeLive do
         <.public_hero_section
           section_pattern={public_section_pattern_slug(:hero)}
           data-home-hero=""
+          data-testid={BrowserTestContracts.home_hero()}
         >
           <:heading_block>
             <.section_heading
@@ -121,6 +124,7 @@ defmodule EBossWeb.HomeLive do
           section_pattern={public_section_pattern_slug(:proof_band)}
           heading_class="space-y-3 max-w-3xl"
           data-home-proof-strip=""
+          data-testid={BrowserTestContracts.home_proof_band()}
         >
           <:section_heading>
             <p class="ui-kicker" data-tone="primary">Narrative proof</p>
@@ -150,6 +154,7 @@ defmodule EBossWeb.HomeLive do
         <.public_feature_row
           section_pattern={public_section_pattern_slug(:feature_row)}
           data-home-story="continuity"
+          data-testid={BrowserTestContracts.home_feature_row_continuity()}
         >
           <:copy_rail>
             <p class="ui-kicker" data-tone="primary">Route continuity</p>
@@ -197,6 +202,7 @@ defmodule EBossWeb.HomeLive do
           section_pattern={public_section_pattern_slug(:feature_row)}
           reverse={true}
           data-home-story="tempo"
+          data-testid={BrowserTestContracts.home_feature_row_tempo()}
         >
           <:copy_rail>
             <p class="ui-kicker" data-tone="primary">Narrative rhythm</p>
@@ -242,6 +248,7 @@ defmodule EBossWeb.HomeLive do
         <.public_closing_section
           section_pattern={public_section_pattern_slug(:closing_section)}
           data-home-closing=""
+          data-testid={BrowserTestContracts.home_closing()}
         >
           <Layouts.public_cta_frame
             eyebrow="Working-shell handoff"

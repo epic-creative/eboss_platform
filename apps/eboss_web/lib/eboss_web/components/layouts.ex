@@ -5,6 +5,8 @@ defmodule EBossWeb.Layouts do
 
   use EBossWeb, :html
 
+  alias EBossWeb.BrowserTestContracts
+
   embed_templates("layouts/*")
 
   attr(:flash, :map, required: true)
@@ -63,7 +65,11 @@ defmodule EBossWeb.Layouts do
                     <.badge tone="neutral">Shared shell</.badge>
                   </div>
 
-                  <nav class="ui-public-shell__nav" aria-label="Public routes" data-public-shell-nav>
+                  <nav
+                    class="ui-public-shell__nav"
+                    aria-label={BrowserTestContracts.public_routes_nav_label()}
+                    data-public-shell-nav
+                  >
                     <.nav_pill to={~p"/"} active={public_nav_active?(:home, @current_path)}>
                       Home
                     </.nav_pill>
@@ -93,6 +99,7 @@ defmodule EBossWeb.Layouts do
                   size="sm"
                   variant={public_context_action(@current_path).variant}
                   tone={public_context_action(@current_path).tone}
+                  data-testid={BrowserTestContracts.public_shell_context_action()}
                 >
                   {public_context_action(@current_path).label}
                 </.button>
@@ -252,7 +259,11 @@ defmodule EBossWeb.Layouts do
 
   def public_footer(assigns) do
     ~H"""
-    <footer class="ui-public-footer" data-public-shell-footer>
+    <footer
+      class="ui-public-footer"
+      aria-label={BrowserTestContracts.public_footer_label()}
+      data-public-shell-footer
+    >
       <div class="ui-public-footer__inner">
         <.panel surface="floating" padding="lg" class="ui-public-footer__frame">
           <div class="ui-public-footer__grid">

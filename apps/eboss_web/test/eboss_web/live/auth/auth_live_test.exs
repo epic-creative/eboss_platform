@@ -4,6 +4,8 @@ defmodule EBossWeb.AuthLiveTest do
   import LiveVue.Test
   import Swoosh.TestAssertions
 
+  alias EBossWeb.BrowserTestContracts
+
   setup :set_swoosh_global
 
   test "anonymous visitors can access the public auth pages", %{conn: conn} do
@@ -46,7 +48,32 @@ defmodule EBossWeb.AuthLiveTest do
       assert has_element?(view, ".ui-auth-page__header")
       assert has_element?(view, ".ui-auth-page__body")
       assert has_element?(view, ".ui-auth-page__footer")
-      assert has_element?(view, "nav[aria-label='Authentication routes']")
+
+      assert has_element?(
+               view,
+               ~s(nav[aria-label="#{BrowserTestContracts.authentication_routes_nav_label()}"])
+             )
+    end
+  end
+
+  test "anonymous auth routes expose stable browser form and shell contracts", %{conn: conn} do
+    routes = [
+      {~p"/sign-in",
+       [
+         BrowserTestContracts.password_sign_in_form_label(),
+         BrowserTestContracts.magic_link_request_form_label()
+       ]},
+      {~p"/register", [BrowserTestContracts.register_form_label()]},
+      {~p"/forgot-password", [BrowserTestContracts.forgot_password_form_label()]}
+    ]
+
+    for {route, form_labels} <- routes do
+      assert {:ok, view, _html} = live(conn, route)
+      assert has_element?(view, ~s([data-testid="#{BrowserTestContracts.auth_shell()}"]))
+
+      for form_label <- form_labels do
+        assert has_element?(view, ~s(form[aria-label="#{form_label}"]))
+      end
     end
   end
 

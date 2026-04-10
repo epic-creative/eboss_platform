@@ -1658,3 +1658,91 @@ Running ExUnit with seed: 815697, max_cases: 20
 .................................................................
 Finished in 9.5 seconds (0.3s async, 9.1s sync)
 65 tests, 0 failures
+1) changed files
+
+- [apps/eboss_web/lib/eboss_web/browser_test_contracts.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/browser_test_contracts.ex)
+- [apps/eboss_web/lib/eboss_web/components/auth_components.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/components/auth_components.ex)
+- [apps/eboss_web/lib/eboss_web/components/layouts.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/components/layouts.ex)
+- [apps/eboss_web/lib/eboss_web/live/home_live.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/live/home_live.ex)
+- [apps/eboss_web/lib/eboss_web/live/auth/password_sign_in_component.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/live/auth/password_sign_in_component.ex)
+- [apps/eboss_web/lib/eboss_web/live/auth/magic_link_request_component.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/live/auth/magic_link_request_component.ex)
+- [apps/eboss_web/lib/eboss_web/live/auth/register_live.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/live/auth/register_live.ex)
+- [apps/eboss_web/lib/eboss_web/live/auth/forgot_password_live.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/live/auth/forgot_password_live.ex)
+- [apps/eboss_web/lib/eboss_web/live/auth/reset_password_live.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/live/auth/reset_password_live.ex)
+- [apps/eboss_web/lib/eboss_web/live/auth/confirm_live.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/live/auth/confirm_live.ex)
+- [apps/eboss_web/lib/eboss_web/live/auth/magic_link_live.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/live/auth/magic_link_live.ex)
+- [apps/eboss_web/test/design_surface_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/design_surface_test.exs)
+- [apps/eboss_web/test/eboss_web/live/public_shell_smoke_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/eboss_web/live/public_shell_smoke_test.exs)
+- [apps/eboss_web/test/eboss_web/live/auth/auth_live_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/eboss_web/live/auth/auth_live_test.exs)
+- [apps/eboss_web/test/eboss_web/live/auth/auth_contract_smoke_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/eboss_web/live/auth/auth_contract_smoke_test.exs)
+
+2) tests/commands executed
+
+- Test-env compile with warnings as errors via Mix task wrapper: passed.
+- Dev-env format on touched files via Mix task wrapper: passed.
+- `elixir -e 'ExUnit.start(); Code.require_file("apps/eboss_web/test/design_surface_test.exs", ...)'`: passed, `6 tests, 0 failures`.
+- No-start public shell smoke: passed, `3 tests, 0 failures`.
+- No-start auth contract smoke: passed, `1 test, 0 failures`.
+- Attempted DB-backed `ecto.create` and `auth_live_test.exs:59`: failed in sandbox with Postgrex `:eperm`.
+- Direct `mix test`/`mix format`/`mix precommit` invocation is blocked here by Mix’s TCP PubSub/lock path before task execution.
+
+3) acceptance criteria coverage
+
+- Key auth and public surfaces now have explicit contracts:
+  - accessible labels for public nav/footer and auth nav/forms
+  - `data-testid` only for unstable structural/dynamic targets: `auth-shell`, public shell context action, and home narrative sections
+- Selectors avoid incidental markup:
+  - auth form selection is by form landmark name
+  - public shell selection is by landmark label where possible
+  - explicit IDs are limited to places where copy/state changes would make role/name brittle
+- Approach is documented in code:
+  - [browser_test_contracts.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/browser_test_contracts.ex)
+
+4) blockers/assumptions
+
+- I could not leave `mix precommit` passing in this sandbox. Two environment-level blockers remain:
+  - Mix CLI startup tries to open a local TCP PubSub/lock socket and gets `:eperm`.
+  - DB-backed tasks/tests also get `:eperm` from PostgreSQL access, including via `/private/tmp/.s.PGSQL.5432`.
+- I assumed these contract labels are the intended stable Playwright-facing names:
+  - `Password sign-in`
+  - `Magic-link request`
+  - `Register account`
+  - `Forgot password request`
+  - `Reset password`
+  - `Confirm email`
+  - `Magic-link confirmation`
+==> eboss_web
+Compiling 1 file (.ex)
+Generated eboss_web app
+==> eboss_data
+There are no tests to run
+==> eboss_accounts
+Running ExUnit with seed: 459598, max_cases: 20
+
+............
+Finished in 8.1 seconds (0.00s async, 8.1s sync)
+12 tests, 0 failures
+==> eboss_tenancy
+Running ExUnit with seed: 30177, max_cases: 20
+
+............
+Finished in 7.0 seconds (0.00s async, 7.0s sync)
+12 tests, 0 failures
+==> eboss_workspaces
+Running ExUnit with seed: 502218, max_cases: 20
+
+............
+Finished in 6.0 seconds (0.00s async, 6.0s sync)
+12 tests, 0 failures
+==> eboss_folio
+Running ExUnit with seed: 67840, max_cases: 20
+
+...........
+Finished in 4.3 seconds (0.00s async, 4.3s sync)
+11 tests, 0 failures
+==> eboss_web
+Running ExUnit with seed: 267044, max_cases: 20
+
+...................................................................
+Finished in 7.6 seconds (0.3s async, 7.3s sync)
+67 tests, 0 failures

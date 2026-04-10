@@ -130,6 +130,7 @@ defmodule EBossWeb.DesignSurfaceTest do
 
   test "public shell patterns define shared navigation, footer, and CTA framing" do
     patterns_css = File.read!(@patterns_css)
+    browser_test_contracts = read_file("lib/eboss_web/browser_test_contracts.ex")
     layouts = read_file("lib/eboss_web/components/layouts.ex")
     home_live = read_file("lib/eboss_web/live/home_live.ex")
     design_system_live = read_file("lib/eboss_web/live/dev/design_system_live.ex")
@@ -166,6 +167,9 @@ defmodule EBossWeb.DesignSurfaceTest do
     assert layouts =~ ~s(data-shell-mode={@shell_mode_attr})
     assert layouts =~ ~s(data-public-shell-nav)
     assert layouts =~ ~s(data-public-shell-footer)
+    assert layouts =~ "public_routes_nav_label()"
+    assert layouts =~ "public_footer_label()"
+    assert layouts =~ "public_shell_context_action()"
     assert layouts =~ "def public_cta_frame(assigns)"
     assert layouts =~ ~s(data-public-section-pattern={@section_pattern})
 
@@ -176,6 +180,11 @@ defmodule EBossWeb.DesignSurfaceTest do
     assert home_live =~ ~s(data-home-story="continuity")
     assert home_live =~ ~s(data-home-story="tempo")
     assert home_live =~ ~s(data-home-closing)
+    assert home_live =~ "home_hero()"
+    assert home_live =~ "home_proof_band()"
+    assert home_live =~ "home_feature_row_continuity()"
+    assert home_live =~ "home_feature_row_tempo()"
+    assert home_live =~ "home_closing()"
     assert home_live =~ ~s(<.public_hero_section)
     assert home_live =~ ~s(<.public_proof_band)
     assert home_live =~ ~s(<.public_feature_row)
@@ -208,6 +217,14 @@ defmodule EBossWeb.DesignSurfaceTest do
     assert design_system_live =~ "public_section_patterns()"
     assert design_system_live =~ "public_home_page_sections()"
     assert design_system_live =~ "defp public_section_pattern_label(id)"
+
+    assert browser_test_contracts =~
+             "Stable browser-test contracts for the auth and public surfaces."
+
+    assert browser_test_contracts =~ ~s(- `public-shell-context-action`)
+    assert browser_test_contracts =~ ~s(def public_routes_nav_label)
+    assert browser_test_contracts =~ ~s(def public_footer_label)
+    assert browser_test_contracts =~ ~s(def home_feature_row_tempo)
 
     assert sign_in_live =~ ~s(shell_mode="public")
     assert register_live =~ ~s(shell_mode="public")
@@ -315,6 +332,7 @@ defmodule EBossWeb.DesignSurfaceTest do
 
   test "auth routes share a reusable shell hierarchy and preview contract" do
     patterns_css = File.read!(@patterns_css)
+    browser_test_contracts = read_file("lib/eboss_web/browser_test_contracts.ex")
     auth_components = read_file("lib/eboss_web/components/auth_components.ex")
     design_system_live = read_file("lib/eboss_web/live/dev/design_system_live.ex")
     sign_in_live = read_file("lib/eboss_web/live/auth/sign_in_live.ex")
@@ -342,26 +360,31 @@ defmodule EBossWeb.DesignSurfaceTest do
 
     assert auth_components =~ "def auth_page(assigns)"
     assert auth_components =~ "def auth_page_footer(assigns)"
-    assert auth_components =~ ~s(aria-label="Authentication routes")
+    assert auth_components =~ "authentication_routes_nav_label()"
+    assert auth_components =~ "data-testid={BrowserTestContracts.auth_shell()}"
     assert auth_components =~ "def auth_form(assigns)"
     assert auth_components =~ "def auth_submit(assigns)"
+
+    assert browser_test_contracts =~ ~s(- `auth-shell`)
+    assert browser_test_contracts =~ ~s(def password_sign_in_form_label)
+    assert browser_test_contracts =~ ~s(def magic_link_confirmation_form_label)
 
     assert design_system_live =~ "<.auth_page"
     assert sign_in_live =~ "<.auth_page"
     assert sign_in_live =~ "PasswordSignInComponent"
     assert sign_in_live =~ "MagicLinkRequestComponent"
-    assert password_sign_in_component =~ "<.auth_form"
-    assert magic_link_request_component =~ "<.auth_form"
+    assert password_sign_in_component =~ "password_sign_in_form_label()"
+    assert magic_link_request_component =~ "magic_link_request_form_label()"
     assert register_live =~ "<.auth_page"
-    assert register_live =~ "<.auth_form"
+    assert register_live =~ "register_form_label()"
     assert forgot_password_live =~ "<.auth_page"
-    assert forgot_password_live =~ "<.auth_form"
+    assert forgot_password_live =~ "forgot_password_form_label()"
     assert reset_password_live =~ "<.auth_page"
-    assert reset_password_live =~ "<.auth_form"
+    assert reset_password_live =~ "reset_password_form_label()"
     assert confirm_live =~ "<.auth_page"
-    assert confirm_live =~ "<.auth_form"
+    assert confirm_live =~ "confirm_email_form_label()"
     assert magic_link_live =~ "<.auth_page"
-    assert magic_link_live =~ "<.auth_form"
+    assert magic_link_live =~ "magic_link_confirmation_form_label()"
   end
 
   defp read_file(path) do
