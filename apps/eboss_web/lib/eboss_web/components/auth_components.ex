@@ -162,7 +162,8 @@ defmodule EBossWeb.AuthComponents do
   attr :actions_layout, :string, values: ~w(end between), default: "end"
 
   attr :rest, :global,
-    include: ~w(action autocomplete method novalidate phx-change phx-submit phx-trigger-action)
+    include:
+      ~w(action autocomplete method novalidate phx-change phx-submit phx-target phx-trigger-action)
 
   slot :inner_block, required: true
   slot :actions, required: true

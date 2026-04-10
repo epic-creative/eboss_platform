@@ -120,7 +120,10 @@ defmodule EBossWeb.DesignSurfaceTest do
     core_components = read_file("lib/eboss_web/components/core_components.ex")
     ui_components = read_file("lib/eboss_web/components/ui_components.ex")
     auth_components = read_file("lib/eboss_web/components/auth_components.ex")
-    sign_in_live = read_file("lib/eboss_web/live/auth/sign_in_live.ex")
+
+    magic_link_request_component =
+      read_file("lib/eboss_web/live/auth/magic_link_request_component.ex")
+
     forgot_password_live = read_file("lib/eboss_web/live/auth/forgot_password_live.ex")
     design_system_live = read_file("lib/eboss_web/live/dev/design_system_live.ex")
     ui_alert_vue = read_file("assets/vue/components/ui/UiAlert.vue")
@@ -170,10 +173,12 @@ defmodule EBossWeb.DesignSurfaceTest do
     refute forgot_password_live =~
              ~s|put_flash(:info, "If that account exists, we just emailed reset instructions.")|
 
-    assert sign_in_live =~ ~s|<.auth_feedback|
-    assert sign_in_live =~ ~s|message="If the account exists, a sign-in link is on the way."|
+    assert magic_link_request_component =~ ~s|<.auth_feedback|
 
-    refute sign_in_live =~
+    assert magic_link_request_component =~
+             ~s|message="If the account exists, a sign-in link is on the way."|
+
+    refute magic_link_request_component =~
              ~s|put_flash(:info, "If that account exists, we just sent a magic link.")|
 
     assert design_system_live =~ ~s(<.alert)
@@ -215,6 +220,13 @@ defmodule EBossWeb.DesignSurfaceTest do
     auth_components = read_file("lib/eboss_web/components/auth_components.ex")
     design_system_live = read_file("lib/eboss_web/live/dev/design_system_live.ex")
     sign_in_live = read_file("lib/eboss_web/live/auth/sign_in_live.ex")
+
+    password_sign_in_component =
+      read_file("lib/eboss_web/live/auth/password_sign_in_component.ex")
+
+    magic_link_request_component =
+      read_file("lib/eboss_web/live/auth/magic_link_request_component.ex")
+
     register_live = read_file("lib/eboss_web/live/auth/register_live.ex")
     forgot_password_live = read_file("lib/eboss_web/live/auth/forgot_password_live.ex")
     reset_password_live = read_file("lib/eboss_web/live/auth/reset_password_live.ex")
@@ -238,7 +250,10 @@ defmodule EBossWeb.DesignSurfaceTest do
 
     assert design_system_live =~ "<.auth_page"
     assert sign_in_live =~ "<.auth_page"
-    assert sign_in_live =~ "<.auth_form"
+    assert sign_in_live =~ "PasswordSignInComponent"
+    assert sign_in_live =~ "MagicLinkRequestComponent"
+    assert password_sign_in_component =~ "<.auth_form"
+    assert magic_link_request_component =~ "<.auth_form"
     assert register_live =~ "<.auth_page"
     assert register_live =~ "<.auth_form"
     assert forgot_password_live =~ "<.auth_page"

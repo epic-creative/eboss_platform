@@ -94,6 +94,20 @@ defmodule EBossWeb.AuthLiveTest do
     assert html =~ ~s(autocomplete="section-magic-link email")
   end
 
+  test "sign-in page routes password and magic-link flows through separate component targets", %{
+    conn: conn
+  } do
+    {:ok, view, _html} = live(conn, ~p"/sign-in")
+    html = render(view)
+
+    password_target = form_target(html, "sign-in-password-form")
+    magic_link_target = form_target(html, "sign-in-magic-link-form")
+
+    refute is_nil(password_target)
+    refute is_nil(magic_link_target)
+    refute password_target == magic_link_target
+  end
+
   test "auth forms expose shared hints and submit-state markup", %{conn: conn} do
     {:ok, sign_in, _html} = live(conn, ~p"/sign-in")
     sign_in_html = render(sign_in)
@@ -202,6 +216,58 @@ defmodule EBossWeb.AuthLiveTest do
     assert html =~ ~s(data-feedback="danger")
     assert html =~ ~s(role="alert")
     assert html =~ ~s(aria-live="assertive")
+  end
+
+  test "password typing survives magic-link typing", %{conn: conn} do
+    {:ok, view, _html} = live(conn, ~p"/sign-in")
+    password_email = "retained-password@example.com"
+    magic_email = "retained-magic@example.com"
+
+    _ =
+      view
+      |> form("#sign-in-password-form",
+        password_user: %{"email" => password_email, "password" => "supersecret123"}
+      )
+      |> render_change()
+
+    _ =
+      view
+      |> form("#sign-in-magic-link-form", magic_link_user: %{"email" => magic_email})
+      |> render_change()
+
+    html = render(view)
+
+    assert form_field_value(html, "sign-in-password-form", "password_user[email]") ==
+             password_email
+
+    assert form_field_value(html, "sign-in-magic-link-form", "magic_link_user[email]") ==
+             magic_email
+  end
+
+  test "magic-link typing survives password typing", %{conn: conn} do
+    {:ok, view, _html} = live(conn, ~p"/sign-in")
+    magic_email = "keep-me@example.com"
+    password_email = "password-owner@example.com"
+
+    _ =
+      view
+      |> form("#sign-in-magic-link-form", magic_link_user: %{"email" => magic_email})
+      |> render_change()
+
+    _ =
+      view
+      |> form("#sign-in-password-form",
+        password_user: %{"email" => password_email, "password" => "wrong-password"}
+      )
+      |> render_change()
+
+    html = render(view)
+
+    assert form_field_value(html, "sign-in-password-form", "password_user[email]") ==
+             password_email
+
+    assert form_field_value(html, "sign-in-magic-link-form", "magic_link_user[email]") ==
+             magic_email
   end
 
   test "forgot password sends a reset email", %{conn: conn} do
@@ -334,6 +400,25 @@ defmodule EBossWeb.AuthLiveTest do
       {:email, _email} -> flush_emails()
     after
       0 -> :ok
+    end
+  end
+
+  defp form_target(html, form_id) do
+    regex = ~r/id="#{Regex.escape(form_id)}"[^>]*phx-target="([^"]+)"/
+
+    case Regex.run(regex, html, capture: :all_but_first) do
+      [target] -> target
+      _ -> nil
+    end
+  end
+
+  defp form_field_value(html, form_id, field_name) do
+    regex =
+      ~r/id="#{Regex.escape(form_id)}".*?name="#{Regex.escape(field_name)}".*?value="([^"]*)"/s
+
+    case Regex.run(regex, html, capture: :all_but_first) do
+      [value] -> value
+      _ -> nil
     end
   end
 end

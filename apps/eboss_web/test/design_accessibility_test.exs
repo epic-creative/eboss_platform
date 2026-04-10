@@ -29,7 +29,10 @@ defmodule EBossWeb.DesignAccessibilityTest do
   test "shared HEEx and Vue primitives expose explicit accessibility contracts" do
     core_components = read_file("lib/eboss_web/components/core_components.ex")
     auth_components = read_file("lib/eboss_web/components/auth_components.ex")
-    sign_in_live = read_file("lib/eboss_web/live/auth/sign_in_live.ex")
+
+    magic_link_request_component =
+      read_file("lib/eboss_web/live/auth/magic_link_request_component.ex")
+
     forgot_password_live = read_file("lib/eboss_web/live/auth/forgot_password_live.ex")
     design_system_live = read_file("lib/eboss_web/live/dev/design_system_live.ex")
     ui_button_vue = read_file("assets/vue/components/ui/UiButton.vue")
@@ -47,7 +50,7 @@ defmodule EBossWeb.DesignAccessibilityTest do
     assert auth_components =~ "role=\"alert\""
     assert auth_components =~ "live=\"assertive\""
     assert auth_components =~ "phx-disable-with={@busy_label}"
-    assert sign_in_live =~ "data-feedback=\"success\""
+    assert magic_link_request_component =~ "data-feedback=\"success\""
     assert forgot_password_live =~ "data-feedback=\"success\""
     assert design_system_live =~ "role=\"alert\""
     assert design_system_live =~ "live=\"assertive\""

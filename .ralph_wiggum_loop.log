@@ -1001,3 +1001,226 @@ Running ExUnit with seed: 727099, max_cases: 20
 .....................................................
 Finished in 6.8 seconds (0.2s async, 6.5s sync)
 53 tests, 0 failures
+1. changed files
+- [apps/eboss_web/lib/eboss_web/live/auth/sign_in_live.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/live/auth/sign_in_live.ex): reduced the page LiveView to shell/layout only and moved each sign-in flow behind its own component boundary.
+- [apps/eboss_web/lib/eboss_web/live/auth/password_sign_in_component.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/live/auth/password_sign_in_component.ex): new password-flow LiveComponent with targeted validate/submit handling.
+- [apps/eboss_web/lib/eboss_web/live/auth/magic_link_request_component.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/live/auth/magic_link_request_component.ex): new magic-link LiveComponent with targeted validate/submit handling.
+- [apps/eboss_web/lib/eboss_web/components/auth_components.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/components/auth_components.ex): allowed `phx-target` through the shared auth form component.
+- [apps/eboss_web/test/eboss_web/live/auth/auth_live_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/eboss_web/live/auth/auth_live_test.exs): added regression coverage for separate component targets and cross-flow field retention while typing.
+
+2. tests/commands executed
+- `elixir -e 'for file <- System.argv() do file |> File.read!() |> Code.string_to_quoted!(file: file) end' ...` on all edited Elixir files: passed.
+- `mix precommit`: failed in this sandbox with `failed to open a TCP socket in Mix.Sync.PubSub.subscribe/1, reason: :eperm`.
+- `elixir -e 'IO.inspect(:gen_tcp.listen(...))'` and `elixir -e 'IO.inspect(:gen_tcp.connect(...))'`: confirmed local TCP is blocked with `:eperm`, which also blocks real browser/server verification here.
+
+3. acceptance criteria coverage
+- Typing into one `/sign-in` flow should no longer clear the other flow’s fields because password and magic-link forms now live in separate LiveComponents with distinct `phx-target`s, so sibling patches do not rerender the other subtree.
+- Added automated coverage for the retention regression in [apps/eboss_web/test/eboss_web/live/auth/auth_live_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/eboss_web/live/auth/auth_live_test.exs): separate-target assertion plus mixed typing retention in both directions.
+- Existing password sign-in and magic-link request tests remain in place to cover both flows conceptually.
+- Actual browser-driven `/sign-in` verification could not be executed in this environment because the sandbox blocks local TCP.
+
+4. blockers/assumptions
+- Blocker: this sandbox denies local TCP sockets (`:eperm`), so I could not start Mix, connect to the repo, run `mix precommit`, or perform a real browser walkthrough against a live Phoenix server.
+- Assumption: the regression is caused by sibling LiveView rerenders wiping browser-held state; isolating each sign-in flow in its own LiveComponent is the intended fix for that browser-visible retention issue.
+==> eboss_web
+Compiling 5 files (.ex)
+Generated eboss_web app
+==> eboss_data
+There are no tests to run
+==> eboss_accounts
+Running ExUnit with seed: 835334, max_cases: 20
+
+............
+Finished in 7.7 seconds (0.00s async, 7.7s sync)
+12 tests, 0 failures
+==> eboss_tenancy
+Running ExUnit with seed: 18263, max_cases: 20
+
+............
+Finished in 6.7 seconds (0.00s async, 6.7s sync)
+12 tests, 0 failures
+==> eboss_workspaces
+Running ExUnit with seed: 191897, max_cases: 20
+
+............
+Finished in 6.0 seconds (0.00s async, 6.0s sync)
+12 tests, 0 failures
+==> eboss_folio
+Running ExUnit with seed: 660183, max_cases: 20
+
+...........
+Finished in 4.1 seconds (0.00s async, 4.1s sync)
+11 tests, 0 failures
+==> eboss_web
+Running ExUnit with seed: 399746, max_cases: 20
+
+...........
+
+  1) test shared HEEx and Vue primitives expose explicit accessibility contracts (EBossWeb.DesignAccessibilityTest)
+     test/design_accessibility_test.exs:29
+     Assertion with =~ failed
+     code:  assert sign_in_live =~ "data-feedback=\"success\""
+     left:  "defmodule EBossWeb.Auth.SignInLive do\n  use EBossWeb, :live_view\n\n  alias EBossWeb.Auth.{MagicLinkRequestComponent, PasswordSignInComponent}\n  alias EBossWeb.AuthComponents\n  import AuthComponents\n\n  @impl true\n  def mount(_params, _session, socket) do\n    {:ok,\n     socket\n     |> assign(:page_title, \"Sign in\")}\n  end\n\n  @impl true\n  def render(assigns) do\n    ~H\"\"\"\n    <Layouts.app\n      flash={@flash}\n      current_scope={assigns[:current_scope]}\n      current_user={assigns[:current_user]}\n    >\n      <.auth_shell\n        eyebrow=\"Custom authentication\"\n        title=\"Sign in without leaving the product\"\n        subtitle=\"Use your password for a full session or request a one-time magic link for a faster return.\"\n        detail_one=\"Password sign-in still uses AshAuthentication sign-in tokens\"\n        detail_two=\"Magic links stay sign-in only for existing accounts\"\n        detail_three=\"Every session lands on a dedicated dashboard shell\"\n      >\n        <.auth_page\n          eyebrow=\"Account access\"\n          title=\"Sign in\"\n          subtitle=\"Choose your entry path. Password and magic-link access stay inside the same first-party shell.\"\n          current_path=\"/sign-in\"\n        >\n          <div class=\"ui-auth-flow-stack\">\n            <.live_component module={PasswordSignInComponent} id=\"password-sign-in\" />\n\n            <div class=\"ui-auth-flow-divider\" />\n\n            <.live_component module={MagicLinkRequestComponent} id=\"magic-link-request\" />\n          </div>\n\n          <:footer>\n            <.auth_page_footer\n              prompt=\"Need a fresh account?\"\n              link_text=\"Register\"\n              link_href={~p\"/register\"}\n              note=\"Password and magic-link access land in the same authenticated dashboard shell.\"\n            />\n          </:footer>\n        </.auth_page>\n      </.auth_shell>\n    </Layouts.app>\n    \"\"\"\n  end\nend\n"
+     right: "data-feedback=\"success\""
+     stacktrace:
+       test/design_accessibility_test.exs:50: (test)
+
+......
+
+  2) test HEEx and Vue primitive contracts align for alerts and invalid field states (EBossWeb.DesignSurfaceTest)
+     test/design_surface_test.exs:119
+     Assertion with =~ failed
+     code:  assert sign_in_live =~ ~s|<.auth_feedback|
+     left:  "defmodule EBossWeb.Auth.SignInLive do\n  use EBossWeb, :live_view\n\n  alias EBossWeb.Auth.{MagicLinkRequestComponent, PasswordSignInComponent}\n  alias EBossWeb.AuthComponents\n  import AuthComponents\n\n  @impl true\n  def mount(_params, _session, socket) do\n    {:ok,\n     socket\n     |> assign(:page_title, \"Sign in\")}\n  end\n\n  @impl true\n  def render(assigns) do\n    ~H\"\"\"\n    <Layouts.app\n      flash={@flash}\n      current_scope={assigns[:current_scope]}\n      current_user={assigns[:current_user]}\n    >\n      <.auth_shell\n        eyebrow=\"Custom authentication\"\n        title=\"Sign in without leaving the product\"\n        subtitle=\"Use your password for a full session or request a one-time magic link for a faster return.\"\n        detail_one=\"Password sign-in still uses AshAuthentication sign-in tokens\"\n        detail_two=\"Magic links stay sign-in only for existing accounts\"\n        detail_three=\"Every session lands on a dedicated dashboard shell\"\n      >\n        <.auth_page\n          eyebrow=\"Account access\"\n          title=\"Sign in\"\n          subtitle=\"Choose your entry path. Password and magic-link access stay inside the same first-party shell.\"\n          current_path=\"/sign-in\"\n        >\n          <div class=\"ui-auth-flow-stack\">\n            <.live_component module={PasswordSignInComponent} id=\"password-sign-in\" />\n\n            <div class=\"ui-auth-flow-divider\" />\n\n            <.live_component module={MagicLinkRequestComponent} id=\"magic-link-request\" />\n          </div>\n\n          <:footer>\n            <.auth_page_footer\n              prompt=\"Need a fresh account?\"\n              link_text=\"Register\"\n              link_href={~p\"/register\"}\n              note=\"Password and magic-link access land in the same authenticated dashboard shell.\"\n            />\n          </:footer>\n        </.auth_page>\n      </.auth_shell>\n    </Layouts.app>\n    \"\"\"\n  end\nend\n"
+     right: "<.auth_feedback"
+     stacktrace:
+       test/design_surface_test.exs:173: (test)
+
+
+
+  3) test auth routes share a reusable shell hierarchy and preview contract (EBossWeb.DesignSurfaceTest)
+     test/design_surface_test.exs:213
+     Assertion with =~ failed
+     code:  assert sign_in_live =~ "<.auth_form"
+     left:  "defmodule EBossWeb.Auth.SignInLive do\n  use EBossWeb, :live_view\n\n  alias EBossWeb.Auth.{MagicLinkRequestComponent, PasswordSignInComponent}\n  alias EBossWeb.AuthComponents\n  import AuthComponents\n\n  @impl true\n  def mount(_params, _session, socket) do\n    {:ok,\n     socket\n     |> assign(:page_title, \"Sign in\")}\n  end\n\n  @impl true\n  def render(assigns) do\n    ~H\"\"\"\n    <Layouts.app\n      flash={@flash}\n      current_scope={assigns[:current_scope]}\n      current_user={assigns[:current_user]}\n    >\n      <.auth_shell\n        eyebrow=\"Custom authentication\"\n        title=\"Sign in without leaving the product\"\n        subtitle=\"Use your password for a full session or request a one-time magic link for a faster return.\"\n        detail_one=\"Password sign-in still uses AshAuthentication sign-in tokens\"\n        detail_two=\"Magic links stay sign-in only for existing accounts\"\n        detail_three=\"Every session lands on a dedicated dashboard shell\"\n      >\n        <.auth_page\n          eyebrow=\"Account access\"\n          title=\"Sign in\"\n          subtitle=\"Choose your entry path. Password and magic-link access stay inside the same first-party shell.\"\n          current_path=\"/sign-in\"\n        >\n          <div class=\"ui-auth-flow-stack\">\n            <.live_component module={PasswordSignInComponent} id=\"password-sign-in\" />\n\n            <div class=\"ui-auth-flow-divider\" />\n\n            <.live_component module={MagicLinkRequestComponent} id=\"magic-link-request\" />\n          </div>\n\n          <:footer>\n            <.auth_page_footer\n              prompt=\"Need a fresh account?\"\n              link_text=\"Register\"\n              link_href={~p\"/register\"}\n              note=\"Password and magic-link access land in the same authenticated dashboard shell.\"\n            />\n          </:footer>\n        </.auth_page>\n      </.auth_shell>\n    </Layouts.app>\n    \"\"\"\n  end\nend\n"
+     right: "<.auth_form"
+     stacktrace:
+       test/design_surface_test.exs:241: (test)
+
+..................
+
+  4) test magic-link typing survives password typing (EBossWeb.AuthLiveTest)
+     test/eboss_web/live/auth/auth_live_test.exs:245
+     Assertion with == failed
+     code:  assert form_field_value(html, "sign-in-password-form", "password_user[email]") == password_email
+     left:  nil
+     right: "password-owner@example.com"
+     stacktrace:
+       test/eboss_web/live/auth/auth_live_test.exs:262: (test)
+
+...........
+
+  5) test password typing survives magic-link typing (EBossWeb.AuthLiveTest)
+     test/eboss_web/live/auth/auth_live_test.exs:221
+     Assertion with == failed
+     code:  assert form_field_value(html, "sign-in-password-form", "password_user[email]") == password_email
+     left:  nil
+     right: "retained-password@example.com"
+     stacktrace:
+       test/eboss_web/live/auth/auth_live_test.exs:238: (test)
+
+.....
+Finished in 6.6 seconds (0.3s async, 6.3s sync)
+56 tests, 5 failures
+** (exit) 2
+    (mix 1.19.5) lib/mix/tasks/cmd.ex:135: Mix.Tasks.Cmd.run/1
+    (mix 1.19.5) lib/mix/task.ex:499: anonymous fn/3 in Mix.Task.run_task/5
+    (mix 1.19.5) lib/mix/project.ex:557: Mix.Project.in_project/4
+    (elixir 1.19.5) lib/file.ex:2013: File.cd!/2
+    (mix 1.19.5) lib/mix/task.ex:671: anonymous fn/4 in Mix.Task.run_in_children_projects/2
+    (elixir 1.19.5) lib/enum.ex:2520: Enum."-reduce/3-lists^foldl/2-0-"/3
+    (mix 1.19.5) lib/mix/task.ex:670: Mix.Task.run_in_children_projects/2
+    (mix 1.19.5) lib/mix/project_stack.ex:241: Mix.ProjectStack.recur/1
+Updated the failing story tests to match the extracted sign-in components and the component-targeted event flow. The source-contract assertions now inspect the magic-link component and sign-in composition instead of assuming everything still lives in `SignInLive` in [design_accessibility_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/design_accessibility_test.exs#L29) and [design_surface_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/design_surface_test.exs#L119). The retention tests now re-render the full LiveView after component change events before asserting persisted field values in [auth_live_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/eboss_web/live/auth/auth_live_test.exs#L221).
+
+I also ran a lightweight syntax parse on the modified test files with `elixir`, which passed.
+
+I attempted `mix precommit`, but it cannot run in this sandbox: Mix fails immediately with `failed to open a TCP socket in Mix.Sync.PubSub.subscribe/1, reason: :eperm` before project verification starts. So I could not leave `mix precommit` passing from this environment. No commit or push was made.
+==> eboss_data
+There are no tests to run
+==> eboss_accounts
+Running ExUnit with seed: 279777, max_cases: 20
+
+............
+Finished in 8.5 seconds (0.00s async, 8.5s sync)
+12 tests, 0 failures
+==> eboss_tenancy
+Running ExUnit with seed: 283061, max_cases: 20
+
+............
+Finished in 6.8 seconds (0.00s async, 6.8s sync)
+12 tests, 0 failures
+==> eboss_workspaces
+Running ExUnit with seed: 708816, max_cases: 20
+
+............
+Finished in 6.1 seconds (0.00s async, 6.1s sync)
+12 tests, 0 failures
+==> eboss_folio
+Running ExUnit with seed: 408968, max_cases: 20
+
+...........
+Finished in 4.1 seconds (0.00s async, 4.1s sync)
+11 tests, 0 failures
+==> eboss_web
+Running ExUnit with seed: 407913, max_cases: 20
+
+....................................
+
+  1) test password typing survives magic-link typing (EBossWeb.AuthLiveTest)
+     test/eboss_web/live/auth/auth_live_test.exs:221
+     Assertion with == failed
+     code:  assert form_field_value(html, "sign-in-password-form", "password_user[email]") == password_email
+     left:  nil
+     right: "retained-password@example.com"
+     stacktrace:
+       test/eboss_web/live/auth/auth_live_test.exs:240: (test)
+
+..............
+
+  2) test magic-link typing survives password typing (EBossWeb.AuthLiveTest)
+     test/eboss_web/live/auth/auth_live_test.exs:247
+     Assertion with == failed
+     code:  assert form_field_value(html, "sign-in-password-form", "password_user[email]") == password_email
+     left:  nil
+     right: "password-owner@example.com"
+     stacktrace:
+       test/eboss_web/live/auth/auth_live_test.exs:266: (test)
+
+....
+Finished in 8.0 seconds (0.2s async, 7.7s sync)
+56 tests, 2 failures
+** (exit) 2
+    (mix 1.19.5) lib/mix/tasks/cmd.ex:135: Mix.Tasks.Cmd.run/1
+    (mix 1.19.5) lib/mix/task.ex:499: anonymous fn/3 in Mix.Task.run_task/5
+    (mix 1.19.5) lib/mix/project.ex:557: Mix.Project.in_project/4
+    (elixir 1.19.5) lib/file.ex:2013: File.cd!/2
+    (mix 1.19.5) lib/mix/task.ex:671: anonymous fn/4 in Mix.Task.run_in_children_projects/2
+    (elixir 1.19.5) lib/enum.ex:2520: Enum."-reduce/3-lists^foldl/2-0-"/3
+    (mix 1.19.5) lib/mix/task.ex:670: Mix.Task.run_in_children_projects/2
+    (mix 1.19.5) lib/mix/project_stack.ex:241: Mix.ProjectStack.recur/1
+Updated [core_components.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/components/core_components.ex#L193) so form-backed inputs always take the field value and normalize `String.Chars` structs like `Ash.CiString` before rendering. That restores the missing `value=` attribute on the sign-in email fields, which is what was causing the retention regression when the sibling auth form updated. No commit or push was done.
+
+Verification in this sandbox is partial. `mix compile --warnings-as-errors` and `mix format --check-formatted` pass. I also verified with a direct component render that both auth email inputs now emit the expected `value="..."` markup. A real `mix precommit` run still cannot complete here because Postgrex is blocked from opening the test DB connection in this environment: `tcp connect (/tmp/.s.PGSQL.5432): not owner - :eperm`.
+==> eboss_data
+There are no tests to run
+==> eboss_accounts
+Running ExUnit with seed: 349474, max_cases: 20
+
+............
+Finished in 7.7 seconds (0.00s async, 7.7s sync)
+12 tests, 0 failures
+==> eboss_tenancy
+Running ExUnit with seed: 486739, max_cases: 20
+
+............
+Finished in 6.6 seconds (0.00s async, 6.6s sync)
+12 tests, 0 failures
+==> eboss_workspaces
+Running ExUnit with seed: 564283, max_cases: 20
+
+............
+Finished in 6.4 seconds (0.00s async, 6.4s sync)
+12 tests, 0 failures
+==> eboss_folio
+Running ExUnit with seed: 488791, max_cases: 20
+
+...........
+Finished in 4.3 seconds (0.00s async, 4.3s sync)
+11 tests, 0 failures
+==> eboss_web
+Running ExUnit with seed: 597077, max_cases: 20
+
+........................................................
+Finished in 7.2 seconds (0.2s async, 6.9s sync)
+56 tests, 0 failures

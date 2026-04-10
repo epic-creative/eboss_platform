@@ -197,7 +197,7 @@ defmodule EBossWeb.CoreComponents do
     |> assign(field: nil, id: assigns.id || field.id)
     |> assign(:errors, Enum.map(errors, &translate_error(&1)))
     |> assign_new(:name, fn -> if assigns.multiple, do: field.name <> "[]", else: field.name end)
-    |> assign_new(:value, fn -> field.value end)
+    |> assign(:value, normalize_form_value(field.value))
     |> input()
   end
 
@@ -342,6 +342,18 @@ defmodule EBossWeb.CoreComponents do
       <span>{render_slot(@inner_block)}</span>
     </p>
     """
+  end
+
+  defp normalize_form_value(value) when is_list(value) do
+    Enum.map(value, &normalize_form_value/1)
+  end
+
+  defp normalize_form_value(value) do
+    if String.Chars.impl_for(value) && !is_binary(value) do
+      to_string(value)
+    else
+      value
+    end
   end
 
   slot :inner_block, required: true
