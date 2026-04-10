@@ -1345,3 +1345,136 @@ Running ExUnit with seed: 21151, max_cases: 20
 .............................................................
 Finished in 7.5 seconds (0.3s async, 7.2s sync)
 61 tests, 0 failures
+**1) Changed files**
+- [home_live.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/live/home_live.ex) rewrites the landing page around a calmer hero, proof strip, continuity section, rhythm section, and updated CTA copy.
+- [patterns.css](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/css/system/patterns.css) adds page-scoped `ui-home-*` layout/pacing rules and responsive breakpoints for the new landing structure.
+- [design_surface_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/design_surface_test.exs) updates static design-system assertions for the new home-page structure and CSS hooks.
+- [public_shell_smoke_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/eboss_web/live/public_shell_smoke_test.exs) adds home-page narrative smoke coverage and a no-start endpoint harness for route checks.
+- [home_live_render_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/eboss_web/live/home_live_render_test.exs) adds render-level coverage for the reframed landing page without requiring the repo to boot.
+
+**2) Tests/commands executed**
+- `git diff --check`  
+  Passed.
+- `MIX_OS_CONCURRENCY_LOCK=0 elixir -pa /tmp/mix_override/mix/ebin $(which mix) format ...`  
+  Passed for the changed files.
+- `MIX_ENV=test MIX_OS_CONCURRENCY_LOCK=0 elixir -pa /tmp/mix_override/mix/ebin $(which mix) compile`  
+  Passed.
+- `MIX_ENV=test MIX_OS_CONCURRENCY_LOCK=0 elixir -pa /tmp/mix_override/mix/ebin $(which mix) run --no-start -e 'ExUnit.start(); Code.require_file(...design_surface_test...); Code.require_file(...home_live_render_test...); Code.require_file(...public_shell_smoke_test...); ...'`  
+  Passed, `10 tests, 0 failures`.
+- `MIX_OS_CONCURRENCY_LOCK=0 elixir -pa /tmp/mix_override/mix/ebin $(which mix) precommit`  
+  Attempted, but did not pass in this sandbox.
+
+**3) Acceptance criteria coverage**
+- The landing page now reads as part of the product UI, not a generic marketing shell: the hero pairs narrative copy with route/handoff proof panels and keeps the shared shell vocabulary intact in [home_live.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/live/home_live.ex).
+- Narrative pacing is stronger and priorities are clearer: the page now moves hero -> proof strip -> continuity section -> rhythm section -> CTA, with dedicated responsive rules in [patterns.css](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/css/system/patterns.css).
+- The design system is used intentionally: the rewrite stays on shared `panel`, `badge`, typography, and `Layouts.public_cta_frame` contracts rather than decorative one-offs, and that structure is covered in [design_surface_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/design_surface_test.exs), [public_shell_smoke_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/eboss_web/live/public_shell_smoke_test.exs), and [home_live_render_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/eboss_web/live/home_live_render_test.exs).
+
+**4) Blockers/assumptions**
+- I kept the work scoped to `ST-PUB-002`: only the home page narrative/rhythm and its page-scoped coverage changed. I did not introduce reusable public-section abstractions from `ST-PUB-003`.
+- `mix precommit` could not be left passing in this environment. The sandbox blocks Mix’s loopback socket behavior and local Postgres access with `:eperm`, so the repo’s normal recursive Mix/test path cannot complete here.
+- I verified the story with `mix run --no-start` route/render checks and reviewed the implementation against `DESIGN.md`, but a full live browser desktop/mobile visual pass was limited by the same sandbox restrictions on local listeners/file-backed browser rendering.
+==> eboss_data
+There are no tests to run
+==> eboss_accounts
+Running ExUnit with seed: 887263, max_cases: 20
+
+............
+Finished in 8.2 seconds (0.00s async, 8.2s sync)
+12 tests, 0 failures
+==> eboss_tenancy
+Running ExUnit with seed: 725460, max_cases: 20
+
+............
+Finished in 7.0 seconds (0.00s async, 7.0s sync)
+12 tests, 0 failures
+==> eboss_workspaces
+Running ExUnit with seed: 664533, max_cases: 20
+
+............
+Finished in 6.2 seconds (0.00s async, 6.2s sync)
+12 tests, 0 failures
+==> eboss_folio
+Running ExUnit with seed: 421704, max_cases: 20
+
+...........
+Finished in 4.4 seconds (0.00s async, 4.4s sync)
+11 tests, 0 failures
+==> eboss_web
+Running ExUnit with seed: 547342, max_cases: 20
+
+...........
+
+  1) test shared HEEx surfaces use the semantic typography hierarchy (EBossWeb.DesignTypographyTest)
+     test/design_typography_test.exs:57
+     Assertion with =~ failed
+     code:  assert contents =~ ~s(title_size="hero")
+     left:  "defmodule EBossWeb.CoreComponents do\n  @moduledoc \"\"\"\n  Canonical HEEx UI primitives backed by the first-party design system.\n  \"\"\"\n\n  use Phoenix.Component\n  use Gettext, backend: EBossWeb.Gettext\n\n  alias Phoenix.LiveView.JS\n\n  attr :id, :string, doc: \"the optional id of flash container\"\n  attr :flash, :map, default: %{}, doc: \"the map of flash messages to display\"\n  attr :title, :string, default: nil\n  attr :kind, :atom, values: [:info, :error], doc: \"used for flash lookup\"\n  attr :tone, :string, default: nil\n  attr :dismissible, :boolean, default: true\n  attr :rest, :global\n\n  slot :inner_block\n\n  def flash(assigns) do\n    assigns = assign_new(assigns, :id, fn -> \"flash-\#{assigns.kind}\" end)\n    assigns = assign(assigns, :tone, assigns.tone || tone_from_kind(assigns.kind))\n    assigns = assign(assigns, :icon_name, flash_icon(assigns.kind))\n\n    ~H\"\"\"\n    <div\n      :if={msg = render_slot(@inner_block) || Phoenix.Flash.get(@flash, @kind)}\n      id={@id}\n      class=\"ui-toast-stack\"\n      {@rest}\n    >\n      <div\n        role=\"alert\"\n        aria-live=\"assertive\"\n        aria-atomic=\"true\"\n        class=\"ui-alert w-80 max-w-80 sm:w-96 sm:max-w-96\"\n        data-tone={@tone}\n      >\n        <.icon name={@icon_name} class=\"mt-0.5 size-5 shrink-0\" />\n        <div class=\"ui-alert__content\">\n          <p :if={@title} class=\"ui-alert__title\">{@title}</p>\n          <p class=\"ui-alert__description\">{msg}</p>\n        </div>\n        <button\n          :if={@dismissible}\n          type=\"button\"\n          class=\"ui-button shrink-0\"\n          data-variant=\"ghost\"\n          data-tone=\"neutral\"\n          data-size=\"sm\"\n          aria-label={gettext(\"close\")}\n          phx-click={JS.push(\"lv:clear-flash\", value: %{key: @kind}) |> hide(\"#\#{@id}\")}\n        >\n          <.icon name=\"hero-x-mark\" class=\"size-4\" />\n        </button>\n      </div>\n    </div>\n    \"\"\"\n  end\n\n  attr :rest, :global, include: ~w(href navigate patch method download name value disabled type)\n  attr :class, :any, default: nil\n  attr :variant, :string, values: ~w(solid outline ghost subtle), default: \"solid\"\n  attr :tone, :string, values: ~w(primary neutral success warning danger), default: \"primary\"\n  attr :size, :string, values: ~w(sm md lg), default: \"md\"\n  attr :loading, :boolean, default: false\n  attr :icon, :string, default: nil\n  attr :icon_position, :string, values: ~w(leading trailing), default: \"leading\"\n\n  slot :inner_block, required: true\n\n  def button(%{rest: rest} = assigns) do\n    state = if assigns.loading, do: \"loading\", else: \"default\"\n    button_class = [\"ui-button\", assigns.class]\n    button_disabled = assigns.loading || !!rest[:disabled]\n    is_link = !!(rest[:href] || rest[:navigate] || rest[:patch])\n\n    assigns =\n      assigns\n      |> assign(:button_class, button_class)\n      |> assign(:button_state, state)\n      |> assign(:is_link, is_link)\n      |> assign(:button_disabled, button_disabled)\n      |> assign(:button_rest, strip_button_accessibility_attrs(rest))\n      |> assign(:disabled_link_rest, strip_disabled_link_attrs(rest))\n\n    cond do\n      assigns.is_link && assigns.button_disabled ->\n        ~H\"\"\"\n        <span\n          class={@button_class}\n          data-variant={@variant}\n          data-tone={@tone}\n          data-size={@size}\n          data-state={@button_state}\n          aria-busy={busy_attr(@loading)}\n          aria-disabled=\"true\"\n          tabindex=\"-1\"\n          {@disabled_link_rest}\n        >\n          <.button_inner loading={@loading} icon={@icon} icon_position={@icon_position}>\n            {render_slot(@inner_block)}\n          </.button_inner>\n        </span>\n        \"\"\"\n\n      assigns.is_link ->\n        ~H\"\"\"\n        <.link\n          class={@button_class}\n          data-variant={@variant}\n          data-tone={@tone}\n          data-size={@size}\n          data-state={@button_state}\n          aria-busy={busy_attr(@loading)}\n          {@button_rest}\n        >\n          <.button_inner loading={@loading} icon={@icon} icon_position={@icon_position}>\n            {render_slot(@inner_block)}\n          </.button_inner>\n        </.link>" <> ...
+     right: "title_size=\"hero\""
+     stacktrace:
+       test/design_typography_test.exs:65: (test)
+
+.........
+
+  2) test home live renders the reframed landing structure (EBossWeb.HomeLiveRenderTest)
+     test/eboss_web/live/home_live_render_test.exs:18
+     ** (RuntimeError) failed to start child with the spec {Phoenix.PubSub, [name: EBoss.PubSub]}.
+     Reason: bad child specification, got: {:already_started, #PID<0.507.0>}
+     stacktrace:
+       (ex_unit 1.19.5) lib/ex_unit/callbacks.ex:597: ExUnit.Callbacks.start_supervised!/2
+       test/eboss_web/live/home_live_render_test.exs:13: EBossWeb.HomeLiveRenderTest.__ex_unit_setup_0/1
+       test/eboss_web/live/home_live_render_test.exs:1: EBossWeb.HomeLiveRenderTest.__ex_unit__/2
+
+.........................................
+Finished in 7.9 seconds (0.3s async, 7.6s sync)
+63 tests, 2 failures
+** (exit) 2
+    (mix 1.19.5) lib/mix/tasks/cmd.ex:135: Mix.Tasks.Cmd.run/1
+    (mix 1.19.5) lib/mix/task.ex:499: anonymous fn/3 in Mix.Task.run_task/5
+    (mix 1.19.5) lib/mix/project.ex:557: Mix.Project.in_project/4
+    (elixir 1.19.5) lib/file.ex:2013: File.cd!/2
+    (mix 1.19.5) lib/mix/task.ex:671: anonymous fn/4 in Mix.Task.run_in_children_projects/2
+    (elixir 1.19.5) lib/enum.ex:2520: Enum."-reduce/3-lists^foldl/2-0-"/3
+    (mix 1.19.5) lib/mix/task.ex:670: Mix.Task.run_in_children_projects/2
+    (mix 1.19.5) lib/mix/project_stack.ex:241: Mix.ProjectStack.recur/1
+**Changes**
+I fixed the two reported regressions.
+
+In [home_live.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/live/home_live.ex#L31), the hero now uses the shared `<.section_heading>` with `title_size="hero"`, which restores the semantic typography contract the audit test expects without changing the story copy. In [home_live_render_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/eboss_web/live/home_live_render_test.exs#L1), I made the test non-async and guarded the Telemetry/PubSub/Endpoint startup so it no longer crashes on `{:already_started, ...}`.
+
+**Verification**
+`mix format --check-formatted` passed. `mix compile --warnings-as-errors` passed. I also re-ran the two failing checks directly under `elixir` against the compiled test build, and they now pass: 4 tests, 0 failures.
+
+**Blocker**
+I attempted `mix precommit`, but I could not leave it passing in this sandbox. After working around Elixir 1.19 Mix’s own socket-based pubsub, the umbrella alias still fails in `ecto.create` because `EBoss.Repo` tries to connect to Postgres on `localhost:5432`, and this environment blocks that TCP connection with `:eperm`. I did not commit or push.
+==> eboss_data
+There are no tests to run
+==> eboss_accounts
+Running ExUnit with seed: 966921, max_cases: 20
+
+............
+Finished in 8.0 seconds (0.00s async, 8.0s sync)
+12 tests, 0 failures
+==> eboss_tenancy
+Running ExUnit with seed: 523740, max_cases: 20
+
+............
+Finished in 7.1 seconds (0.00s async, 7.1s sync)
+12 tests, 0 failures
+==> eboss_workspaces
+Running ExUnit with seed: 988318, max_cases: 20
+
+............
+Finished in 6.0 seconds (0.00s async, 6.0s sync)
+12 tests, 0 failures
+==> eboss_folio
+Running ExUnit with seed: 586907, max_cases: 20
+
+...........
+Finished in 4.4 seconds (0.00s async, 4.4s sync)
+11 tests, 0 failures
+==> eboss_web
+Running ExUnit with seed: 208030, max_cases: 20
+
+...............................................................
+Finished in 8.0 seconds (0.2s async, 7.8s sync)
+63 tests, 0 failures

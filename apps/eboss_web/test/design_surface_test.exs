@@ -56,7 +56,11 @@ defmodule EBossWeb.DesignSurfaceTest do
     assert ui_panel_story =~ "Floating surface"
     assert ui_panel_story =~ "Solid surface"
 
-    assert home_live =~ ~s(<.panel as="div" surface="solid" padding="sm" class="ui-metric-card">)
+    assert home_live =~ ~s(<div class="ui-home-page">)
+    assert home_live =~ ~s(<.panel surface="floating" class="ui-home-hero__frame">)
+    assert home_live =~ ~s|:for={step <- route_sequence()}|
+    assert home_live =~ ~s|class="ui-home-route-sequence__step"|
+
     assert story_surface =~ ~s(class="ui-preview-frame")
     assert visual_dna_story =~ ~s(<UiPanel surface="solid" padding="sm" class="space-y-3">)
     assert auth_scene_vue =~ ~s(<UiPanel class="ui-auth-scene__tile p-4" surface="solid">)
@@ -131,6 +135,12 @@ defmodule EBossWeb.DesignSurfaceTest do
     assert patterns_css =~ ".ui-public-footer"
     assert patterns_css =~ ".ui-public-footer__grid"
     assert patterns_css =~ ".ui-public-footer__link[data-active=\"true\"]"
+    assert patterns_css =~ ".ui-home-page"
+    assert patterns_css =~ ".ui-home-hero"
+    assert patterns_css =~ ".ui-home-proof-grid"
+    assert patterns_css =~ ".ui-home-story"
+    assert patterns_css =~ ".ui-home-story--reverse"
+    assert patterns_css =~ ".ui-home-route-sequence__step-inner"
 
     assert layouts =~
              ~s|attr :shell_mode, :string, values: ~w(product public), default: "product"|
@@ -142,6 +152,10 @@ defmodule EBossWeb.DesignSurfaceTest do
 
     assert home_live =~ ~s(shell_mode="public")
     assert home_live =~ ~s(current_path="/")
+    assert home_live =~ ~s(data-home-hero)
+    assert home_live =~ ~s(data-home-proof-strip)
+    assert home_live =~ ~s(data-home-story="continuity")
+    assert home_live =~ ~s(data-home-story="tempo")
     assert home_live =~ "<:shell_footer>"
     assert home_live =~ "<Layouts.public_cta_frame"
 
