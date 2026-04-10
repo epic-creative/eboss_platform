@@ -1,5 +1,9 @@
 # EBoss.Umbrella
 
+## Design System
+
+Design-system guidance for typography, CSS layering, HEEx and Vue component boundaries, file locations, and Histoire usage lives in `DESIGN.md`.
+
 Runtime host defaults are environment-aware:
 
 * `local` -> `http://local.eboss.ai:4000`

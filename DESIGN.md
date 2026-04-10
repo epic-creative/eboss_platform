@@ -1,0 +1,285 @@
+# DESIGN.md
+
+This document is the design-system counterpart to `AGENTS.md`.
+
+It defines how the EBoss design layer is organized, where design code lives, and how to extend it without turning the UI into a set of unrelated page-level decisions.
+
+The goal is not to lock in a single visual treatment forever. The goal is to keep the system coherent while the product evolves.
+
+## Intent
+
+The EBoss UI should feel like one product, not a collection of screens.
+
+Design work in this repository should:
+
+- build from shared primitives before page-specific styling
+- use semantic tokens instead of hardcoded visual values
+- keep HEEx and Vue surfaces visually aligned
+- separate visual structure from business logic
+- prefer repeatable patterns over one-off hero implementations
+- make component states visible in development tooling before they spread through the app
+
+## System Shape
+
+The design layer currently has four main levels:
+
+1. Foundations
+   Typography, spacing, radii, shadows, color tokens, motion, density.
+2. Primitives
+   Inputs, buttons, panels, alerts, badges, tabs, dialogs, empty states, and related low-level controls.
+3. Patterns
+   Auth shells, form layouts, dashboard sections, split panes, empty states, feedback blocks, navigation shells.
+4. Screens
+   Product-specific pages built from the layers above.
+
+Do not build screen-first and only later try to extract a system. Start from the lowest stable layer that fits the change.
+
+## File Locations
+
+The current design-system surface is split across CSS, HEEx, Vue, and development previews.
+
+### CSS foundation
+
+- `apps/eboss_web/assets/css/app.css`
+  Entry point for the web styling stack.
+- `apps/eboss_web/assets/css/system/tokens.css`
+  Semantic tokens and theme-facing variable mapping.
+- `apps/eboss_web/assets/css/system/themes.css`
+  Theme definitions and theme-specific overrides.
+- `apps/eboss_web/assets/css/system/primitives.css`
+  Shared primitive styles such as buttons, fields, panels, alerts, and common interaction states.
+- `apps/eboss_web/assets/css/system/patterns.css`
+  Higher-level layout and page-pattern rules.
+
+### HEEx components
+
+- `apps/eboss_web/lib/eboss_web/components/core_components.ex`
+  Core HEEx primitives used directly in LiveViews and templates.
+- `apps/eboss_web/lib/eboss_web/components/ui_components.ex`
+  Shared HEEx UI patterns and composition helpers.
+- `apps/eboss_web/lib/eboss_web/components/layouts.ex`
+  Global shell and layout frame.
+- `apps/eboss_web/lib/eboss_web/components/auth_components.ex`
+  Auth-specific shared patterns.
+
+### Vue components
+
+- `apps/eboss_web/assets/vue/components/ui/`
+  Reusable Vue primitives and low-level building blocks.
+- `apps/eboss_web/assets/vue/stories/`
+  Histoire helpers used to present and inspect component states.
+- `apps/eboss_web/assets/vue/auth/`
+  Auth-focused Vue scenes and page-level composition.
+- `apps/eboss_web/assets/vue/dashboard/`
+  Dashboard-focused Vue scenes and composition.
+
+### Development previews
+
+- `apps/eboss_web/assets/histoire.config.ts`
+  Histoire configuration.
+- `apps/eboss_web/assets/histoire.setup.ts`
+  Histoire setup and CSS loading.
+- `apps/eboss_web/lib/eboss_web/live/dev/design_system_live.ex`
+  HEEx-side design-system preview page.
+- `/dev/design-system`
+  In-app HEEx preview route for primitives and patterns.
+
+## Typography
+
+Typography is part of the system, not a per-page decision.
+
+- Use the tokenized font roles:
+  - display
+  - body
+  - mono
+- Use display typography for headings and product-defining moments, not for all text.
+- Use body typography for dense product UI, forms, tables, explanatory copy, and long-reading surfaces.
+- Use mono typography sparingly for metadata, labels, operator context, short codes, and technical accents.
+- Prefer semantic classes and tokens over direct font-family decisions at call sites.
+- If a screen needs a new text treatment, first decide whether it is:
+  - a missing token
+  - a missing primitive style
+  - a one-off that should not exist
+
+Avoid introducing typography variants that are distinguishable only by tiny weight or spacing changes. If users cannot reliably feel the difference, it is noise.
+
+## CSS Rules
+
+The CSS layer should stay intentional and layered.
+
+- Put shared variables in `tokens.css`.
+- Put theme-specific mappings and overrides in `themes.css`.
+- Put reusable control styling in `primitives.css`.
+- Put layout and screen-pattern rules in `patterns.css`.
+- Keep `app.css` as the composition entrypoint, not a dumping ground.
+
+### Preferred CSS approach
+
+- Prefer semantic custom properties over hardcoded raw values.
+- Prefer shared `ui-*` class contracts for reusable pieces.
+- Prefer Tailwind utilities for local layout composition when they do not create repeated visual contracts.
+- Promote repeated visual structures into shared CSS and components.
+
+### Avoid
+
+- page-specific color literals when a semantic token should exist
+- component-local design systems that bypass the shared `ui-*` vocabulary
+- one-off spacing scales
+- arbitrary visual fixes duplicated across pages
+- mixing structural and stateful styles in a way that makes states hard to reason about
+
+## HEEx and Vue Parity
+
+This project has both HEEx components and Vue components. They must behave like one design system.
+
+- If a primitive exists in HEEx and Vue, it should share the same visual vocabulary and state model.
+- Naming should stay aligned across both layers.
+- Variants should mean the same thing in both layers.
+- Tone names should mean the same thing in both layers.
+- Focus, hover, loading, disabled, empty, error, and success states should feel equivalent.
+
+Do not let HEEx become the “server look” and Vue become the “modern look.” They are both part of the same product.
+
+## Vue Component Logic
+
+Vue components in the design layer should be primarily presentational and compositional.
+
+- Keep reusable UI primitives in `assets/vue/components/ui/`.
+- Keep product scenes and page compositions outside the primitive directory.
+- Prefer props, slots, and emitted events over internal business rules.
+- Keep domain logic, auth decisions, persistence, and server state in LiveView or the application layer unless there is a clear client-only need.
+- When a component needs state, keep that state local and interface-driven.
+- Avoid coupling primitives to specific routes, API payloads, or Ash resource details.
+
+A good primitive answers: “How should this look and interact?”
+
+It should not answer: “What business process owns this?”
+
+## LiveView and LiveVue Guidance
+
+LiveView owns server state and application flow.
+Vue should enhance presentation, composition, and controlled client interactions.
+
+- Prefer HEEx for server-driven forms, auth flows, and content that closely tracks assigns.
+- Prefer Vue where richer interaction, structured client composition, or component-driven presentation adds value.
+- Keep the contract between LiveView and Vue explicit through props and events.
+- Do not bury application-critical behavior inside opaque client-side component state.
+
+When in doubt, put truth on the server and presentation in the component layer.
+
+## Component Contracts
+
+Every shared primitive should have a small, explicit contract.
+
+That contract should answer:
+
+- what problem the component solves
+- what variants it supports
+- what states it supports
+- what inputs it accepts
+- what slots it exposes
+- what accessibility guarantees it provides
+- whether it is intended for primitive use or screen composition
+
+If a new component cannot explain its contract simply, it is probably a pattern or screen, not a primitive.
+
+## Accessibility
+
+Accessibility is part of design quality, not a later pass.
+
+- Inputs must have clear labels.
+- Interactive controls must have keyboard and focus behavior.
+- Focus states must be visible and consistent.
+- Dialogs, tabs, alerts, and form feedback must use appropriate semantics.
+- Color must not be the only signal for meaning.
+- Empty, loading, and error states should remain understandable without visual ornament.
+
+## Motion and Feedback
+
+Motion should clarify, not decorate.
+
+- Use motion to reinforce hierarchy, entry, feedback, and state change.
+- Keep transitions restrained and consistent.
+- Prefer a small motion vocabulary reused throughout the app.
+- Loading states should preserve layout stability whenever possible.
+
+Avoid layered animations that compete with content or make operator workflows feel soft or slow.
+
+## Histoire Usage
+
+Histoire is the primary workbench for Vue-side primitive and pattern development.
+
+Use it to:
+
+- inspect component states in isolation
+- compare variants and tones
+- validate responsive behavior
+- exercise empty, loading, error, and dense-content cases
+- document intended usage through stories
+
+Do not use Histoire as a replacement for:
+
+- LiveView integration testing
+- browser auth-flow testing
+- end-to-end workflow validation
+
+### Histoire expectations
+
+- Every reusable Vue primitive should have a story.
+- Stories should show meaningful states, not only the happy path.
+- Stories should include boundary examples such as long labels, missing content, dense content, and disabled/loading states where relevant.
+- Stories should use the shared story helpers in `assets/vue/stories/` when useful.
+- Histoire should load the same CSS entrypoint as the app so components are reviewed in the real design language.
+
+Useful scripts:
+
+- `npm run histoire`
+- `npm run histoire:build`
+- `npm run vue:check`
+
+Run them from `apps/eboss_web/assets`.
+
+## In-App Design Preview
+
+The HEEx design layer should also stay inspectable outside Vue stories.
+
+Use `/dev/design-system` to:
+
+- preview shared HEEx primitives
+- compare shell and layout patterns
+- validate form and panel composition in the app shell
+- make sure HEEx patterns stay aligned with Vue patterns
+
+If a shared HEEx pattern matters, it should be visible there.
+
+## Design Review Heuristics
+
+When changing UI, ask:
+
+- Is this using the existing system or bypassing it?
+- Is this a primitive, a pattern, or a screen concern?
+- Should this visual decision become reusable?
+- Does this create parity problems between HEEx and Vue?
+- Does this improve operator clarity, or only add novelty?
+- Are all major states represented?
+- Would this still feel coherent if repeated across five more screens?
+
+## What Not To Do
+
+- Do not reintroduce ad hoc visual frameworks or component libraries as the primary design language.
+- Do not define page-level styling as the default way of building the UI.
+- Do not hide important interaction rules inside visual components.
+- Do not add new variants unless they carry clear product meaning.
+- Do not let stories drift away from real production component usage.
+
+## Practical Default
+
+When adding or changing UI:
+
+1. Start with the existing token and primitive vocabulary.
+2. Decide whether the work belongs in CSS foundations, a primitive, a pattern, or a screen.
+3. Update or add Histoire stories for shared Vue components.
+4. Update `/dev/design-system` when HEEx primitives or shared patterns change.
+5. Keep HEEx and Vue parity in mind before merging new component contracts.
+
+This file should evolve as the design system gets stricter and the product surface gets broader.
