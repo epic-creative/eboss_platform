@@ -24,7 +24,11 @@ defmodule EBossWeb.Auth.ConfirmLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.app flash={@flash} current_scope={@current_scope} current_user={@current_user}>
+    <Layouts.app
+      flash={@flash}
+      current_scope={assigns[:current_scope]}
+      current_user={assigns[:current_user]}
+    >
       <.auth_shell
         eyebrow="Account confirmation"
         title="Confirm your email address"
@@ -34,15 +38,12 @@ defmodule EBossWeb.Auth.ConfirmLive do
         detail_three="Successful confirmations land on the dashboard shell"
       >
         <div class="space-y-8">
-          <div class="space-y-3">
-            <p class="text-xs font-semibold uppercase tracking-[0.28em] text-amber-700">
-              Email confirmation
-            </p>
-            <h1 class="text-3xl font-semibold tracking-tight text-stone-950">Confirm your account</h1>
-            <p class="text-sm leading-6 text-stone-600">
-              Use the button below to verify the email address attached to this account.
-            </p>
-          </div>
+          <.section_heading
+            eyebrow="Email confirmation"
+            title="Confirm your account"
+            subtitle="Use the button below to verify the email address attached to this account."
+            title_class="text-3xl"
+          />
 
           <.form_errors form={@form} />
 
@@ -58,12 +59,9 @@ defmodule EBossWeb.Auth.ConfirmLive do
           >
             <input type="hidden" name={form[:confirm].name} value={@token} />
 
-            <button
-              type="submit"
-              class="rounded-full bg-stone-950 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-stone-800"
-            >
+            <.button type="submit">
               Confirm email
-            </button>
+            </.button>
           </.form>
         </div>
       </.auth_shell>

@@ -131,6 +131,12 @@ config :live_vue,
       else: nil
     )
 
+if config_env() == :dev do
+  config :tidewave,
+    root: Path.expand("..", __DIR__),
+    project_name: "eboss_platform"
+end
+
 # config/runtime.exs is executed for all environments, including
 # during releases. It is executed after compilation and before the
 # system starts, so it is typically used to load production configuration

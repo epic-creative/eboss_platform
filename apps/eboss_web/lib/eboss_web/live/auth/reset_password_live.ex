@@ -51,7 +51,11 @@ defmodule EBossWeb.Auth.ResetPasswordLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.app flash={@flash} current_scope={@current_scope} current_user={@current_user}>
+    <Layouts.app
+      flash={@flash}
+      current_scope={assigns[:current_scope]}
+      current_user={assigns[:current_user]}
+    >
       <.auth_shell
         eyebrow="Password recovery"
         title="Choose a new password"
@@ -61,15 +65,12 @@ defmodule EBossWeb.Auth.ResetPasswordLive do
         detail_three="Invalid tokens fall back to the sign-in flow cleanly"
       >
         <div class="space-y-8">
-          <div class="space-y-3">
-            <p class="text-xs font-semibold uppercase tracking-[0.28em] text-amber-700">
-              Reset password
-            </p>
-            <h1 class="text-3xl font-semibold tracking-tight text-stone-950">Set a new password</h1>
-            <p class="text-sm leading-6 text-stone-600">
-              Choose a fresh password and we will sign you back into the application.
-            </p>
-          </div>
+          <.section_heading
+            eyebrow="Reset password"
+            title="Set a new password"
+            subtitle="Choose a fresh password and we will sign you back into the application."
+            title_class="text-3xl"
+          />
 
           <.form_errors form={@form} />
 
@@ -95,12 +96,9 @@ defmodule EBossWeb.Auth.ResetPasswordLive do
               autocomplete="new-password"
             />
 
-            <button
-              type="submit"
-              class="rounded-full bg-stone-950 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-stone-800"
-            >
+            <.button type="submit">
               Reset password
-            </button>
+            </.button>
           </.form>
         </div>
       </.auth_shell>

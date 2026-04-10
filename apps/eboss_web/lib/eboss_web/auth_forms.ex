@@ -26,12 +26,13 @@ defmodule EBossWeb.AuthForms do
     Helpers.auth_path(socket, subject_name(), @auth_routes_prefix, strategy, phase, params)
   end
 
-  def password_sign_in_form(current_tenant \\ nil, context \\ %{}) do
+  def password_sign_in_form(current_tenant \\ nil, context \\ %{}, opts \\ []) do
     strategy = password_strategy!()
+    as = Keyword.get(opts, :as, subject_name_string())
 
     Form.for_action(strategy.resource, strategy.sign_in_action_name,
       domain: domain(),
-      as: subject_name_string(),
+      as: as,
       id: "#{subject_name_string()}-password-sign-in",
       tenant: current_tenant,
       transform_errors: &transform_errors/2,
@@ -80,12 +81,13 @@ defmodule EBossWeb.AuthForms do
     |> Form.validate(%{"reset_token" => token}, errors: false)
   end
 
-  def magic_link_request_form(current_tenant \\ nil, context \\ %{}) do
+  def magic_link_request_form(current_tenant \\ nil, context \\ %{}, opts \\ []) do
     strategy = magic_link_strategy!()
+    as = Keyword.get(opts, :as, subject_name_string())
 
     Form.for_action(strategy.resource, strategy.request_action_name,
       domain: domain(),
-      as: subject_name_string(),
+      as: as,
       id: "#{subject_name_string()}-magic-link-request",
       tenant: current_tenant,
       transform_errors: &transform_errors/2,

@@ -1,0 +1,62 @@
+@theme inline {
+  --font-sans: var(--font-body);
+  --font-mono: var(--font-mono);
+  --font-display: var(--font-display);
+
+  --color-ui-shell: var(--color-shell);
+  --color-ui-canvas: var(--color-canvas);
+  --color-ui-surface: var(--color-surface);
+  --color-ui-surface-elevated: var(--color-surface-elevated);
+  --color-ui-surface-strong: var(--color-surface-strong);
+  --color-ui-panel: var(--color-panel);
+  --color-ui-panel-muted: var(--color-panel-muted);
+  --color-ui-border-subtle: var(--color-border-subtle);
+  --color-ui-border-strong: var(--color-border-strong);
+  --color-ui-text: var(--color-text);
+  --color-ui-text-muted: var(--color-text-muted);
+  --color-ui-text-soft: var(--color-text-soft);
+  --color-ui-accent: var(--color-accent);
+  --color-ui-accent-strong: var(--color-accent-strong);
+  --color-ui-accent-contrast: var(--color-accent-contrast);
+  --color-ui-success: var(--color-success);
+  --color-ui-success-contrast: var(--color-success-contrast);
+  --color-ui-warning: var(--color-warning);
+  --color-ui-warning-contrast: var(--color-warning-contrast);
+  --color-ui-danger: var(--color-danger);
+  --color-ui-danger-contrast: var(--color-danger-contrast);
+}
+
+:root {
+  --font-display: "Space Grotesk", "Avenir Next", "Segoe UI", sans-serif;
+  --font-body: "Manrope", "Avenir Next", "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", "SFMono-Regular", monospace;
+
+  --radius-control: 14px;
+  --radius-panel: 22px;
+  --radius-pill: 999px;
+
+  --control-height-sm: 2rem;
+  --control-height-md: 2.5rem;
+  --control-height-lg: 3rem;
+
+  --space-2xs: 0.375rem;
+  --space-xs: 0.5rem;
+  --space-sm: 0.75rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+
+  --shadow-panel: 0 24px 80px rgba(2, 10, 23, 0.14);
+  --shadow-panel-soft: 0 16px 48px rgba(15, 23, 42, 0.08);
+  --shadow-focus: 0 0 0 2px rgba(15, 23, 42, 0.65), 0 0 0 4px rgba(56, 189, 248, 0.45);
+
+  --motion-fast: 140ms;
+  --motion-medium: 240ms;
+  --ease-standard: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+[data-density="compact"] {
+  --control-height-sm: 1.875rem;
+  --control-height-md: 2.25rem;
+  --control-height-lg: 2.75rem;
+}

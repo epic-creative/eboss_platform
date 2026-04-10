@@ -40,7 +40,11 @@ defmodule EBossWeb.Auth.RegisterLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.app flash={@flash} current_scope={@current_scope} current_user={@current_user}>
+    <Layouts.app
+      flash={@flash}
+      current_scope={assigns[:current_scope]}
+      current_user={assigns[:current_user]}
+    >
       <.auth_shell
         eyebrow="Custom authentication"
         title="Create a first-party account"
@@ -50,16 +54,13 @@ defmodule EBossWeb.Auth.RegisterLive do
         detail_three="Email confirmation links keep the same public route contract"
       >
         <div class="space-y-8">
-          <div class="space-y-3">
-            <p class="text-xs font-semibold uppercase tracking-[0.28em] text-amber-700">
-              New account
-            </p>
-            <h1 class="text-3xl font-semibold tracking-tight text-stone-950">Register</h1>
-            <p class="text-sm leading-6 text-stone-600">
-              Create your account with an email, a stable username, and a password you can rotate later.
-            </p>
-            <.auth_nav current_path="/register" />
-          </div>
+          <.section_heading
+            eyebrow="New account"
+            title="Register"
+            subtitle="Create your account with an email, a stable username, and a password you can rotate later."
+            title_class="text-3xl"
+          />
+          <.auth_nav current_path="/register" />
 
           <.form_errors form={@form} />
 
@@ -87,18 +88,15 @@ defmodule EBossWeb.Auth.RegisterLive do
             />
 
             <div class="flex items-center justify-between gap-4">
-              <p class="text-sm text-stone-500">
+              <p class="text-sm text-ui-text-soft">
                 Already have an account? <a
                   href={~p"/sign-in"}
-                  class="font-medium text-sky-700 hover:text-sky-900"
+                  class="font-medium text-ui-accent hover:text-ui-accent-strong"
                 >Sign in</a>.
               </p>
-              <button
-                type="submit"
-                class="rounded-full bg-stone-950 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-stone-800"
-              >
+              <.button type="submit">
                 Create account
-              </button>
+              </.button>
             </div>
           </.form>
         </div>

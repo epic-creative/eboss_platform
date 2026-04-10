@@ -9,31 +9,30 @@ defmodule EBossWeb.DashboardLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.app flash={@flash} current_scope={@current_scope} current_user={@current_user}>
+    <Layouts.app
+      flash={@flash}
+      current_scope={assigns[:current_scope]}
+      current_user={assigns[:current_user]}
+    >
       <section class="space-y-8">
-        <div class="space-y-3">
-          <p class="text-xs font-semibold uppercase tracking-[0.28em] text-sky-700">
-            Authenticated shell
-          </p>
-          <h1 class="text-4xl font-semibold tracking-tight text-stone-950">
-            Welcome back, @{Map.get(@current_user, :username)}.
-          </h1>
-          <p class="max-w-3xl text-base leading-7 text-stone-600">
-            This dashboard is intentionally lean. It confirms the session boundary, gives the authenticated user a stable landing page, and leaves room for workspace and Folio entry points.
-          </p>
-        </div>
+        <.section_heading
+          eyebrow="Authenticated shell"
+          title={"Welcome back, @#{Map.get(@current_user, :username)}."}
+          subtitle="This dashboard is intentionally lean. It confirms the session boundary, gives the authenticated user a stable landing page, and leaves room for the orchestration surfaces to grow."
+          title_class="text-4xl"
+        />
 
-        <div class="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
-          <div class="rounded-[2rem] border border-white/70 bg-white/85 p-4 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur">
+        <div class="ui-split-grid">
+          <.panel surface="floating" class="ui-frame-card">
             <.DashboardLaunchpad
               username={Map.get(@current_user, :username)}
               email={to_string(Map.get(@current_user, :email))}
               workspaceLabel="Workspace routes and JSON:API are live"
               folioLabel="Folio remains workspace-scoped and boundary-driven"
             />
-          </div>
+          </.panel>
 
-          <div class="space-y-4 rounded-[2rem] border border-stone-200/80 bg-white/90 p-8 shadow-[0_24px_80px_rgba(15,23,42,0.08)]">
+          <.panel surface="floating" class="space-y-4 p-8">
             <div class="space-y-2">
               <p class="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">
                 Current account
@@ -44,28 +43,30 @@ defmodule EBossWeb.DashboardLive do
               <p class="text-sm text-stone-600">{to_string(Map.get(@current_user, :email))}</p>
             </div>
 
-            <div class="rounded-[1.5rem] bg-stone-950 px-5 py-6 text-white">
-              <p class="text-xs font-semibold uppercase tracking-[0.24em] text-amber-300">
+            <.panel tone="inverse" surface="solid" class="space-y-3 px-5 py-6 text-ui-text">
+              <p class="text-xs font-semibold uppercase tracking-[0.24em] text-ui-warning">
                 Next layer
               </p>
-              <p class="mt-3 text-lg font-semibold">
+              <p class="text-lg font-semibold">
                 Attach workspaces, then bring Folio into the shell.
               </p>
-              <p class="mt-2 text-sm leading-6 text-stone-300">
+              <p class="text-sm leading-6 text-ui-text-soft">
                 This page is the authenticated anchor for the rest of the application. Everything else can grow outward from here.
               </p>
-            </div>
+            </.panel>
 
             <form action={~p"/logout"} method="post">
               <input type="hidden" name="_method" value="delete" />
-              <button
+              <.button
                 type="submit"
-                class="inline-flex items-center gap-2 rounded-full border border-stone-300 bg-white px-4 py-2 text-sm font-semibold text-stone-700 transition hover:border-stone-400 hover:text-stone-950"
+                variant="outline"
+                tone="neutral"
+                icon="hero-arrow-left-on-rectangle"
               >
-                <.icon name="hero-arrow-left-on-rectangle" class="size-4" /> Sign out
-              </button>
+                Sign out
+              </.button>
             </form>
-          </div>
+          </.panel>
         </div>
       </section>
     </Layouts.app>

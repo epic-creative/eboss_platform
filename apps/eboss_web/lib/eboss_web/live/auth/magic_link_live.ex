@@ -24,7 +24,11 @@ defmodule EBossWeb.Auth.MagicLinkLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.app flash={@flash} current_scope={@current_scope} current_user={@current_user}>
+    <Layouts.app
+      flash={@flash}
+      current_scope={assigns[:current_scope]}
+      current_user={assigns[:current_user]}
+    >
       <.auth_shell
         eyebrow="Magic link access"
         title="Finish signing in"
@@ -34,15 +38,12 @@ defmodule EBossWeb.Auth.MagicLinkLive do
         detail_three="The final destination is the same dashboard shell as password sign-in"
       >
         <div class="space-y-8">
-          <div class="space-y-3">
-            <p class="text-xs font-semibold uppercase tracking-[0.28em] text-amber-700">Magic link</p>
-            <h1 class="text-3xl font-semibold tracking-tight text-stone-950">
-              Use this sign-in link
-            </h1>
-            <p class="text-sm leading-6 text-stone-600">
-              Confirm the sign-in and we will take you into the authenticated part of the app.
-            </p>
-          </div>
+          <.section_heading
+            eyebrow="Magic link"
+            title="Use this sign-in link"
+            subtitle="Confirm the sign-in and we will take you into the authenticated part of the app."
+            title_class="text-3xl"
+          />
 
           <.form_errors form={@form} />
 
@@ -58,12 +59,9 @@ defmodule EBossWeb.Auth.MagicLinkLive do
           >
             <input type="hidden" name={form[:token].name} value={@token} />
 
-            <button
-              type="submit"
-              class="rounded-full bg-stone-950 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-stone-800"
-            >
+            <.button type="submit">
               Sign me in
-            </button>
+            </.button>
           </.form>
         </div>
       </.auth_shell>

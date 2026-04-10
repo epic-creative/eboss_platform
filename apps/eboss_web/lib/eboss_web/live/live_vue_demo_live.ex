@@ -16,17 +16,18 @@ defmodule EBossWeb.LiveVueDemoLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.app flash={@flash}>
+    <Layouts.app
+      flash={@flash}
+      current_scope={assigns[:current_scope]}
+      current_user={assigns[:current_user]}
+    >
       <div class="space-y-6">
-        <div class="space-y-2">
-          <p class="text-xs font-semibold uppercase tracking-[0.24em] text-secondary">
-            Development Surface
-          </p>
-          <h1 class="text-4xl font-semibold tracking-tight">LiveVue is active in `eboss_web`</h1>
-          <p class="max-w-3xl text-sm leading-6 text-base-content/70">
-            Visit this page in development to confirm Vite, LiveView, and Vue component mounting are all functioning together.
-          </p>
-        </div>
+        <.section_heading
+          eyebrow="Development surface"
+          title="LiveVue is active in `eboss_web`"
+          subtitle="Visit this page in development to confirm Vite, LiveView, and Vue component mounting are all functioning together."
+          title_class="text-4xl"
+        />
 
         <.LiveVueDemo
           count={@count}

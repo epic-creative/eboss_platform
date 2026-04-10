@@ -44,3 +44,5 @@ config :live_vue,
 # Sort query params output of verified routes for robust url comparisons
 config :phoenix,
   sort_verified_routes_query_params: true
+
+config :eboss_web, dev_routes: true

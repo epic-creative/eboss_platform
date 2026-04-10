@@ -10,18 +10,21 @@ defmodule EBossWeb.Auth.SignInLive do
     {:ok,
      socket
      |> assign(:page_title, "Sign in")
-     |> assign(:password_form, AuthForms.password_sign_in_form())
-     |> assign(:magic_link_form, AuthForms.magic_link_request_form())
+     |> assign(:password_form, AuthForms.password_sign_in_form(nil, %{}, as: "password_user"))
+     |> assign(
+       :magic_link_form,
+       AuthForms.magic_link_request_form(nil, %{}, as: "magic_link_user")
+     )
      |> assign(:magic_link_requested, false)}
   end
 
   @impl true
-  def handle_event("validate_password", %{"user" => params}, socket) do
+  def handle_event("validate_password", %{"password_user" => params}, socket) do
     form = Form.validate(socket.assigns.password_form, params, errors: false)
     {:noreply, assign(socket, :password_form, form)}
   end
 
-  def handle_event("submit_password", %{"user" => params}, socket) do
+  def handle_event("submit_password", %{"password_user" => params}, socket) do
     case Form.submit(socket.assigns.password_form, params: params, read_one?: true) do
       {:ok, user} ->
         {:noreply,
@@ -40,24 +43,30 @@ defmodule EBossWeb.Auth.SignInLive do
     end
   end
 
-  def handle_event("validate_magic_link", %{"user" => params}, socket) do
+  def handle_event("validate_magic_link", %{"magic_link_user" => params}, socket) do
     form = Form.validate(socket.assigns.magic_link_form, params, errors: false)
     {:noreply, assign(socket, :magic_link_form, form)}
   end
 
-  def handle_event("submit_magic_link", %{"user" => params}, socket) do
+  def handle_event("submit_magic_link", %{"magic_link_user" => params}, socket) do
     case Form.submit(socket.assigns.magic_link_form, params: params) do
       :ok ->
         {:noreply,
          socket
-         |> assign(:magic_link_form, AuthForms.magic_link_request_form())
+         |> assign(
+           :magic_link_form,
+           AuthForms.magic_link_request_form(nil, %{}, as: "magic_link_user")
+         )
          |> assign(:magic_link_requested, true)
          |> put_flash(:info, "If that account exists, we just sent a magic link.")}
 
       {:ok, _result} ->
         {:noreply,
          socket
-         |> assign(:magic_link_form, AuthForms.magic_link_request_form())
+         |> assign(
+           :magic_link_form,
+           AuthForms.magic_link_request_form(nil, %{}, as: "magic_link_user")
+         )
          |> assign(:magic_link_requested, true)
          |> put_flash(:info, "If that account exists, we just sent a magic link.")}
 
@@ -69,7 +78,11 @@ defmodule EBossWeb.Auth.SignInLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.app flash={@flash} current_scope={@current_scope} current_user={@current_user}>
+    <Layouts.app
+      flash={@flash}
+      current_scope={assigns[:current_scope]}
+      current_user={assigns[:current_user]}
+    >
       <.auth_shell
         eyebrow="Custom authentication"
         title="Sign in without leaving the product"
@@ -79,22 +92,19 @@ defmodule EBossWeb.Auth.SignInLive do
         detail_three="Every session lands on a dedicated dashboard shell"
       >
         <div class="space-y-8">
-          <div class="space-y-3">
-            <p class="text-xs font-semibold uppercase tracking-[0.28em] text-amber-700">
-              Account access
-            </p>
-            <h1 class="text-3xl font-semibold tracking-tight text-stone-950">Sign in</h1>
-            <p class="text-sm leading-6 text-stone-600">
-              Your account session is handled by AshAuthentication. This page keeps the experience first-party.
-            </p>
-            <.auth_nav current_path="/sign-in" />
-          </div>
+          <.section_heading
+            eyebrow="Account access"
+            title="Sign in"
+            subtitle="Your account session is handled by AshAuthentication. This page keeps the experience first-party."
+            title_class="text-3xl"
+          />
+          <.auth_nav current_path="/sign-in" />
 
           <div class="space-y-8">
             <div class="space-y-4">
               <div class="space-y-1">
-                <h2 class="text-lg font-semibold text-stone-950">Password</h2>
-                <p class="text-sm text-stone-600">
+                <h2 class="text-lg font-semibold text-ui-text">Password</h2>
+                <p class="text-sm text-ui-text-soft">
                   Use the password flow for a normal sign-in session.
                 </p>
               </div>
@@ -109,45 +119,44 @@ defmodule EBossWeb.Auth.SignInLive do
                 phx-submit="submit_password"
                 class="space-y-4"
               >
-                <.input field={form[:email]} type="email" label="Email" autocomplete="email" />
+                <.input
+                  field={form[:email]}
+                  type="email"
+                  label="Email"
+                  autocomplete="section-password email"
+                />
                 <.input
                   field={form[:password]}
                   type="password"
                   label="Password"
-                  autocomplete="current-password"
+                  autocomplete="section-password current-password"
                 />
 
                 <div class="flex items-center justify-between gap-4">
                   <a
                     href={~p"/forgot-password"}
-                    class="text-sm font-medium text-sky-700 hover:text-sky-900"
+                    class="text-sm font-medium text-ui-accent hover:text-ui-accent-strong"
                   >
                     Forgot your password?
                   </a>
-                  <button
-                    type="submit"
-                    class="rounded-full bg-stone-950 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-stone-800"
-                  >
+                  <.button type="submit">
                     Continue
-                  </button>
+                  </.button>
                 </div>
               </.form>
             </div>
 
-            <div class="h-px bg-stone-200" />
+            <div class="h-px bg-ui-border-subtle" />
 
             <div class="space-y-4">
               <div class="space-y-1">
-                <h2 class="text-lg font-semibold text-stone-950">Magic link</h2>
-                <p class="text-sm text-stone-600">
+                <h2 class="text-lg font-semibold text-ui-text">Magic link</h2>
+                <p class="text-sm text-ui-text-soft">
                   Request a one-time sign-in link for an existing account.
                 </p>
               </div>
 
-              <div
-                :if={@magic_link_requested}
-                class="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800"
-              >
+              <div :if={@magic_link_requested} class="ui-alert" data-tone="success">
                 Check your email for the sign-in link.
               </div>
 
@@ -161,14 +170,16 @@ defmodule EBossWeb.Auth.SignInLive do
                 phx-submit="submit_magic_link"
                 class="space-y-4"
               >
-                <.input field={form[:email]} type="email" label="Email" autocomplete="email" />
+                <.input
+                  field={form[:email]}
+                  type="email"
+                  label="Email"
+                  autocomplete="section-magic-link email"
+                />
 
-                <button
-                  type="submit"
-                  class="rounded-full border border-stone-300 bg-white px-5 py-2.5 text-sm font-semibold text-stone-700 transition hover:border-stone-400 hover:text-stone-950"
-                >
+                <.button type="submit" variant="outline" tone="neutral">
                   Email me a magic link
-                </button>
+                </.button>
               </.form>
             </div>
           </div>

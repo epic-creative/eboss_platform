@@ -6,13 +6,14 @@
     "module": "ESNext",
     "moduleResolution": "bundler",
     "noEmit": true,
+    "target": "ES2020",
     "paths": {
       "*": ["./node_modules/*", "../../../deps/*"]
     },
     "skipLibCheck": true,
     "strict": true,
-    "types": ["vite/client"]
+    "types": ["vite/client", "@histoire/plugin-vue/client"]
   },
-  "include": ["./js/**/*", "./vue/**/*", "../lib/eboss_web/**/*"],
+  "include": ["./js/**/*", "./vue/**/*", "./histoire.config.ts", "./histoire.setup.ts", "../lib/eboss_web/**/*"],
   "exclude": ["node_modules"]
 }

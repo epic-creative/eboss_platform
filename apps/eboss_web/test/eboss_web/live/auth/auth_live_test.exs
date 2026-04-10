@@ -49,6 +49,21 @@ defmodule EBossWeb.AuthLiveTest do
     assert dashboard_shell.props["username"] == context.current_user.username
   end
 
+  test "sign-in page isolates password and magic-link field names for browser autofill", %{
+    conn: conn
+  } do
+    {:ok, view, _html} = live(conn, ~p"/sign-in")
+    html = render(view)
+
+    assert html =~ ~s(name="password_user[email]")
+    assert html =~ ~s(name="password_user[password]")
+    assert html =~ ~s(autocomplete="section-password email")
+    assert html =~ ~s(autocomplete="section-password current-password")
+
+    assert html =~ ~s(name="magic_link_user[email]")
+    assert html =~ ~s(autocomplete="section-magic-link email")
+  end
+
   test "registration succeeds, signs the user in, and sends confirmation email", %{conn: conn} do
     params = %{
       "email" => "register-live@example.com",
@@ -102,7 +117,7 @@ defmodule EBossWeb.AuthLiveTest do
     {:ok, token_conn} =
       view
       |> form("#sign-in-password-form",
-        user: %{"email" => to_string(user.email), "password" => "supersecret123"}
+        password_user: %{"email" => to_string(user.email), "password" => "supersecret123"}
       )
       |> render_submit()
       |> follow_redirect(conn)
@@ -122,7 +137,7 @@ defmodule EBossWeb.AuthLiveTest do
     html =
       view
       |> form("#sign-in-password-form",
-        user: %{"email" => to_string(user.email), "password" => "wrong-password"}
+        password_user: %{"email" => to_string(user.email), "password" => "wrong-password"}
       )
       |> render_submit()
 
@@ -154,7 +169,7 @@ defmodule EBossWeb.AuthLiveTest do
 
     html =
       view
-      |> form("#sign-in-magic-link-form", user: %{"email" => to_string(user.email)})
+      |> form("#sign-in-magic-link-form", magic_link_user: %{"email" => to_string(user.email)})
       |> render_submit()
 
     assert html =~ "Check your email for the sign-in link."

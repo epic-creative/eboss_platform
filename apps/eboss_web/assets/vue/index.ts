@@ -10,8 +10,8 @@ declare module "vue" {
 export default createLiveVue({
   resolve: name => {
     const components = {
-      ...import.meta.glob("./**/*.vue", { eager: true }),
-      ...import.meta.glob("../../lib/**/*.vue", { eager: true }),
+      ...import.meta.glob(["./**/*.vue", "!./**/*.story.vue"], { eager: true }),
+      ...import.meta.glob(["../../lib/**/*.vue", "!../../lib/**/*.story.vue"], { eager: true }),
     } as ComponentMap
 
     return findComponent(components, name)

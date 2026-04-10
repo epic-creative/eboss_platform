@@ -1,20 +1,30 @@
 {
+  "scripts": {
+    "histoire": "histoire dev --config histoire.config.ts --host 127.0.0.1 --port 6006",
+    "histoire:build": "histoire build --config histoire.config.ts",
+    "vue:check": "vue-tsc --noEmit"
+  },
   "dependencies": {
+    "@fontsource/ibm-plex-mono": "^5.2.7",
+    "@fontsource/manrope": "^5.2.8",
+    "@fontsource/space-grotesk": "^5.2.10",
     "live_vue": "file:../../../deps/live_vue",
     "phoenix": "file:../../../deps/phoenix",
     "phoenix_html": "file:../../../deps/phoenix_html",
     "phoenix_live_view": "file:../../../deps/phoenix_live_view",
+    "reka-ui": "^2.9.5",
     "topbar": "^3.0.0",
     "vue": "^3.5.13"
   },
   "devDependencies": {
+    "@histoire/plugin-vue": "^1.0.0-beta.1",
     "@tailwindcss/vite": "^4.1.12",
-    "@vitejs/plugin-vue": "^5.2.1",
-    "daisyui": "^5.3.9",
+    "@vitejs/plugin-vue": "^6.0.5",
+    "histoire": "^1.0.0-beta.1",
     "phoenix_vite": "file:../../../deps/phoenix_vite",
     "tailwindcss": "^4.1.12",
     "typescript": "^5.9.2",
-    "vite": "^6.3.5",
+    "vite": "^7.3.0",
     "vue-tsc": "^2.2.12"
   }
 }
