@@ -159,6 +159,81 @@ defmodule EBossWeb.DashboardLive do
               </.panel>
             </.dashboard_panel_group>
           </.dashboard_section>
+
+          <.dashboard_section id="dashboard-states" section="states" class="lg:col-span-2">
+            <.dashboard_header
+              eyebrow="State contract"
+              title="Empty, loading, and error states stay in the dashboard language."
+              description="Sparse launch surfaces and dense support panels now share one fallback pattern, so the route keeps its structure before deeper workflow implementation arrives."
+            >
+              <:signal>
+                <.badge tone="neutral">Shared visual contract</.badge>
+              </:signal>
+              <:signal>
+                <.badge tone="neutral">Sparse and dense ready</.badge>
+              </:signal>
+              <:actions>
+                <.dashboard_action_bar>
+                  <.button href="#dashboard-launchpad" variant="outline" tone="neutral" size="sm">
+                    Launch surface
+                  </.button>
+                  <.button href="#dashboard-structure" variant="ghost" tone="neutral" size="sm">
+                    Panel grouping
+                  </.button>
+                </.dashboard_action_bar>
+              </:actions>
+            </.dashboard_header>
+
+            <div class="ui-split-grid">
+              <.dashboard_empty_state
+                density="sparse"
+                title="Nothing is queued for this workspace yet."
+                description="The launch area keeps its frame, action placement, and supporting structure visible so the route reads like a ready workspace instead of a temporary placeholder."
+                details={[
+                  "Primary actions stay where operators expect them.",
+                  "Metrics, rows, and supporting notes keep their footprint reserved."
+                ]}
+              >
+                <:actions>
+                  <.button href="#dashboard-launchpad" size="sm">
+                    Review launch surface
+                  </.button>
+                  <.button href="#dashboard-structure" variant="outline" tone="neutral" size="sm">
+                    Inspect structure
+                  </.button>
+                </:actions>
+              </.dashboard_empty_state>
+
+              <div class="grid gap-4">
+                <.dashboard_loading_state
+                  density="dense"
+                  title="Workspace signals are syncing."
+                  description="Loading keeps the compact panel footprint and reserves the next set of tiles and rows so the rail stays readable while data resolves."
+                >
+                  <:actions>
+                    <.button href="#dashboard-panel-rhythm" variant="ghost" tone="neutral" size="sm">
+                      Review rail rhythm
+                    </.button>
+                  </:actions>
+                </.dashboard_loading_state>
+
+                <.dashboard_error_state
+                  density="dense"
+                  title="The latest sync did not complete."
+                  description="Recovery guidance stays inside the same grouped panel treatment instead of dropping into a generic framework alert."
+                >
+                  <:actions>
+                    <.button href="#dashboard-structure" size="sm">
+                      Retry flow
+                    </.button>
+                    <.button href="#dashboard-top" variant="outline" tone="neutral" size="sm">
+                      Review shell context
+                    </.button>
+                  </:actions>
+                </.dashboard_error_state>
+              </div>
+            </div>
+          </.dashboard_section>
         </div>
       </.dashboard_shell>
     </Layouts.app>

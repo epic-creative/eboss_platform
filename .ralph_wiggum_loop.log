@@ -2326,3 +2326,86 @@ Running ExUnit with seed: 796046, max_cases: 20
 ..........................................................................
 Finished in 9.0 seconds (0.3s async, 8.7s sync)
 74 tests, 0 failures
+1) changed files
+
+- [dashboard_components.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/components/dashboard_components.ex#L197) added shared `dashboard_empty_state/1`, `dashboard_loading_state/1`, and `dashboard_error_state/1` helpers plus a common state frame.
+- [patterns.css](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/css/system/patterns.css#L583) added the dashboard state contract styles for sparse/dense layouts, reserved structure, and loading placeholders.
+- [dashboard_live.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/live/dashboard_live.ex#L163) added a dedicated dashboard state section with representative empty, loading, and error examples.
+- [design_system_live.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/live/dev/design_system_live.ex#L586) added a public `/dev/design-system` preview section for the same dashboard state patterns.
+- [dashboard_state_components_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/eboss_web/live/dashboard_state_components_test.exs#L1) added focused coverage for the new state helpers.
+- [dashboard_live_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/eboss_web/live/dashboard_live_test.exs#L24) updated dashboard assertions for the new state section and state surfaces.
+- [dashboard_live_render_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/eboss_web/live/dashboard_live_render_test.exs#L22) updated render-contract assertions for the new state section.
+- [design_system_live_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/eboss_web/live/dev/design_system_live_test.exs#L1) updated preview-route coverage and made endpoint startup explicit in test setup.
+
+2) tests/commands executed
+
+- `git diff --check`
+- Fallback formatting, because `mix format` was blocked in this sandbox:
+  ```sh
+  ERL_LIBS=_build/dev/lib elixir -e 'opts = [plugins: [Phoenix.LiveView.HTMLFormatter]]; ...'
+  ```
+- Fallback targeted test run from `apps/eboss_web`, because `mix test`/`mix precommit` were blocked by Mix PubSub socket startup:
+  ```sh
+  ERL_LIBS=../../_build/test/lib elixir -e 'Mix.start(); Mix.env(:test); ... ExUnit.run()'
+  ```
+  Result: `8 tests, 0 failures`
+- Attempted but blocked:
+  - `mix format`
+  - `mix precommit`
+
+3) acceptance criteria coverage
+
+- Clear shared visual contract:
+  - Shared helpers and shared CSS now define one dashboard-specific treatment for empty, loading, and error states.
+  - The contract is visible both on the dashboard route and on `/dev/design-system`.
+- Empty and loading preserve layout structure:
+  - Empty and loading helpers reserve panel structure with placeholder blocks/bars instead of collapsing into generic blank states.
+  - The helpers support both `sparse` and `dense` dashboard contexts.
+- Error states communicate clearly without generic framework alerts:
+  - Error state is framed as a dashboard panel with contextual copy, structured alert content, and recovery actions instead of raw flash-style output.
+- Test coverage:
+  - New helper-level LiveView rendering coverage in [dashboard_state_components_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/eboss_web/live/dashboard_state_components_test.exs#L1)
+  - Updated route/render coverage in [dashboard_live_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/eboss_web/live/dashboard_live_test.exs#L24), [dashboard_live_render_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/eboss_web/live/dashboard_live_render_test.exs#L22), and [design_system_live_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/eboss_web/live/dev/design_system_live_test.exs#L23)
+
+4) blockers/assumptions
+
+- `mix precommit` could not be run here. The sandbox blocks Mix’s loopback TCP pubsub startup with `:eperm`, so `mix format`, `mix test`, and `mix precommit` fail before task execution.
+- Browser-based visual review could not be completed in this sandbox. Starting an HTTP listener for a temporary local endpoint also failed with `:eperm`.
+- I used direct `elixir` formatting and a direct ExUnit harness as the fallback verification path. That path passed, but it is not a substitute for a real `mix precommit`.
+- The `/dev/design-system#dashboard-states` section is in place as the intended visual review target once run in a normal local environment.
+==> eboss_web
+Compiling 4 files (.ex)
+Compiling 13 files (.ex)
+Generated eboss_web app
+==> eboss_data
+There are no tests to run
+==> eboss_accounts
+Running ExUnit with seed: 294258, max_cases: 20
+
+............
+Finished in 8.1 seconds (0.00s async, 8.1s sync)
+12 tests, 0 failures
+==> eboss_tenancy
+Running ExUnit with seed: 741993, max_cases: 20
+
+............
+Finished in 6.8 seconds (0.00s async, 6.8s sync)
+12 tests, 0 failures
+==> eboss_workspaces
+Running ExUnit with seed: 966727, max_cases: 20
+
+............
+Finished in 6.2 seconds (0.00s async, 6.2s sync)
+12 tests, 0 failures
+==> eboss_folio
+Running ExUnit with seed: 767654, max_cases: 20
+
+...........
+Finished in 4.3 seconds (0.00s async, 4.3s sync)
+11 tests, 0 failures
+==> eboss_web
+Running ExUnit with seed: 931941, max_cases: 20
+
+.............................................................................
+Finished in 9.4 seconds (0.3s async, 9.1s sync)
+77 tests, 0 failures

@@ -15,18 +15,19 @@ defmodule EBossWeb.DashboardComponents do
 
   alias EBossWeb.BrowserTestContracts
 
-  attr :current_user, :map, required: true
-  attr :current_path, :string, default: nil
-  attr :shell_label, :string, default: "Authenticated product surface"
-  attr :shell_title, :string, default: "EBoss control center"
+  attr(:current_user, :map, required: true)
+  attr(:current_path, :string, default: nil)
+  attr(:shell_label, :string, default: "Authenticated product surface")
+  attr(:shell_title, :string, default: "EBoss control center")
 
-  attr :shell_copy, :string,
+  attr(:shell_copy, :string,
     default:
       "Keep route context, operator identity, and persistent utilities anchored while each working surface changes."
+  )
 
-  slot :page_header, required: true
-  slot :inner_block, required: true
-  slot :sidebar_footer
+  slot(:page_header, required: true)
+  slot(:inner_block, required: true)
+  slot(:sidebar_footer)
 
   def dashboard_shell(assigns) do
     assigns = assign(assigns, :nav_items, dashboard_nav_items(assigns.current_path))
@@ -106,17 +107,17 @@ defmodule EBossWeb.DashboardComponents do
     """
   end
 
-  attr :eyebrow, :string, default: nil
-  attr :title, :string, required: true
-  attr :description, :string, default: nil
-  attr :title_tag, :string, values: ~w(h1 h2 h3), default: "h2"
-  attr :title_size, :string, values: ~w(xl lg md sm), default: "md"
-  attr :class, :any, default: nil
-  attr :rest, :global
+  attr(:eyebrow, :string, default: nil)
+  attr(:title, :string, required: true)
+  attr(:description, :string, default: nil)
+  attr(:title_tag, :string, values: ~w(h1 h2 h3), default: "h2")
+  attr(:title_size, :string, values: ~w(xl lg md sm), default: "md")
+  attr(:class, :any, default: nil)
+  attr(:rest, :global)
 
-  slot :badge
-  slot :signal
-  slot :actions
+  slot(:badge)
+  slot(:signal)
+  slot(:actions)
 
   def dashboard_header(assigns) do
     ~H"""
@@ -148,11 +149,11 @@ defmodule EBossWeb.DashboardComponents do
     """
   end
 
-  attr :section, :string, required: true
-  attr :class, :any, default: nil
-  attr :rest, :global
+  attr(:section, :string, required: true)
+  attr(:class, :any, default: nil)
+  attr(:rest, :global)
 
-  slot :inner_block, required: true
+  slot(:inner_block, required: true)
 
   def dashboard_section(assigns) do
     ~H"""
@@ -162,10 +163,10 @@ defmodule EBossWeb.DashboardComponents do
     """
   end
 
-  attr :class, :any, default: nil
-  attr :rest, :global
+  attr(:class, :any, default: nil)
+  attr(:rest, :global)
 
-  slot :inner_block, required: true
+  slot(:inner_block, required: true)
 
   def dashboard_action_bar(assigns) do
     ~H"""
@@ -175,11 +176,11 @@ defmodule EBossWeb.DashboardComponents do
     """
   end
 
-  attr :columns, :string, values: ~w(stack split), default: "stack"
-  attr :class, :any, default: nil
-  attr :rest, :global
+  attr(:columns, :string, values: ~w(stack split), default: "stack")
+  attr(:class, :any, default: nil)
+  attr(:rest, :global)
 
-  slot :inner_block, required: true
+  slot(:inner_block, required: true)
 
   def dashboard_panel_group(assigns) do
     ~H"""
@@ -193,7 +194,235 @@ defmodule EBossWeb.DashboardComponents do
     """
   end
 
-  attr :item, :map, required: true
+  attr(:label, :string, default: nil)
+  attr(:title, :string, required: true)
+  attr(:description, :string, required: true)
+  attr(:density, :string, values: ~w(sparse dense), default: "dense")
+  attr(:details, :list, default: [])
+  attr(:class, :any, default: nil)
+  attr(:rest, :global)
+
+  slot(:actions)
+
+  def dashboard_empty_state(assigns) do
+    assigns =
+      assigns
+      |> assign_dashboard_state_label()
+      |> assign_dashboard_state_details([
+        "Keep the section header, action row, and supporting cues visible.",
+        "Reserve space for metrics, rows, and queue notes before work lands."
+      ])
+
+    ~H"""
+    <.dashboard_state_frame
+      variant="empty"
+      density={@density}
+      label={@label}
+      status="Empty"
+      status_tone="neutral"
+      title={@title}
+      description={@description}
+      class={@class}
+      {@rest}
+    >
+      <div class="ui-dashboard-state__layout">
+        <div class="ui-dashboard-state__stack">
+          <ul :if={@details != []} class="ui-dashboard-state__list">
+            <li :for={detail <- @details}>{detail}</li>
+          </ul>
+        </div>
+
+        <div class="ui-dashboard-state__structure" data-state-style="empty" aria-hidden="true">
+          <div class="ui-dashboard-state__placeholder" data-span="wide" />
+          <div class="ui-dashboard-state__placeholder" />
+          <div class="ui-dashboard-state__placeholder" />
+        </div>
+      </div>
+
+      <:actions>
+        {render_slot(@actions)}
+      </:actions>
+    </.dashboard_state_frame>
+    """
+  end
+
+  attr(:label, :string, default: nil)
+  attr(:title, :string, required: true)
+  attr(:description, :string, required: true)
+  attr(:density, :string, values: ~w(sparse dense), default: "dense")
+  attr(:details, :list, default: [])
+  attr(:class, :any, default: nil)
+  attr(:rest, :global)
+
+  slot(:actions)
+
+  def dashboard_loading_state(assigns) do
+    assigns =
+      assigns
+      |> assign_dashboard_state_label()
+      |> assign_dashboard_state_details([
+        "Hold the same shell hierarchy while the next snapshot resolves.",
+        "Keep action placement stable so the route never collapses into a spinner-only screen."
+      ])
+
+    ~H"""
+    <.dashboard_state_frame
+      variant="loading"
+      density={@density}
+      label={@label}
+      status="Loading"
+      status_tone="primary"
+      title={@title}
+      description={@description}
+      class={@class}
+      {@rest}
+    >
+      <div class="ui-dashboard-state__layout">
+        <div class="ui-dashboard-state__stack">
+          <div class="ui-dashboard-state__signal">
+            <span class="ui-spinner" data-size="sm" aria-hidden="true" />
+            <p class="ui-text-body" data-size="sm" data-tone="soft">
+              Layout slots stay reserved while the dashboard requests the next data pass.
+            </p>
+          </div>
+
+          <ul :if={@details != []} class="ui-dashboard-state__list">
+            <li :for={detail <- @details}>{detail}</li>
+          </ul>
+
+          <div class="ui-dashboard-state__bars" data-state-style="loading" aria-hidden="true">
+            <span class="ui-dashboard-state__bar" data-width="wide" />
+            <span class="ui-dashboard-state__bar" />
+            <span class="ui-dashboard-state__bar" data-width="short" />
+          </div>
+        </div>
+
+        <div class="ui-dashboard-state__structure" data-state-style="loading" aria-hidden="true">
+          <div class="ui-dashboard-state__placeholder" data-span="wide" />
+          <div class="ui-dashboard-state__placeholder" />
+          <div class="ui-dashboard-state__placeholder" />
+        </div>
+      </div>
+
+      <:actions>
+        {render_slot(@actions)}
+      </:actions>
+    </.dashboard_state_frame>
+    """
+  end
+
+  attr(:label, :string, default: nil)
+  attr(:title, :string, required: true)
+  attr(:description, :string, required: true)
+  attr(:density, :string, values: ~w(sparse dense), default: "dense")
+  attr(:details, :list, default: [])
+  attr(:class, :any, default: nil)
+  attr(:rest, :global)
+
+  slot(:actions)
+
+  def dashboard_error_state(assigns) do
+    assigns =
+      assigns
+      |> assign_dashboard_state_label()
+      |> assign_dashboard_state_details([
+        "Show the recovery path and scope context in the same panel rhythm as healthy content.",
+        "Keep the operator close to retry and event review without dropping into generic alert chrome."
+      ])
+
+    ~H"""
+    <.dashboard_state_frame
+      variant="error"
+      density={@density}
+      label={@label}
+      status="Attention"
+      status_tone="danger"
+      title={@title}
+      description={@description}
+      class={@class}
+      {@rest}
+    >
+      <div class="ui-dashboard-state__stack">
+        <.alert
+          tone="danger"
+          role="alert"
+          live="assertive"
+          title="Recovery stays inside the dashboard frame"
+          description="Retry and event inspection stay grouped with the same shell hierarchy and action treatment."
+        />
+
+        <ul :if={@details != []} class="ui-dashboard-state__list">
+          <li :for={detail <- @details}>{detail}</li>
+        </ul>
+      </div>
+
+      <:actions>
+        {render_slot(@actions)}
+      </:actions>
+    </.dashboard_state_frame>
+    """
+  end
+
+  attr(:variant, :string, values: ~w(empty loading error), required: true)
+  attr(:density, :string, values: ~w(sparse dense), default: "dense")
+  attr(:label, :string, required: true)
+  attr(:status, :string, required: true)
+  attr(:status_tone, :string, values: ~w(neutral primary success warning danger), required: true)
+  attr(:title, :string, required: true)
+  attr(:description, :string, required: true)
+  attr(:class, :any, default: nil)
+  attr(:rest, :global)
+
+  slot(:actions)
+  slot(:inner_block, required: true)
+
+  defp dashboard_state_frame(assigns) do
+    surface = if assigns.density == "sparse", do: "floating", else: "solid"
+    padding = if assigns.density == "sparse", do: "lg", else: "md"
+    title_size = if assigns.density == "sparse", do: "md", else: "sm"
+
+    assigns =
+      assigns
+      |> assign(:surface, surface)
+      |> assign(:padding, padding)
+      |> assign(:title_size, title_size)
+
+    ~H"""
+    <.panel
+      as="section"
+      surface={@surface}
+      padding={@padding}
+      class={["ui-dashboard-state", @class]}
+      data-dashboard-state={@variant}
+      data-dashboard-density={@density}
+      {@rest}
+    >
+      <div class="ui-dashboard-state__header">
+        <div class="space-y-3">
+          <div class="ui-dashboard-state__context">
+            <p class="ui-text-meta" data-tone={dashboard_state_label_tone(@variant)}>{@label}</p>
+            <.badge tone={@status_tone}>{@status}</.badge>
+          </div>
+
+          <div class="space-y-2">
+            <p class="ui-text-title" data-size={@title_size}>{@title}</p>
+            <p class="ui-text-body" data-size="sm" data-tone="soft">{@description}</p>
+          </div>
+        </div>
+
+        <div :if={@actions != []} class="ui-dashboard-state__actions">
+          {render_slot(@actions)}
+        </div>
+      </div>
+
+      <div class="ui-dashboard-state__body">
+        {render_slot(@inner_block)}
+      </div>
+    </.panel>
+    """
+  end
+
+  attr(:item, :map, required: true)
 
   defp dashboard_nav_item(assigns) do
     assigns = assign(assigns, :active_attr, to_string(assigns.item.active?))
@@ -275,4 +504,27 @@ defmodule EBossWeb.DashboardComponents do
       }
     ]
   end
+
+  defp assign_dashboard_state_label(assigns) do
+    if is_nil(assigns.label) do
+      assign(assigns, :label, dashboard_state_context_label(assigns.density))
+    else
+      assigns
+    end
+  end
+
+  defp assign_dashboard_state_details(assigns, default_details) do
+    if assigns.details == [] do
+      assign(assigns, :details, default_details)
+    else
+      assigns
+    end
+  end
+
+  defp dashboard_state_context_label("sparse"), do: "Sparse context"
+  defp dashboard_state_context_label("dense"), do: "Dense context"
+
+  defp dashboard_state_label_tone("error"), do: "danger"
+  defp dashboard_state_label_tone("loading"), do: "primary"
+  defp dashboard_state_label_tone(_variant), do: "soft"
 end

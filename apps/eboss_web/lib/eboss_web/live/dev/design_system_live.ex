@@ -583,6 +583,51 @@ defmodule EBossWeb.Dev.DesignSystemLive do
           </div>
         </section>
 
+        <section id="dashboard-states" class="ui-dev-preview__section">
+          <.section_heading
+            eyebrow="Dashboard states"
+            title="Empty, loading, and error states keep the same operator-grade frame."
+            subtitle="Review sparse and dense dashboard fallbacks without depending on real route data or auth setup."
+            title_size="sm"
+          />
+
+          <div class="ui-split-grid">
+            <.dashboard_empty_state
+              density="sparse"
+              title="Nothing is queued for this workspace yet."
+              description="The dashboard keeps the same shell hierarchy and action rhythm even when the primary lane has no live work."
+            >
+              <:actions>
+                <.button size="sm" href="#shells">Review shell</.button>
+                <.button variant="outline" tone="neutral" size="sm" href="#forms">
+                  Compare controls
+                </.button>
+              </:actions>
+            </.dashboard_empty_state>
+
+            <div class="grid gap-4">
+              <.dashboard_loading_state
+                density="dense"
+                title="Workspace signals are syncing."
+                description="Loading panels preserve the compact rail footprint so the shell never collapses into a spinner-only placeholder."
+              />
+
+              <.dashboard_error_state
+                density="dense"
+                title="The latest sync did not complete."
+                description="Recovery guidance stays grouped with dashboard actions and context instead of falling back to a generic framework alert."
+              >
+                <:actions>
+                  <.button size="sm" href="#feedback">Inspect feedback</.button>
+                  <.button variant="outline" tone="neutral" size="sm" href="#navigation">
+                    Check nav rhythm
+                  </.button>
+                </:actions>
+              </.dashboard_error_state>
+            </div>
+          </div>
+        </section>
+
         <section id="forms" class="ui-dev-preview__section">
           <.section_heading
             eyebrow="Forms"
@@ -1007,6 +1052,7 @@ defmodule EBossWeb.Dev.DesignSystemLive do
       %{label: "Panels", to: "#panels"},
       %{label: "Public patterns", to: "#public-patterns"},
       %{label: "Shells", to: "#shells"},
+      %{label: "Dashboard states", to: "#dashboard-states"},
       %{label: "Forms", to: "#forms"},
       %{label: "Feedback", to: "#feedback"},
       %{label: "Navigation", to: "#navigation"}

@@ -38,16 +38,22 @@ defmodule EBossWeb.DashboardLiveRenderTest do
     assert html =~ ~s(data-dashboard-contract="page-content")
     assert html =~ ~s(data-dashboard-section="launchpad")
     assert html =~ ~s(data-dashboard-section="structure")
+    assert html =~ ~s(data-dashboard-section="states")
     assert html =~ ~s(data-dashboard-panel-group="stack")
+    assert html =~ ~s(data-dashboard-state="empty")
+    assert html =~ ~s(data-dashboard-state="loading")
+    assert html =~ ~s(data-dashboard-state="error")
     assert html =~ "EBoss dashboard"
     assert html =~ "Operator workspace"
     assert html =~ "@render_user"
     assert html =~ "The main dashboard now lives inside the shared operator shell"
     assert html =~ "Panel groupings stay systematic instead of page-specific."
+    assert html =~ "Empty, loading, and error states stay in the dashboard language."
+    assert html =~ "The latest sync did not complete."
     assert html =~ "Launch surface"
     assert html =~ "Panel grouping"
 
-    assert Regex.scan(~r/data-dashboard-header/, html) |> length() == 3
-    assert Regex.scan(~r/data-dashboard-action-bar/, html) |> length() == 3
+    assert Regex.scan(~r/data-dashboard-header/, html) |> length() == 4
+    assert Regex.scan(~r/data-dashboard-action-bar/, html) |> length() == 4
   end
 end
