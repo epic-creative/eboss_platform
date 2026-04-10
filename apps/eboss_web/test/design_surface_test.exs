@@ -73,8 +73,11 @@ defmodule EBossWeb.DesignSurfaceTest do
     assert visual_dna_story =~ ~s(<UiPanel surface="solid" padding="sm" class="space-y-3">)
     assert auth_scene_vue =~ ~s(<UiPanel class="ui-auth-scene__tile p-4" surface="solid">)
 
+    assert dashboard_launchpad_vue =~ ~s(<section class="ui-dashboard-launchpad">)
+    assert dashboard_launchpad_vue =~ ~s(<div class="ui-dashboard-launchpad__signals">)
+
     assert dashboard_launchpad_vue =~
-             ~s(<UiPanel class="ui-auth-scene__tile p-4" surface="solid">)
+             ~s(<UiPanel class="ui-dashboard-launchpad__tile" surface="solid" padding="sm">)
 
     assert ui_dialog_vue =~ ~s(<UiPanel as="div" surface="floating" class="sm:p-8">)
     assert ui_tabs_vue =~ ~s(<UiPanel as="div" surface="solid">)

@@ -14,13 +14,20 @@ defmodule EBossWeb.DashboardLive do
       current_scope={assigns[:current_scope]}
       current_user={assigns[:current_user]}
     >
-      <.dashboard_shell current_user={@current_user} current_path="/dashboard">
+      <.dashboard_shell
+        current_user={@current_user}
+        current_path="/dashboard"
+        shell_label="EBoss dashboard"
+        shell_title="Operator workspace"
+        shell_copy="Keep the authenticated product frame stable while workspaces, folio, and future signed-in routes deepen inside it."
+      >
         <:page_header>
           <div class="ui-dashboard-page-heading" data-dashboard-contract="page-header">
             <div class="space-y-3">
               <div class="flex flex-wrap items-center gap-2">
-                <p class="ui-kicker" data-tone="primary">Dashboard convergence</p>
-                <.badge tone="neutral">Reusable shell</.badge>
+                <p class="ui-kicker" data-tone="primary">EBoss dashboard</p>
+                <.badge tone="neutral">Main route</.badge>
+                <.badge tone="neutral">Authenticated shell</.badge>
               </div>
 
               <div class="space-y-2">
@@ -28,28 +35,26 @@ defmodule EBossWeb.DashboardLive do
                   Welcome back, @{Map.get(@current_user, :username)}.
                 </h1>
                 <p class="ui-text-body" data-size="lg" data-tone="soft">
-                  Keep route context, operator identity, and working panels aligned as EBoss
-                  grows deeper into authenticated surfaces.
+                  The main dashboard now lives inside the shared operator shell, so route work can
+                  evolve without resetting navigation, identity, or session controls.
                 </p>
               </div>
             </div>
 
             <div class="ui-dashboard-page-heading__signals">
-              <.badge tone="neutral">Authenticated surface</.badge>
-              <.badge tone="neutral">Product-specific rhythm</.badge>
+              <.badge tone="neutral">Stable shell chrome</.badge>
+              <.badge tone="neutral">Route-owned work surface</.badge>
             </div>
           </div>
         </:page_header>
 
         <div class="ui-dashboard-page">
-          <.panel surface="floating" class="ui-frame-card">
-            <.DashboardLaunchpad
-              username={Map.get(@current_user, :username)}
-              email={to_string(Map.get(@current_user, :email))}
-              workspaceLabel="Workspace routes and JSON:API are live"
-              folioLabel="Folio remains workspace-scoped and boundary-driven"
-            />
-          </.panel>
+          <.DashboardLaunchpad
+            username={Map.get(@current_user, :username)}
+            email={to_string(Map.get(@current_user, :email))}
+            workspaceLabel="Workspace routes and JSON:API stay available inside the shared product frame."
+            folioLabel="Folio stays workspace-scoped while reusing the same signed-in shell."
+          />
 
           <div class="ui-dashboard-page__rail">
             <.panel
@@ -57,42 +62,41 @@ defmodule EBossWeb.DashboardLive do
               class="space-y-4"
               data-dashboard-contract="page-content"
             >
-              <p class="ui-text-meta" data-tone="primary">Route focus</p>
+              <p class="ui-text-meta" data-tone="primary">Route frame</p>
 
               <div class="space-y-2">
                 <p class="ui-text-title" data-size="md">
-                  Primary work can change without resetting operator context.
+                  Page content can change without rebuilding the shell.
                 </p>
                 <p class="ui-text-body" data-tone="soft">
-                  Route-specific actions, states, and panels belong in the working surface while
-                  identity, navigation, and utilities stay anchored in the shell.
+                  The dashboard owns the working surface while identity, navigation, theme
+                  controls, and sign-out stay anchored in persistent shell chrome.
                 </p>
               </div>
 
               <ul class="ui-dashboard-page__list">
-                <li>Operational summaries land inside the page body.</li>
-                <li>State changes keep the same frame on small and large screens.</li>
-                <li>Future authenticated surfaces can reuse the scaffold without detouring.</li>
+                <li>The main route keeps its own panels and launch surface.</li>
+                <li>Future authenticated routes can inherit the same shell rhythm.</li>
+                <li>Small and large breakpoints keep the same dashboard frame.</li>
               </ul>
             </.panel>
 
             <.panel tone="inverse" surface="solid" class="space-y-4">
               <div class="space-y-2">
-                <p class="ui-text-meta" data-tone="primary">System states</p>
+                <p class="ui-text-meta" data-tone="primary">Shell reuse</p>
                 <p class="ui-text-title" data-size="md">
-                  Theme and density stay in one rhythm.
+                  One authenticated frame can carry the product system.
                 </p>
                 <p class="ui-text-body" data-tone="soft">
-                  Dark and light themes, default and compact density, and signed-in route changes
-                  all keep the shell legible and intact.
+                  The dashboard route now reads like part of EBoss instead of a stand-alone launch
+                  page, which makes the shell ready for the next signed-in surfaces.
                 </p>
               </div>
 
               <div class="flex flex-wrap gap-2">
-                <.badge tone="neutral">Dark / default</.badge>
-                <.badge tone="neutral">Dark / compact</.badge>
-                <.badge tone="neutral">Light / default</.badge>
-                <.badge tone="neutral">Light / compact</.badge>
+                <.badge tone="neutral">Persistent nav</.badge>
+                <.badge tone="neutral">Stable session frame</.badge>
+                <.badge tone="neutral">Route-level panels</.badge>
               </div>
             </.panel>
           </div>

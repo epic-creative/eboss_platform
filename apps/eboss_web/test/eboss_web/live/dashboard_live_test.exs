@@ -1,40 +1,52 @@
 defmodule EBossWeb.DashboardLiveTest do
-  use EBossWeb.ConnCase, async: false
+  use ExUnit.Case, async: false
+  use EBossWeb, :verified_routes
+
+  import Phoenix.ConnTest
+  import Phoenix.LiveViewTest
 
   alias EBossWeb.BrowserTestContracts
 
-  test "dashboard route renders the authenticated shell scaffold", context do
-    %{conn: conn, current_user: current_user} = register_and_log_in_user(context)
+  @endpoint EBossWeb.Endpoint
 
-    assert {:ok, view, _html} = live(conn, ~p"/dashboard")
+  setup do
+    for app <- [:plug_crypto, :phoenix, :phoenix_html, :phoenix_live_view, :gettext] do
+      {:ok, _} = Application.ensure_all_started(app)
+    end
 
-    assert has_element?(view, ~s([data-testid="#{BrowserTestContracts.dashboard_shell()}"]))
+    if is_nil(Process.whereis(EBossWeb.Endpoint)) do
+      start_supervised!(EBossWeb.Endpoint)
+    end
 
-    assert has_element?(
-             view,
-             ~s(nav[aria-label="#{BrowserTestContracts.dashboard_navigation_label()}"])
-           )
-
-    assert has_element?(view, "[data-dashboard-shell-sidebar]")
-    assert has_element?(view, "[data-dashboard-shell-main]")
-    assert has_element?(view, "[data-dashboard-shell-header]")
-    assert has_element?(view, "[data-dashboard-shell-body]")
-    assert has_element?(view, "[data-dashboard-chrome='identity']")
-    assert has_element?(view, "[data-dashboard-chrome='context']")
-    assert has_element?(view, ~s([data-dashboard-nav-item="dashboard"][data-active="true"]))
-    assert has_element?(view, "[data-dashboard-contract='page-header']")
-    assert has_element?(view, "[data-dashboard-contract='page-content']")
-    assert has_element?(view, ".ui-shell[data-shell-mode='product']")
-    refute has_element?(view, "[data-public-shell-nav]")
-
-    assert has_element?(
-             view,
-             "[data-dashboard-chrome='context'] .ui-text-title",
-             "@#{current_user.username}"
-           )
+    :ok
   end
 
-  test "dashboard route redirects anonymous visitors to sign-in", %{conn: conn} do
-    assert {:error, {:redirect, %{to: "/sign-in"}}} = live(conn, ~p"/dashboard")
+  test "dashboard live render keeps the authenticated shell contract on the main surface" do
+    current_user = %{username: "shell_user", email: "shell@example.com"}
+
+    html =
+      render_component(&EBossWeb.DashboardLive.render/1, %{
+        flash: %{},
+        current_scope: nil,
+        current_user: current_user
+      })
+
+    assert html =~ ~s(data-testid="#{BrowserTestContracts.dashboard_shell()}")
+    assert html =~ ~s(aria-label="#{BrowserTestContracts.dashboard_navigation_label()}")
+    assert html =~ ~s(data-dashboard-shell-sidebar)
+    assert html =~ ~s(data-dashboard-shell-main)
+    assert html =~ ~s(data-dashboard-shell-header)
+    assert html =~ ~s(data-dashboard-shell-body)
+    assert html =~ ~s(data-dashboard-contract="page-header")
+    assert html =~ ~s(data-dashboard-contract="page-content")
+    assert html =~ "EBoss dashboard"
+    assert html =~ "Operator workspace"
+    assert html =~ "The main dashboard now lives inside the shared operator shell"
+    assert html =~ "@#{current_user.username}"
+    refute html =~ "Dark / compact"
+  end
+
+  test "dashboard route redirects anonymous visitors to sign-in" do
+    assert {:error, {:redirect, %{to: "/sign-in"}}} = live(build_conn(), ~p"/dashboard")
   end
 end

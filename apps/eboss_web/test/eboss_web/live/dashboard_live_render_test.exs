@@ -36,7 +36,9 @@ defmodule EBossWeb.DashboardLiveRenderTest do
     assert html =~ ~s(data-dashboard-nav-item="dashboard")
     assert html =~ ~s(data-dashboard-contract="page-header")
     assert html =~ ~s(data-dashboard-contract="page-content")
+    assert html =~ "EBoss dashboard"
+    assert html =~ "Operator workspace"
     assert html =~ "@render_user"
-    assert html =~ "Dark / compact"
+    assert html =~ "The main dashboard now lives inside the shared operator shell"
   end
 end

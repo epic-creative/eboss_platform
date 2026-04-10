@@ -2183,3 +2183,80 @@ Running ExUnit with seed: 492208, max_cases: 20
 ..........................................................................
 Finished in 10.6 seconds (0.7s async, 9.9s sync)
 74 tests, 0 failures
+1) changed files
+
+- [apps/eboss_web/lib/eboss_web/live/dashboard_live.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/live/dashboard_live.ex#L10)  
+  Adopted the shared dashboard shell as the real `/dashboard` surface, passed route-specific shell identity, removed the extra floating wrapper around the main launchpad, and rewrote the page copy so it reads like product UI instead of shell scaffolding.
+- [apps/eboss_web/assets/vue/dashboard/DashboardLaunchpad.vue](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/vue/dashboard/DashboardLaunchpad.vue#L13)  
+  Reworked the launchpad from auth-scene styling into a dashboard-native surface with shell/status content and route-level panels.
+- [apps/eboss_web/assets/css/system/patterns.css](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/css/system/patterns.css#L386)  
+  Added the `ui-dashboard-launchpad*` pattern styles so the dashboard body has its own shell-aligned visual contract.
+- [apps/eboss_web/test/eboss_web/live/dashboard_live_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/eboss_web/live/dashboard_live_test.exs#L1)  
+  Updated coverage to validate the adopted shell contract without requiring a database-backed sign-in flow.
+- [apps/eboss_web/test/eboss_web/live/dashboard_live_render_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/eboss_web/live/dashboard_live_render_test.exs#L22)  
+  Updated render assertions for the new dashboard shell content.
+- [apps/eboss_web/test/design_surface_test.exs](/Users/mhostetler/Source/EBoss/EBoss_platform/apps/eboss_web/test/design_surface_test.exs#L72)  
+  Updated the design-surface contract to match the new dashboard-native Vue scene.
+
+2) tests/commands executed
+
+- `MIX_ENV=test MIX_OS_CONCURRENCY_LOCK=0 elixir -pa /tmp/mix_sync_pubsub_stub_beam -S mix compile --warnings-as-errors`  
+  Passed.
+- `MIX_OS_CONCURRENCY_LOCK=0 elixir -pa /tmp/mix_sync_pubsub_stub_beam -S mix format ...` on changed files  
+  Passed.
+- `MIX_ENV=test elixir -e 'Code.prepend_paths(Path.wildcard("_build/test/lib/*/ebin")); ... ExUnit.run()'`  
+  Ran:
+  - `apps/eboss_web/test/eboss_web/live/dashboard_live_test.exs`
+  - `apps/eboss_web/test/eboss_web/live/dashboard_live_render_test.exs`
+  - `apps/eboss_web/test/eboss_web/live/dashboard_auth_gate_smoke_test.exs`
+  - `apps/eboss_web/test/design_surface_test.exs`  
+  Result: `11 tests, 0 failures`.
+- `MIX_ENV=test MIX_OS_CONCURRENCY_LOCK=0 elixir -pa /tmp/mix_sync_pubsub_stub_beam -S mix precommit`  
+  Attempted, but blocked by sandbox limitations; see below.
+
+3) acceptance criteria coverage
+
+- The dashboard route is using the new shell pattern: covered by [dashboard_live.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/live/dashboard_live.ex#L17) and verified by [dashboard_live_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/eboss_web/live/dashboard_live_test.exs#L24) and [dashboard_live_render_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/eboss_web/live/dashboard_live_render_test.exs#L22).
+- The route remains functional and visually coherent after adoption: the main surface now uses the dashboard-native component/style pair in [DashboardLaunchpad.vue](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/vue/dashboard/DashboardLaunchpad.vue#L13) and [patterns.css](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/css/system/patterns.css#L386), with contract coverage in [design_surface_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/design_surface_test.exs#L76).
+- Shell-level composition is easier to reuse for future authenticated surfaces: shell chrome stays in `dashboard_shell`, while route-owned content is isolated to the header/body in [dashboard_live.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/live/dashboard_live.ex#L24).
+- Auth gating: route redirect remains covered by [dashboard_live_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/eboss_web/live/dashboard_live_test.exs#L49) and the existing [dashboard_auth_gate_smoke_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/eboss_web/live/dashboard_auth_gate_smoke_test.exs#L37).
+
+4) blockers/assumptions
+
+- `mix precommit` could not be left passing in this sandbox. Two environment issues blocked it:
+  - stock `mix` needs loopback TCP for `Mix.PubSub`; umbrella alias child `cmd mix` calls still hit `:eperm`
+  - PostgreSQL socket/TCP access is blocked here, so DB-backed tests cannot run
+- Because of that, I could not do a true authenticated browser visual review of `/dashboard`; verification was limited to compile-safe render tests and contract checks.
+- Assumption: in a normal local/CI environment with working Mix pubsub and PostgreSQL, the remaining DB-backed `mix precommit` path should be the final verification step.
+==> eboss_data
+There are no tests to run
+==> eboss_accounts
+Running ExUnit with seed: 277079, max_cases: 20
+
+............
+Finished in 8.3 seconds (0.00s async, 8.3s sync)
+12 tests, 0 failures
+==> eboss_tenancy
+Running ExUnit with seed: 109489, max_cases: 20
+
+............
+Finished in 7.0 seconds (0.00s async, 7.0s sync)
+12 tests, 0 failures
+==> eboss_workspaces
+Running ExUnit with seed: 591621, max_cases: 20
+
+............
+Finished in 6.3 seconds (0.00s async, 6.3s sync)
+12 tests, 0 failures
+==> eboss_folio
+Running ExUnit with seed: 352640, max_cases: 20
+
+...........
+Finished in 4.3 seconds (0.00s async, 4.3s sync)
+11 tests, 0 failures
+==> eboss_web
+Running ExUnit with seed: 823327, max_cases: 20
+
+..........................................................................
+Finished in 9.3 seconds (0.4s async, 8.9s sync)
+74 tests, 0 failures
