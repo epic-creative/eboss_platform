@@ -37,6 +37,28 @@ import UiButton from "./UiButton.vue"
           </div>
         </StorySurface>
       </Variant>
+
+      <Variant title="Semantic tones">
+        <StorySurface :theme="state.theme" :density="state.density">
+          <div class="grid gap-3">
+            <div class="flex flex-wrap gap-3">
+              <UiButton tone="primary">Primary</UiButton>
+              <UiButton tone="neutral">Neutral</UiButton>
+              <UiButton tone="success">Success</UiButton>
+              <UiButton tone="warning">Warning</UiButton>
+              <UiButton tone="danger">Danger</UiButton>
+            </div>
+
+            <div class="flex flex-wrap gap-3">
+              <UiButton variant="outline" tone="primary">Primary outline</UiButton>
+              <UiButton variant="outline" tone="neutral">Neutral outline</UiButton>
+              <UiButton variant="outline" tone="success">Success outline</UiButton>
+              <UiButton variant="outline" tone="warning">Warning outline</UiButton>
+              <UiButton variant="outline" tone="danger">Danger outline</UiButton>
+            </div>
+          </div>
+        </StorySurface>
+      </Variant>
     </template>
   </Story>
 </template>

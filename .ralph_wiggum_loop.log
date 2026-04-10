@@ -142,3 +142,71 @@ Running ExUnit with seed: 993960, max_cases: 20
 ......................................
 Finished in 6.2 seconds (0.2s async, 5.9s sync)
 38 tests, 0 failures
+**1) Changed Files**
+- [tokens.css](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/css/system/tokens.css)
+- [themes.css](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/css/system/themes.css)
+- [patterns.css](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/css/system/patterns.css)
+- [primitives.css](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/css/system/primitives.css)
+- [LiveVueDemo.vue](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/vue/LiveVueDemo.vue)
+- [AuthScene.vue](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/vue/auth/AuthScene.vue)
+- [UiAlert.story.vue](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/vue/components/ui/UiAlert.story.vue)
+- [UiButton.story.vue](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/vue/components/ui/UiButton.story.vue)
+- [DashboardLaunchpad.vue](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/vue/dashboard/DashboardLaunchpad.vue)
+- [VisualDna.story.vue](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/vue/stories/VisualDna.story.vue)
+- [layouts.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/components/layouts.ex)
+- [ui_components.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/components/ui_components.ex)
+- [dashboard_live.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/live/dashboard_live.ex)
+- [design_system_live.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/live/dev/design_system_live.ex)
+- [design_tone_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/design_tone_test.exs)
+- [design_system_live_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/eboss_web/live/dev/design_system_live_test.exs)
+
+**2) Tests/Commands Executed**
+- `npm run vue:check` in `apps/eboss_web/assets` passed.
+- `elixir -e 'ExUnit.start(); Code.require_file("apps/eboss_web/test/design_tone_test.exs"); ...'` passed: `3 tests, 0 failures`.
+- `mix format` passed via a temporary Mix bootstrap workaround.
+- `mix format --check-formatted` passed via the same workaround.
+- `mix compile --warnings-as-errors` passed.
+- `npm run histoire:build` failed in this environment with `EMFILE` from `chokidar` file watching.
+- `mix precommit` was attempted and failed because test boot tries to create/connect to Postgres on `localhost:5432`, which this sandbox blocks with `:eperm`.
+
+**3) Acceptance Criteria Coverage**
+- Same tone names now carry the same meaning across HEEx and Vue: semantic `primary`, `neutral`, `success`, `warning`, and `danger` tokens were added to the CSS foundation, shared HEEx/Vue primitive contracts were aligned, and a tone-focused acceptance test was added.
+- Shared primitives no longer drift on state color meaning: buttons now honor semantic tones across non-solid variants too, alerts and badges share the same semantic palette, and decorative `warning`/`accent` usage was removed from shared surfaces and previews.
+- Public, auth, and dashboard surfaces now read as one palette family: decorative warning washes were removed from shell/auth/background surfaces, section badges were normalized away from false-warning styling, and `/dev/design-system` plus Histoire stories were updated to show the semantic tone model explicitly.
+
+**4) Blockers/Assumptions**
+- I could not leave `mix precommit` passing in this sandbox. The blocker is environmental, not story code: tests need Postgres, and TCP access to `localhost:5432` is denied here.
+- `npm run histoire:build` is also environment-blocked here by Node/chokidar raising `EMFILE` while setting up watchers during the build.
+- I left the existing `inverse` panel mode intact as a surface treatment, since changing the broader surface/elevation contract belongs to `ST-DSN-004`, not this story.
+==> eboss_data
+There are no tests to run
+==> eboss_accounts
+Running ExUnit with seed: 846194, max_cases: 20
+
+............
+Finished in 8.3 seconds (0.00s async, 8.3s sync)
+12 tests, 0 failures
+==> eboss_tenancy
+Running ExUnit with seed: 40567, max_cases: 20
+
+............
+Finished in 7.1 seconds (0.00s async, 7.1s sync)
+12 tests, 0 failures
+==> eboss_workspaces
+Running ExUnit with seed: 833608, max_cases: 20
+
+............
+Finished in 6.2 seconds (0.00s async, 6.2s sync)
+12 tests, 0 failures
+==> eboss_folio
+Running ExUnit with seed: 845344, max_cases: 20
+
+...........
+Finished in 4.8 seconds (0.00s async, 4.8s sync)
+11 tests, 0 failures
+==> eboss_web
+Running ExUnit with seed: 752789, max_cases: 20
+
+.........................................
+Finished in 7.0 seconds (0.2s async, 6.8s sync)
+41 tests, 0 failures

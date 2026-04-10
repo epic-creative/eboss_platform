@@ -44,7 +44,7 @@ defmodule EBossWeb.DashboardLive do
             </div>
 
             <.panel tone="inverse" surface="solid" class="space-y-3 px-5 py-6">
-              <p class="ui-text-meta" data-tone="warning">Next layer</p>
+              <p class="ui-text-meta" data-tone="primary">Next layer</p>
               <p class="ui-text-title" data-size="md">
                 Attach workspaces, then bring Folio into the shell.
               </p>

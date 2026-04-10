@@ -12,7 +12,11 @@
   inset: 0;
   background:
     radial-gradient(circle at top, color-mix(in srgb, var(--color-accent) 14%, transparent), transparent 36%),
-    radial-gradient(circle at bottom right, color-mix(in srgb, var(--color-warning) 12%, transparent), transparent 30%);
+    radial-gradient(
+      circle at bottom right,
+      color-mix(in srgb, var(--color-surface-strong) 70%, transparent),
+      transparent 30%
+    );
   pointer-events: none;
 }
 
@@ -143,7 +147,11 @@
   border-radius: calc(var(--radius-panel) - 2px);
   background:
     radial-gradient(circle at top right, color-mix(in srgb, var(--color-accent) 22%, transparent), transparent 34%),
-    radial-gradient(circle at bottom left, color-mix(in srgb, var(--color-warning) 18%, transparent), transparent 32%),
+    radial-gradient(
+      circle at bottom left,
+      color-mix(in srgb, var(--color-surface-strong) 76%, transparent),
+      transparent 32%
+    ),
     linear-gradient(180deg, color-mix(in srgb, var(--color-surface-strong) 95%, black 4%), color-mix(in srgb, var(--color-canvas) 92%, black));
   color: var(--color-text);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);

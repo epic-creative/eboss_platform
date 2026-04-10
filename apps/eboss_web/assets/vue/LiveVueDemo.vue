@@ -20,7 +20,7 @@ const countParity = computed(() => (props.count % 2 === 0 ? "even" : "odd"))
   <UiPanel surface="floating" class="p-6">
     <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
       <div class="space-y-2">
-        <UiBadge tone="primary">Frontend foundation</UiBadge>
+        <UiBadge tone="neutral">Frontend foundation</UiBadge>
         <h2 class="ui-text-display" data-size="lg">{{ headline }}</h2>
         <p class="ui-text-body max-w-2xl" data-tone="soft">{{ subhead }}</p>
       </div>
@@ -36,7 +36,7 @@ const countParity = computed(() => (props.count % 2 === 0 ? "even" : "odd"))
 
         <div class="mt-4 flex items-end gap-3">
           <span class="ui-text-display" data-size="hero">{{ count }}</span>
-          <UiBadge tone="primary">{{ countParity }}</UiBadge>
+          <UiBadge tone="neutral">{{ countParity }}</UiBadge>
         </div>
 
         <div class="mt-5 flex flex-wrap gap-3">

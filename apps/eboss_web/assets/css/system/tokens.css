@@ -15,6 +15,12 @@
   --color-ui-text: var(--color-text);
   --color-ui-text-muted: var(--color-text-muted);
   --color-ui-text-soft: var(--color-text-soft);
+  --color-ui-primary: var(--color-accent);
+  --color-ui-primary-strong: var(--color-accent-strong);
+  --color-ui-primary-contrast: var(--color-accent-contrast);
+  --color-ui-neutral: var(--color-text-muted);
+  --color-ui-neutral-strong: var(--color-text);
+  --color-ui-neutral-contrast: var(--color-canvas);
   --color-ui-accent: var(--color-accent);
   --color-ui-accent-strong: var(--color-accent-strong);
   --color-ui-accent-contrast: var(--color-accent-contrast);

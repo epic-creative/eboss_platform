@@ -83,7 +83,7 @@ const publicProofPoints = [
           <div class="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
             <UiPanel tone="inverse" surface="solid" class="space-y-6">
               <div class="space-y-3">
-                <UiBadge tone="warning">Shared thesis</UiBadge>
+                <UiBadge tone="neutral">Shared thesis</UiBadge>
                 <h2 class="ui-text-display" data-size="xl">
                   Operator console first, marketing polish second.
                 </h2>
@@ -133,7 +133,7 @@ const publicProofPoints = [
           <div class="grid gap-4 xl:grid-cols-3">
             <UiPanel surface="floating" class="space-y-5">
               <div class="space-y-3">
-                <UiBadge tone="warning">Dashboard surfaces</UiBadge>
+                <UiBadge tone="neutral">Dashboard surfaces</UiBadge>
                 <h3 class="ui-text-title" data-size="xl">Strong chrome, compact hierarchy, status-first emphasis.</h3>
                 <p class="ui-text-body" data-tone="soft">
                   This is the clearest expression of the system: framed navigation, dense groupings,
@@ -171,9 +171,9 @@ const publicProofPoints = [
               />
             </UiPanel>
 
-            <UiPanel tone="primary" surface="floating" class="space-y-5">
+            <UiPanel surface="floating" class="space-y-5">
               <div class="space-y-3">
-                <UiBadge tone="primary">Public surfaces</UiBadge>
+                <UiBadge tone="neutral">Public surfaces</UiBadge>
                 <h3 class="ui-text-display" data-size="lg">Narrative rhythm, still anchored in product infrastructure.</h3>
                 <p class="ui-text-body" data-size="lg" data-tone="soft">
                   Public pages can stretch out and sell the system, but they should stay rooted in

@@ -18,6 +18,7 @@ import UiAlert from "./UiAlert.vue"
       <Variant title="Feedback">
         <StorySurface :theme="state.theme" :density="state.density">
           <div class="grid gap-3">
+            <UiAlert tone="neutral" title="Operator note" description="Shared defaults stay grounded in shell tones." />
             <UiAlert tone="primary" title="Agent queue healthy" description="Work continues without operator intervention." />
             <UiAlert tone="success" title="Run approved" description="Execution can resume with the latest policy checks." />
             <UiAlert tone="warning" title="Review requested" description="A human decision is needed before the next branch executes." />

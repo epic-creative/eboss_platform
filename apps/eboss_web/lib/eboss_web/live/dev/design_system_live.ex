@@ -32,7 +32,7 @@ defmodule EBossWeb.Dev.DesignSystemLive do
           <div class="ui-dev-preview__grid ui-dev-preview__grid--2">
             <.panel tone="inverse" surface="solid" class="space-y-6">
               <div class="space-y-3">
-                <.badge tone="warning">Shared thesis</.badge>
+                <.badge tone="neutral">Shared thesis</.badge>
                 <h2 class="ui-text-display" data-size="xl">
                   Calm control surfaces, framed precisely enough to carry real work.
                 </h2>
@@ -85,7 +85,7 @@ defmodule EBossWeb.Dev.DesignSystemLive do
           <div class="ui-dev-preview__grid ui-dev-preview__grid--3">
             <.panel surface="floating" class="space-y-5">
               <div class="space-y-3">
-                <.badge tone="warning">Dashboard surfaces</.badge>
+                <.badge tone="neutral">Dashboard surfaces</.badge>
                 <h3 class="ui-text-title" data-size="xl">
                   Strong chrome, compact hierarchy, status-first emphasis.
                 </h3>
@@ -124,9 +124,9 @@ defmodule EBossWeb.Dev.DesignSystemLive do
               />
             </.panel>
 
-            <.panel tone="primary" surface="floating" class="space-y-5">
+            <.panel surface="floating" class="space-y-5">
               <div class="space-y-3">
-                <.badge tone="primary">Public surfaces</.badge>
+                <.badge tone="neutral">Public surfaces</.badge>
                 <h3 class="ui-text-display" data-size="lg">
                   Narrative rhythm, still anchored in product infrastructure.
                 </h3>
@@ -158,16 +158,36 @@ defmodule EBossWeb.Dev.DesignSystemLive do
           <.section_heading
             eyebrow="Buttons"
             title="Action styles"
-            subtitle="Solid, outline, subtle, ghost, and loading states."
+            subtitle="Variant and tone combinations share the same semantic color contract."
             title_size="sm"
           />
           <.panel surface="floating" class="p-6">
-            <div class="flex flex-wrap gap-3">
-              <.button>Primary</.button>
-              <.button variant="outline" tone="neutral">Outline</.button>
-              <.button variant="subtle" tone="neutral">Subtle</.button>
-              <.button variant="ghost" tone="neutral">Ghost</.button>
-              <.button loading>Loading</.button>
+            <div class="space-y-5">
+              <div class="flex flex-wrap gap-3">
+                <.button>Primary</.button>
+                <.button variant="outline" tone="neutral">Outline</.button>
+                <.button variant="subtle" tone="neutral">Subtle</.button>
+                <.button variant="ghost" tone="neutral">Ghost</.button>
+                <.button loading>Loading</.button>
+              </div>
+
+              <div class="space-y-3">
+                <p class="ui-text-meta" data-tone="soft">Semantic tones</p>
+                <div class="flex flex-wrap gap-3">
+                  <.button tone="primary">Primary</.button>
+                  <.button tone="neutral">Neutral</.button>
+                  <.button tone="success">Success</.button>
+                  <.button tone="warning">Warning</.button>
+                  <.button tone="danger">Danger</.button>
+                </div>
+                <div class="flex flex-wrap gap-3">
+                  <.button variant="outline" tone="primary">Primary outline</.button>
+                  <.button variant="outline" tone="neutral">Neutral outline</.button>
+                  <.button variant="outline" tone="success">Success outline</.button>
+                  <.button variant="outline" tone="warning">Warning outline</.button>
+                  <.button variant="outline" tone="danger">Danger outline</.button>
+                </div>
+              </div>
             </div>
           </.panel>
         </section>
@@ -228,15 +248,31 @@ defmodule EBossWeb.Dev.DesignSystemLive do
           <.section_heading
             eyebrow="Feedback"
             title="Alerts and status"
-            subtitle="Inline feedback components for success, warning, and errors."
+            subtitle="Neutral, primary, success, warning, and danger all stay on one semantic palette."
             title_size="sm"
           />
           <div class="ui-dev-preview__grid ui-dev-preview__grid--3">
+            <div class="ui-alert" data-tone="neutral">
+              <div class="ui-alert__content">
+                <p class="ui-alert__title">Operator note</p>
+                <p class="ui-alert__description">
+                  Default feedback stays grounded in the same shell palette as the rest of the product.
+                </p>
+              </div>
+            </div>
             <div class="ui-alert" data-tone="primary">
               <div class="ui-alert__content">
-                <p class="ui-alert__title">Queue healthy</p>
+                <p class="ui-alert__title">Queue scheduled</p>
                 <p class="ui-alert__description">
-                  Agents are making progress with no approval backlog.
+                  The next orchestration step is active and using the product’s primary signal.
+                </p>
+              </div>
+            </div>
+            <div class="ui-alert" data-tone="success">
+              <div class="ui-alert__content">
+                <p class="ui-alert__title">Run approved</p>
+                <p class="ui-alert__description">
+                  Execution can continue because the latest policy checks have passed.
                 </p>
               </div>
             </div>

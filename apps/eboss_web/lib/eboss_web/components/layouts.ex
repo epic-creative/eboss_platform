@@ -43,7 +43,7 @@ defmodule EBossWeb.Layouts do
                 <.button navigate={~p"/dashboard"} variant="outline" tone="neutral" size="sm">
                   Dashboard
                 </.button>
-                <.badge tone="primary" class="hidden sm:inline-flex">
+                <.badge tone="neutral" class="hidden sm:inline-flex">
                   @{Map.get(@current_user, :username)}
                 </.badge>
                 <form action={~p"/logout"} method="post">

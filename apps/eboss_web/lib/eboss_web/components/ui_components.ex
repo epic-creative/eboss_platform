@@ -83,7 +83,11 @@ defmodule EBossWeb.UIComponents do
   attr :title, :string, required: true
   attr :subtitle, :string, default: nil
   attr :title_size, :string, values: ~w(hero xl lg md sm), default: "lg"
-  attr :eyebrow_tone, :string, values: ~w(warning soft muted accent), default: "warning"
+
+  attr :eyebrow_tone, :string,
+    values: ~w(primary neutral soft muted success warning danger),
+    default: "primary"
+
   attr :title_class, :any, default: nil
   attr :class, :any, default: nil
 
