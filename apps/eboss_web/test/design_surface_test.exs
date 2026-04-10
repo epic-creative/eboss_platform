@@ -40,6 +40,7 @@ defmodule EBossWeb.DesignSurfaceTest do
   test "HEEx and Vue surfaces share the same default, floating, and solid vocabulary" do
     design_system_live = read_file("lib/eboss_web/live/dev/design_system_live.ex")
     home_live = read_file("lib/eboss_web/live/home_live.ex")
+    ui_components = read_file("lib/eboss_web/components/ui_components.ex")
     story_surface = read_file("assets/vue/stories/StorySurface.vue")
     visual_dna_story = read_file("assets/vue/stories/VisualDna.story.vue")
     ui_panel_story = read_file("assets/vue/components/ui/UiPanel.story.vue")
@@ -56,10 +57,17 @@ defmodule EBossWeb.DesignSurfaceTest do
     assert ui_panel_story =~ "Floating surface"
     assert ui_panel_story =~ "Solid surface"
 
-    assert home_live =~ ~s(<div class="ui-home-page">)
-    assert home_live =~ ~s(<.panel surface="floating" class="ui-home-hero__frame">)
+    assert home_live =~ ~s(<div class="ui-public-page ui-home-page">)
+    assert home_live =~ ~s(<.public_hero_section)
+    assert home_live =~ ~s(<.public_proof_band)
+    assert home_live =~ ~s(<.public_feature_row)
     assert home_live =~ ~s|:for={step <- route_sequence()}|
-    assert home_live =~ ~s|class="ui-home-route-sequence__step"|
+    assert home_live =~ ~s|class="ui-public-route-sequence__step"|
+
+    assert ui_components =~ "def public_hero_section(assigns)"
+    assert ui_components =~ "def public_proof_band(assigns)"
+    assert ui_components =~ "def public_feature_row(assigns)"
+    assert ui_components =~ "def public_closing_section(assigns)"
 
     assert story_surface =~ ~s(class="ui-preview-frame")
     assert visual_dna_story =~ ~s(<UiPanel surface="solid" padding="sm" class="space-y-3">)
@@ -137,6 +145,11 @@ defmodule EBossWeb.DesignSurfaceTest do
     assert patterns_css =~ ".ui-public-footer"
     assert patterns_css =~ ".ui-public-footer__grid"
     assert patterns_css =~ ".ui-public-footer__link[data-active=\"true\"]"
+    assert patterns_css =~ ".ui-public-page"
+    assert patterns_css =~ ".ui-public-hero"
+    assert patterns_css =~ ".ui-public-proof-band"
+    assert patterns_css =~ ".ui-public-feature-row"
+    assert patterns_css =~ ".ui-public-route-sequence__step-inner"
     assert patterns_css =~ ".ui-home-page"
     assert patterns_css =~ ".ui-home-hero"
     assert patterns_css =~ ".ui-home-proof-grid"
@@ -163,14 +176,14 @@ defmodule EBossWeb.DesignSurfaceTest do
     assert home_live =~ ~s(data-home-story="continuity")
     assert home_live =~ ~s(data-home-story="tempo")
     assert home_live =~ ~s(data-home-closing)
-    assert home_live =~ ~s|data-public-section-pattern={public_section_pattern_slug(:hero)}|
-    assert home_live =~ ~s|data-public-section-pattern={public_section_pattern_slug(:proof_band)}|
-
-    assert home_live =~
-             ~s|data-public-section-pattern={public_section_pattern_slug(:feature_row)}|
-
-    assert home_live =~
-             ~s|data-public-section-pattern={public_section_pattern_slug(:closing_section)}|
+    assert home_live =~ ~s(<.public_hero_section)
+    assert home_live =~ ~s(<.public_proof_band)
+    assert home_live =~ ~s(<.public_feature_row)
+    assert home_live =~ ~s(<.public_closing_section)
+    assert home_live =~ ~s|section_pattern={public_section_pattern_slug(:hero)}|
+    assert home_live =~ ~s|section_pattern={public_section_pattern_slug(:proof_band)}|
+    assert home_live =~ ~s|section_pattern={public_section_pattern_slug(:feature_row)}|
+    assert home_live =~ ~s|section_pattern={public_section_pattern_slug(:closing_section)}|
 
     assert home_live =~ ~s|section_pattern={public_section_pattern_slug(:cta_band)}|
     assert home_live =~ "<:shell_footer>"

@@ -149,6 +149,129 @@ defmodule EBossWeb.UIComponents do
     """
   end
 
+  attr :section_pattern, :string, required: true
+  attr :class, :any, default: nil
+  attr :rest, :global
+  slot :heading_block, required: true
+  slot :narrative, required: true
+  slot :action, required: true
+  slot :signal
+  slot :proof_frame, required: true
+
+  def public_hero_section(assigns) do
+    ~H"""
+    <section
+      class={["ui-public-hero", @class]}
+      data-public-section-pattern={@section_pattern}
+      {@rest}
+    >
+      <div class="ui-public-hero__copy">
+        {render_slot(@heading_block)}
+
+        <div class="ui-public-hero__narrative">
+          {render_slot(@narrative)}
+        </div>
+
+        <div class="ui-public-hero__actions">
+          {render_slot(@action)}
+        </div>
+
+        <div :if={@signal != []} class="ui-public-hero__signals">
+          {render_slot(@signal)}
+        </div>
+      </div>
+
+      <.panel surface="floating" class="ui-public-hero__frame">
+        <div class="ui-public-hero__frame-stack">
+          {render_slot(@proof_frame)}
+        </div>
+      </.panel>
+    </section>
+    """
+  end
+
+  attr :section_pattern, :string, required: true
+  attr :class, :any, default: nil
+  attr :heading_class, :any, default: nil
+  attr :grid_class, :any, default: nil
+  attr :rest, :global
+  slot :section_heading, required: true
+  slot :proof_item, required: true
+
+  def public_proof_band(assigns) do
+    ~H"""
+    <section
+      class={["ui-public-proof-band", @class]}
+      data-public-section-pattern={@section_pattern}
+      {@rest}
+    >
+      <div class={["ui-public-proof-band__heading", @heading_class]}>
+        {render_slot(@section_heading)}
+      </div>
+
+      <div class={["ui-public-proof-band__grid", @grid_class]}>
+        {render_slot(@proof_item)}
+      </div>
+    </section>
+    """
+  end
+
+  attr :section_pattern, :string, required: true
+  attr :reverse, :boolean, default: false
+  attr :class, :any, default: nil
+  attr :rest, :global
+  slot :copy_rail, required: true
+  slot :signal
+  slot :supporting_frame, required: true
+
+  def public_feature_row(assigns) do
+    assigns =
+      assign(assigns, :feature_row_classes, [
+        "ui-public-feature-row",
+        assigns.reverse && "ui-public-feature-row--reverse",
+        assigns.class
+      ])
+
+    ~H"""
+    <section
+      class={@feature_row_classes}
+      data-public-section-pattern={@section_pattern}
+      {@rest}
+    >
+      <div class="ui-public-feature-row__copy">
+        {render_slot(@copy_rail)}
+
+        <div :if={@signal != []} class="ui-public-feature-row__signals">
+          {render_slot(@signal)}
+        </div>
+      </div>
+
+      <.panel surface="floating" class="ui-public-feature-row__frame">
+        <div class="ui-public-feature-row__frame-stack">
+          {render_slot(@supporting_frame)}
+        </div>
+      </.panel>
+    </section>
+    """
+  end
+
+  attr :section_pattern, :string, required: true
+  attr :class, :any, default: nil
+  attr :rest, :global
+  slot :inner_block, required: true
+
+  def public_closing_section(assigns) do
+    ~H"""
+    <section
+      class={["ui-public-closing-section", @class]}
+      data-public-section-pattern={@section_pattern}
+      {@rest}
+    >
+      {render_slot(@inner_block)}
+    </section>
+    """
+  end
+
   attr :title, :string, required: true
   attr :copy, :string, required: true
   attr :class, :any, default: nil

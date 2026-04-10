@@ -1583,3 +1583,78 @@ Running ExUnit with seed: 140361, max_cases: 20
 .................................................................
 Finished in 7.9 seconds (0.3s async, 7.6s sync)
 65 tests, 0 failures
+1) changed files
+
+- [apps/eboss_web/lib/eboss_web/components/ui_components.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/components/ui_components.ex)
+- [apps/eboss_web/lib/eboss_web/live/home_live.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/live/home_live.ex)
+- [apps/eboss_web/assets/css/system/patterns.css](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/css/system/patterns.css)
+- [apps/eboss_web/test/design_surface_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/design_surface_test.exs)
+- [apps/eboss_web/test/eboss_web/live/home_live_render_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/eboss_web/live/home_live_render_test.exs)
+- [apps/eboss_web/test/eboss_web/live/public_shell_smoke_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/eboss_web/live/public_shell_smoke_test.exs)
+
+2) tests/commands executed
+
+- Custom Mix bootstrap at repo root:
+  - `Mix.Tasks.Format.run([...changed files...])`
+  - `Mix.Tasks.Format.run(["--check-formatted", ...])`
+  - result: passed
+- Custom Mix bootstrap at `apps/eboss_web`:
+  - `Mix.Tasks.Compile.run(["--warnings-as-errors", "--no-deps-check"])`
+  - result: passed
+- Custom Mix bootstrap at `apps/eboss_web`:
+  - `Mix.Tasks.Test.run(["--no-deps-check", "test/design_surface_test.exs", "test/eboss_web/public_page_patterns_test.exs", "test/eboss_web/live/home_live_render_test.exs", "test/eboss_web/live/public_shell_smoke_test.exs"])`
+  - result: `12 tests, 0 failures`
+- Attempted:
+  - plain `mix test`
+  - exact `mix precommit`
+  - local HTTP server for browser review
+  - all blocked by sandbox TCP restrictions
+
+3) acceptance criteria coverage
+
+- Public page uses standardized section patterns in practice:
+  - `HomeLive` now composes shared section helpers for hero, proof band, feature rows, and closing section, with the existing shared CTA frame still carrying the CTA-band pattern.
+- One-off layout improvisation reduced materially:
+  - section wrapper markup moved out of `HomeLive` into reusable `UIComponents`
+  - shared `ui-public-*` pattern classes now back those components
+  - old `ui-home-*` selectors remain as compatibility aliases instead of cleanup removal
+- Public page remains coherent across desktop and mobile:
+  - shared responsive rules were added for the new public pattern classes
+  - render and LiveView smoke tests were updated to assert the migrated structure and pattern usage
+
+4) blockers/assumptions
+
+- Exact `mix precommit` could not be run in this sandbox. Mix starts a loopback PubSub socket, and this environment denies local TCP sockets with `:eperm`. The repo’s test setup also expects PostgreSQL on `localhost:5432`, which is likewise blocked here.
+- Live browser review against a running local route was also blocked by the same socket restriction, so I verified structure through render/smoke tests and compile/format checks instead.
+==> eboss_data
+There are no tests to run
+==> eboss_accounts
+Running ExUnit with seed: 944479, max_cases: 20
+
+............
+Finished in 9.1 seconds (0.00s async, 9.1s sync)
+12 tests, 0 failures
+==> eboss_tenancy
+Running ExUnit with seed: 610488, max_cases: 20
+
+............
+Finished in 6.9 seconds (0.00s async, 6.9s sync)
+12 tests, 0 failures
+==> eboss_workspaces
+Running ExUnit with seed: 67834, max_cases: 20
+
+............
+Finished in 6.4 seconds (0.00s async, 6.4s sync)
+12 tests, 0 failures
+==> eboss_folio
+Running ExUnit with seed: 463232, max_cases: 20
+
+...........
+Finished in 4.4 seconds (0.00s async, 4.4s sync)
+11 tests, 0 failures
+==> eboss_web
+Running ExUnit with seed: 815697, max_cases: 20
+
+.................................................................
+Finished in 9.5 seconds (0.3s async, 9.1s sync)
+65 tests, 0 failures
