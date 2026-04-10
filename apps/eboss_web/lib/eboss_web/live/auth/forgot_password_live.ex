@@ -61,7 +61,7 @@ defmodule EBossWeb.Auth.ForgotPasswordLive do
             eyebrow="Password reset"
             title="Forgot your password?"
             subtitle="Enter the email for your account and we will send a reset link if it exists."
-            title_class="text-3xl"
+            title_size="md"
           />
           <.auth_nav current_path="/forgot-password" />
 
@@ -84,7 +84,7 @@ defmodule EBossWeb.Auth.ForgotPasswordLive do
             <div class="flex items-center justify-between gap-4">
               <a
                 href={~p"/sign-in"}
-                class="text-sm font-medium text-ui-accent hover:text-ui-accent-strong"
+                class="ui-text-link"
               >
                 Back to sign in
               </a>

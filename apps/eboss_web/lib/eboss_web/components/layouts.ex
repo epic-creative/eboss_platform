@@ -30,11 +30,13 @@ defmodule EBossWeb.Layouts do
               <div class="ui-brand-mark">EB</div>
               <div class="space-y-1">
                 <p class="ui-kicker">EBoss Platform</p>
-                <p class="text-sm text-ui-text-soft">Precision control for agent orchestration.</p>
+                <p class="ui-text-body" data-size="sm" data-tone="soft">
+                  Precision control for agent orchestration.
+                </p>
               </div>
             </a>
 
-            <nav class="ui-control-cluster text-sm">
+            <nav class="ui-control-cluster">
               <.theme_toggle />
 
               <%= if @current_user do %>

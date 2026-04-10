@@ -19,7 +19,7 @@ defmodule EBossWeb.DashboardLive do
           eyebrow="Authenticated shell"
           title={"Welcome back, @#{Map.get(@current_user, :username)}."}
           subtitle="This dashboard is intentionally lean. It confirms the session boundary, gives the authenticated user a stable landing page, and leaves room for the orchestration surfaces to grow."
-          title_class="text-4xl"
+          title_size="lg"
         />
 
         <div class="ui-split-grid">
@@ -34,23 +34,21 @@ defmodule EBossWeb.DashboardLive do
 
           <.panel surface="floating" class="space-y-4 p-8">
             <div class="space-y-2">
-              <p class="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">
-                Current account
-              </p>
-              <p class="text-2xl font-semibold text-stone-950">
+              <p class="ui-text-meta" data-tone="muted">Current account</p>
+              <p class="ui-text-title" data-size="lg">
                 @{Map.get(@current_user, :username)}
               </p>
-              <p class="text-sm text-stone-600">{to_string(Map.get(@current_user, :email))}</p>
+              <p class="ui-text-body" data-size="sm" data-tone="soft">
+                {to_string(Map.get(@current_user, :email))}
+              </p>
             </div>
 
-            <.panel tone="inverse" surface="solid" class="space-y-3 px-5 py-6 text-ui-text">
-              <p class="text-xs font-semibold uppercase tracking-[0.24em] text-ui-warning">
-                Next layer
-              </p>
-              <p class="text-lg font-semibold">
+            <.panel tone="inverse" surface="solid" class="space-y-3 px-5 py-6">
+              <p class="ui-text-meta" data-tone="warning">Next layer</p>
+              <p class="ui-text-title" data-size="md">
                 Attach workspaces, then bring Folio into the shell.
               </p>
-              <p class="text-sm leading-6 text-ui-text-soft">
+              <p class="ui-text-body" data-tone="soft">
                 This page is the authenticated anchor for the rest of the application. Everything else can grow outward from here.
               </p>
             </.panel>

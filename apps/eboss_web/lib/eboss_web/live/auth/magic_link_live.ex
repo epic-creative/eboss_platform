@@ -42,7 +42,7 @@ defmodule EBossWeb.Auth.MagicLinkLive do
             eyebrow="Magic link"
             title="Use this sign-in link"
             subtitle="Confirm the sign-in and we will take you into the authenticated part of the app."
-            title_class="text-3xl"
+            title_size="md"
           />
 
           <.form_errors form={@form} />

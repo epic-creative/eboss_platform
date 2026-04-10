@@ -62,7 +62,7 @@ defmodule EBossWeb.AuthComponents do
 
   def auth_nav(assigns) do
     ~H"""
-    <nav class="flex flex-wrap gap-2 text-sm">
+    <nav class="flex flex-wrap gap-2">
       <.nav_pill to={~p"/sign-in"} active={@current_path == "/sign-in"}>
         Sign in
       </.nav_pill>

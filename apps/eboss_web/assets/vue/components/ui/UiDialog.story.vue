@@ -28,7 +28,7 @@ import UiDialog from "./UiDialog.vue"
             </template>
 
             <div class="space-y-4">
-              <p class="ui-copy-muted">
+              <p class="ui-text-body" data-tone="soft">
                 This wrapper uses Reka UI for behavior while preserving the same first-party surface language.
               </p>
               <div class="flex gap-3">

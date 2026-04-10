@@ -55,3 +55,90 @@ Running ExUnit with seed: 629728, max_cases: 20
 ...................................
 Finished in 6.9 seconds (0.2s async, 6.7s sync)
 35 tests, 0 failures
+**Changed Files**
+CSS:
+- [apps/eboss_web/assets/css/system/tokens.css](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/css/system/tokens.css)
+- [apps/eboss_web/assets/css/system/primitives.css](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/css/system/primitives.css)
+
+HEEx / LiveView:
+- [apps/eboss_web/lib/eboss_web/components/ui_components.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/components/ui_components.ex)
+- [apps/eboss_web/lib/eboss_web/components/core_components.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/components/core_components.ex)
+- [apps/eboss_web/lib/eboss_web/components/layouts.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/components/layouts.ex)
+- [apps/eboss_web/lib/eboss_web/components/auth_components.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/components/auth_components.ex)
+- [apps/eboss_web/lib/eboss_web/live/home_live.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/live/home_live.ex)
+- [apps/eboss_web/lib/eboss_web/live/dashboard_live.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/live/dashboard_live.ex)
+- [apps/eboss_web/lib/eboss_web/live/live_vue_demo_live.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/live/live_vue_demo_live.ex)
+- [apps/eboss_web/lib/eboss_web/live/dev/design_system_live.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/live/dev/design_system_live.ex)
+- [apps/eboss_web/lib/eboss_web/live/auth/sign_in_live.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/live/auth/sign_in_live.ex)
+- [apps/eboss_web/lib/eboss_web/live/auth/register_live.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/live/auth/register_live.ex)
+- [apps/eboss_web/lib/eboss_web/live/auth/forgot_password_live.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/live/auth/forgot_password_live.ex)
+- [apps/eboss_web/lib/eboss_web/live/auth/reset_password_live.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/live/auth/reset_password_live.ex)
+- [apps/eboss_web/lib/eboss_web/live/auth/confirm_live.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/live/auth/confirm_live.ex)
+- [apps/eboss_web/lib/eboss_web/live/auth/magic_link_live.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/live/auth/magic_link_live.ex)
+
+Vue:
+- [apps/eboss_web/assets/vue/LiveVueDemo.vue](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/vue/LiveVueDemo.vue)
+- [apps/eboss_web/assets/vue/auth/AuthScene.vue](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/vue/auth/AuthScene.vue)
+- [apps/eboss_web/assets/vue/dashboard/DashboardLaunchpad.vue](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/vue/dashboard/DashboardLaunchpad.vue)
+- [apps/eboss_web/assets/vue/components/ui/UiDialog.vue](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/vue/components/ui/UiDialog.vue)
+- [apps/eboss_web/assets/vue/components/ui/UiDialog.story.vue](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/vue/components/ui/UiDialog.story.vue)
+- [apps/eboss_web/assets/vue/components/ui/UiTabs.vue](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/vue/components/ui/UiTabs.vue)
+- [apps/eboss_web/assets/vue/components/ui/UiTooltip.vue](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/vue/components/ui/UiTooltip.vue)
+- [apps/eboss_web/assets/vue/stories/StoryControls.vue](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/vue/stories/StoryControls.vue)
+- [apps/eboss_web/assets/vue/stories/VisualDna.story.vue](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/vue/stories/VisualDna.story.vue)
+
+Tests:
+- [apps/eboss_web/test/design_typography_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/design_typography_test.exs)
+- [apps/eboss_web/test/eboss_web/live/dev/design_system_live_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/eboss_web/live/dev/design_system_live_test.exs)
+
+**Tests / Commands Executed**
+- `PATH=/tmp/mix_wrapper:$PATH MIX_OS_CONCURRENCY_LOCK=0 MIX_ENV=dev mix format` , passed
+- `PATH=/tmp/mix_wrapper:$PATH MIX_OS_CONCURRENCY_LOCK=0 MIX_ENV=test mix compile --warnings-as-errors` , passed
+- `elixir -e 'ExUnit.start(); Code.require_file("apps/eboss_web/test/design_typography_test.exs"); ExUnit.run()'` , passed
+- `mix precommit` , failed in sandbox before compile because Mix PubSub could not open a TCP socket
+- `PATH=/tmp/mix_wrapper:$PATH MIX_OS_CONCURRENCY_LOCK=0 mix precommit` , progressed through compile/format, then failed in test phase because PostgreSQL TCP access to `localhost:5432` is blocked by sandbox policy
+- `PATH=/tmp/mix_wrapper:$PATH MIX_OS_CONCURRENCY_LOCK=0 MIX_ENV=test mix test apps/eboss_web/test/design_typography_test.exs` , failed for the same DB/socket reason
+- `git diff --check -- apps/eboss_web` , passed
+
+**Acceptance Criteria Coverage**
+- Shared typography roles are now explicit in the CSS foundation via semantic tokens and classes for display, title, body, metadata, and link text in [tokens.css](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/css/system/tokens.css) and [primitives.css](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/css/system/primitives.css).
+- Shared HEEx primitives and shells now consume those roles through `title_size` and `ui-text-*` usage across shared components and auth/home/dashboard/dev surfaces, centered in [ui_components.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/components/ui_components.ex), [core_components.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/components/core_components.ex), and [design_system_live.ex](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/lib/eboss_web/live/dev/design_system_live.ex).
+- Shared Vue primitives and surfaces now use the same hierarchy in [AuthScene.vue](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/vue/auth/AuthScene.vue), [DashboardLaunchpad.vue](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/vue/dashboard/DashboardLaunchpad.vue), [LiveVueDemo.vue](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/vue/LiveVueDemo.vue), [UiDialog.vue](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/vue/components/ui/UiDialog.vue), [UiTabs.vue](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/vue/components/ui/UiTabs.vue), and [VisualDna.story.vue](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/vue/stories/VisualDna.story.vue).
+- Added regression coverage in [design_typography_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/design_typography_test.exs) and strengthened [design_system_live_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/eboss_web/live/dev/design_system_live_test.exs).
+
+**Blockers / Assumptions**
+- `mix precommit` is not fully passable in this sandbox because TCP sockets are blocked. That affected Mix PubSub, Mix OS concurrency locking, and finally PostgreSQL access to `localhost:5432` during the test alias. The repository is therefore not left with a fully passing `mix precommit` in this environment.
+- I used a temporary `/tmp` wrapper only to get Mix past the PubSub/lock socket restrictions for compile/format; no repository files were changed for that workaround.
+- I treated the shared auth, public, dashboard, and dev-preview shells as part of this typography-normalization story because they are the shared surfaces downstream stories depend on, but I did not change layout structure, tone semantics, accessibility rules, or cross-layer component contracts beyond typography.
+==> eboss_data
+There are no tests to run
+==> eboss_accounts
+Running ExUnit with seed: 891746, max_cases: 20
+
+............
+Finished in 7.4 seconds (0.00s async, 7.4s sync)
+12 tests, 0 failures
+==> eboss_tenancy
+Running ExUnit with seed: 670596, max_cases: 20
+
+............
+Finished in 6.4 seconds (0.00s async, 6.4s sync)
+12 tests, 0 failures
+==> eboss_workspaces
+Running ExUnit with seed: 430992, max_cases: 20
+
+............
+Finished in 5.7 seconds (0.00s async, 5.7s sync)
+12 tests, 0 failures
+==> eboss_folio
+Running ExUnit with seed: 644271, max_cases: 20
+
+...........
+Finished in 3.7 seconds (0.00s async, 3.7s sync)
+11 tests, 0 failures
+==> eboss_web
+Running ExUnit with seed: 993960, max_cases: 20
+
+......................................
+Finished in 6.2 seconds (0.2s async, 5.9s sync)
+38 tests, 0 failures

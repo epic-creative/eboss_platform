@@ -37,7 +37,7 @@ const activeValue = computed(() => props.modelValue ?? props.items[0]?.value ?? 
     <TabsContent v-for="item in items" :key="item.value" :value="item.value" class="focus:outline-none">
       <div class="ui-panel p-6" data-surface="solid">
         <slot :name="`content-${item.value}`" :item="item">
-          <p class="ui-copy-muted leading-7">{{ item.copy }}</p>
+          <p class="ui-text-body" data-size="lg" data-tone="soft">{{ item.copy }}</p>
         </slot>
       </div>
     </TabsContent>

@@ -38,10 +38,10 @@ const emit = defineEmits<{
         <div class="ui-panel p-6 sm:p-8" data-surface="floating">
           <div class="flex items-start justify-between gap-4">
             <div class="space-y-2">
-              <DialogTitle class="ui-section-header__title text-2xl">
+              <DialogTitle class="ui-text-title" data-size="lg">
                 {{ title }}
               </DialogTitle>
-              <DialogDescription v-if="description" class="ui-section-header__subtitle">
+              <DialogDescription v-if="description" class="ui-text-body" data-tone="soft">
                 {{ description }}
               </DialogDescription>
             </div>

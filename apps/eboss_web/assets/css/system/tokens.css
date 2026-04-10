@@ -31,6 +31,32 @@
   --font-body: "Manrope", "Avenir Next", "Segoe UI", sans-serif;
   --font-mono: "IBM Plex Mono", "SFMono-Regular", monospace;
 
+  --type-display-hero-size: clamp(3.5rem, 6vw, 4.75rem);
+  --type-display-xl-size: clamp(2.75rem, 4vw, 3.5rem);
+  --type-display-lg-size: 2.25rem;
+  --type-display-md-size: 1.875rem;
+  --type-display-line-height: 1.06;
+
+  --type-title-xl-size: 1.875rem;
+  --type-title-lg-size: 1.5rem;
+  --type-title-md-size: 1.25rem;
+  --type-title-sm-size: 1.0625rem;
+  --type-title-line-height: 1.18;
+
+  --type-body-lg-size: 1rem;
+  --type-body-md-size: 0.9375rem;
+  --type-body-sm-size: 0.84rem;
+  --type-body-line-height: 1.6;
+  --type-body-relaxed-line-height: 1.72;
+
+  --type-meta-size: 0.74rem;
+  --type-meta-line-height: 1.2;
+  --type-meta-tracking: 0.24em;
+
+  --type-label-size: 0.84rem;
+  --type-label-line-height: 1.35;
+  --type-label-tracking: 0.01em;
+
   --radius-control: 14px;
   --radius-panel: 22px;
   --radius-pill: 999px;

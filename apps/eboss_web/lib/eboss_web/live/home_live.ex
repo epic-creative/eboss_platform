@@ -28,7 +28,8 @@ defmodule EBossWeb.HomeLive do
             eyebrow="Workspace-native operations"
             title="Keep the control surface sharp while the agent domains grow."
             subtitle="EBoss keeps orchestration, workspaces, and planning flows legible without turning the product into an anxious dashboard."
-            title_class="max-w-4xl text-5xl sm:text-6xl"
+            title_size="hero"
+            title_class="max-w-4xl"
           />
 
           <div class="flex flex-wrap gap-4">
@@ -42,24 +43,20 @@ defmodule EBossWeb.HomeLive do
 
           <dl class="ui-card-grid ui-card-grid--3">
             <div class="ui-metric-card">
-              <dt class="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">
-                Identity
-              </dt>
-              <dd class="mt-3 text-sm leading-6 text-ui-text-muted">
+              <dt class="ui-text-meta" data-tone="muted">Identity</dt>
+              <dd class="ui-text-body mt-3" data-tone="muted">
                 Email confirmation, magic links, and password flows stay on AshAuthentication’s happy path.
               </dd>
             </div>
             <div class="ui-metric-card">
-              <dt class="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">
-                Workspaces
-              </dt>
-              <dd class="mt-3 text-sm leading-6 text-ui-text-muted">
+              <dt class="ui-text-meta" data-tone="muted">Workspaces</dt>
+              <dd class="ui-text-body mt-3" data-tone="muted">
                 Owner-aware routing and API-ready boundaries are already in place for the larger application to come.
               </dd>
             </div>
             <div class="ui-metric-card">
-              <dt class="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">Folio</dt>
-              <dd class="mt-3 text-sm leading-6 text-ui-text-muted">
+              <dt class="ui-text-meta" data-tone="muted">Folio</dt>
+              <dd class="ui-text-body mt-3" data-tone="muted">
                 Planning primitives, audit history, and strict workspace scoping are ready for the next layer.
               </dd>
             </div>

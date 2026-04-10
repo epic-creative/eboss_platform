@@ -12,5 +12,9 @@ defmodule EBossWeb.Dev.DesignSystemLiveTest do
     assert html =~ "Auth surfaces"
     assert html =~ "Public surfaces"
     assert html =~ "No active runs"
+    assert html =~ "ui-text-display"
+    assert html =~ "ui-text-title"
+    assert html =~ "ui-text-body"
+    assert html =~ "ui-text-meta"
   end
 end

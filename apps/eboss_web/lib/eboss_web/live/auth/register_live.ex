@@ -58,7 +58,7 @@ defmodule EBossWeb.Auth.RegisterLive do
             eyebrow="New account"
             title="Register"
             subtitle="Create your account with an email, a stable username, and a password you can rotate later."
-            title_class="text-3xl"
+            title_size="md"
           />
           <.auth_nav current_path="/register" />
 
@@ -88,10 +88,10 @@ defmodule EBossWeb.Auth.RegisterLive do
             />
 
             <div class="flex items-center justify-between gap-4">
-              <p class="text-sm text-ui-text-soft">
+              <p class="ui-text-body" data-size="sm" data-tone="soft">
                 Already have an account? <a
                   href={~p"/sign-in"}
-                  class="font-medium text-ui-accent hover:text-ui-accent-strong"
+                  class="ui-text-link"
                 >Sign in</a>.
               </p>
               <.button type="submit">

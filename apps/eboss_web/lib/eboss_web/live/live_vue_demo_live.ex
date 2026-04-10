@@ -26,7 +26,7 @@ defmodule EBossWeb.LiveVueDemoLive do
           eyebrow="Development surface"
           title="LiveVue is active in `eboss_web`"
           subtitle="Visit this page in development to confirm Vite, LiveView, and Vue component mounting are all functioning together."
-          title_class="text-4xl"
+          title_size="lg"
         />
 
         <.LiveVueDemo

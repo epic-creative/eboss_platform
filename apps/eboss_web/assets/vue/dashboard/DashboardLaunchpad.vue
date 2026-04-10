@@ -15,25 +15,25 @@ defineProps<{
     <div class="space-y-7">
       <div class="space-y-3">
         <UiBadge tone="warning">Dashboard launchpad</UiBadge>
-        <h2 class="ui-heading text-3xl">The authenticated edge is ready.</h2>
-        <p class="max-w-2xl text-sm leading-7 text-ui-text-soft">
+        <h2 class="ui-text-display" data-size="lg">The authenticated edge is ready.</h2>
+        <p class="ui-text-body max-w-2xl" data-size="lg" data-tone="soft">
           This is the first thin shell for signed-in users. It is intentionally calm so the next product surfaces can grow without reworking the session boundary again.
         </p>
       </div>
 
       <div class="grid gap-3">
         <UiPanel class="ui-auth-scene__tile p-4" surface="solid">
-          <p class="ui-kicker text-ui-accent">Current user</p>
-          <p class="mt-2 text-lg font-semibold">{{ username }}</p>
-          <p class="text-sm text-ui-text-soft">{{ email }}</p>
+          <p class="ui-text-meta" data-tone="accent">Current user</p>
+          <p class="ui-text-title mt-2" data-size="md">{{ username }}</p>
+          <p class="ui-text-body" data-size="sm" data-tone="soft">{{ email }}</p>
         </UiPanel>
         <UiPanel class="ui-auth-scene__tile p-4" surface="solid">
-          <p class="ui-kicker text-ui-accent">Workspace surface</p>
-          <p class="mt-2 text-sm leading-6 text-ui-text-muted">{{ workspaceLabel }}</p>
+          <p class="ui-text-meta" data-tone="accent">Workspace surface</p>
+          <p class="ui-text-body mt-2" data-tone="muted">{{ workspaceLabel }}</p>
         </UiPanel>
         <UiPanel class="ui-auth-scene__tile p-4" surface="solid">
-          <p class="ui-kicker text-ui-accent">Folio surface</p>
-          <p class="mt-2 text-sm leading-6 text-ui-text-muted">{{ folioLabel }}</p>
+          <p class="ui-text-meta" data-tone="accent">Folio surface</p>
+          <p class="ui-text-body mt-2" data-tone="muted">{{ folioLabel }}</p>
         </UiPanel>
       </div>
     </div>

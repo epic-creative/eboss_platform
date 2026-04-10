@@ -84,10 +84,10 @@ const publicProofPoints = [
             <UiPanel tone="inverse" surface="solid" class="space-y-6">
               <div class="space-y-3">
                 <UiBadge tone="warning">Shared thesis</UiBadge>
-                <h2 class="ui-heading text-3xl sm:text-4xl">
+                <h2 class="ui-text-display" data-size="xl">
                   Operator console first, marketing polish second.
                 </h2>
-                <p class="max-w-3xl text-sm leading-7 text-ui-text-soft sm:text-base">
+                <p class="ui-text-body max-w-3xl" data-size="lg" data-tone="soft">
                   The shell, borders, panels, and type hierarchy should do most of the brand work.
                   Accent and motion stay secondary. If a design needs loud color, playful type, or
                   floating fragments to feel interesting, it is drifting off-brand.
@@ -96,15 +96,15 @@ const publicProofPoints = [
 
               <div class="grid gap-4 sm:grid-cols-2">
                 <div class="rounded-[1.35rem] border border-ui-border-subtle bg-ui-panel-muted/70 p-4">
-                  <p class="ui-kicker text-ui-text-soft">Lean on</p>
-                  <p class="mt-3 text-sm leading-6 text-ui-text-muted">
+                  <p class="ui-text-meta" data-tone="soft">Lean on</p>
+                  <p class="ui-text-body mt-3" data-tone="muted">
                     cool surfaces, stable shell chrome, restrained type, mono metadata, and
                     utility-led emphasis
                   </p>
                 </div>
                 <div class="rounded-[1.35rem] border border-ui-border-subtle bg-ui-panel-muted/70 p-4">
-                  <p class="ui-kicker text-ui-text-soft">Reject</p>
-                  <p class="mt-3 text-sm leading-6 text-ui-text-muted">
+                  <p class="ui-text-meta" data-tone="soft">Reject</p>
+                  <p class="ui-text-body mt-3" data-tone="muted">
                     neon gradients, borderless cards, pitch-deck heroes, and decorative motion that
                     competes with state clarity
                   </p>
@@ -120,8 +120,8 @@ const publicProofPoints = [
                 padding="sm"
                 class="space-y-2"
               >
-                <p class="ui-kicker text-ui-text-soft">{{ rule.title }}</p>
-                <p class="text-sm leading-6 text-ui-text-muted">{{ rule.copy }}</p>
+                <p class="ui-text-meta" data-tone="soft">{{ rule.title }}</p>
+                <p class="ui-text-body" data-tone="muted">{{ rule.copy }}</p>
               </UiPanel>
             </div>
           </div>
@@ -134,8 +134,8 @@ const publicProofPoints = [
             <UiPanel surface="floating" class="space-y-5">
               <div class="space-y-3">
                 <UiBadge tone="warning">Dashboard surfaces</UiBadge>
-                <h3 class="ui-heading text-2xl">Strong chrome, compact hierarchy, status-first emphasis.</h3>
-                <p class="text-sm leading-6 text-ui-text-soft">
+                <h3 class="ui-text-title" data-size="xl">Strong chrome, compact hierarchy, status-first emphasis.</h3>
+                <p class="ui-text-body" data-tone="soft">
                   This is the clearest expression of the system: framed navigation, dense groupings,
                   and signal-rich panels that stay calm under load.
                 </p>
@@ -153,9 +153,9 @@ const publicProofPoints = [
                   :key="item.label"
                   class="rounded-[1.35rem] border border-ui-border-subtle bg-ui-panel-muted/70 p-4"
                 >
-                  <p class="ui-kicker text-ui-text-soft">{{ item.label }}</p>
-                  <p class="mt-2 text-lg font-semibold text-ui-text">{{ item.value }}</p>
-                  <p class="mt-1 text-sm leading-6 text-ui-text-muted">{{ item.copy }}</p>
+                  <p class="ui-text-meta" data-tone="soft">{{ item.label }}</p>
+                  <p class="ui-text-title mt-2" data-size="md">{{ item.value }}</p>
+                  <p class="ui-text-body mt-1" data-tone="muted">{{ item.copy }}</p>
                 </div>
               </div>
             </UiPanel>
@@ -174,8 +174,8 @@ const publicProofPoints = [
             <UiPanel tone="primary" surface="floating" class="space-y-5">
               <div class="space-y-3">
                 <UiBadge tone="primary">Public surfaces</UiBadge>
-                <h3 class="ui-heading text-3xl">Narrative rhythm, still anchored in product infrastructure.</h3>
-                <p class="text-sm leading-7 text-ui-text-soft">
+                <h3 class="ui-text-display" data-size="lg">Narrative rhythm, still anchored in product infrastructure.</h3>
+                <p class="ui-text-body" data-size="lg" data-tone="soft">
                   Public pages can stretch out and sell the system, but they should stay rooted in
                   the same cool palette, precise shell framing, and proof-first content blocks.
                 </p>
@@ -192,8 +192,8 @@ const publicProofPoints = [
                   :key="item.label"
                   class="rounded-[1.35rem] border border-ui-border-subtle bg-ui-panel-muted/70 p-4"
                 >
-                  <p class="ui-kicker text-ui-text-soft">{{ item.label }}</p>
-                  <p class="mt-2 text-sm leading-6 text-ui-text-muted">{{ item.copy }}</p>
+                  <p class="ui-text-meta" data-tone="soft">{{ item.label }}</p>
+                  <p class="ui-text-body mt-2" data-tone="muted">{{ item.copy }}</p>
                 </div>
               </div>
             </UiPanel>

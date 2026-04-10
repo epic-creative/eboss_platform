@@ -288,6 +288,7 @@ defmodule EBossWeb.CoreComponents do
   slot :inner_block, required: true
   slot :subtitle
   slot :actions
+  attr :title_size, :string, values: ~w(md sm), default: "sm"
 
   def header(assigns) do
     ~H"""
@@ -297,7 +298,7 @@ defmodule EBossWeb.CoreComponents do
       "pb-4"
     ]}>
       <div class="space-y-2">
-        <h1 class="ui-section-header__title text-2xl">{render_slot(@inner_block)}</h1>
+        <h1 class="ui-section-header__title" data-size={@title_size}>{render_slot(@inner_block)}</h1>
         <p :if={@subtitle != []} class="ui-section-header__subtitle">{render_slot(@subtitle)}</p>
       </div>
       <div :if={@actions != []} class="flex-none">{render_slot(@actions)}</div>
@@ -345,7 +346,7 @@ defmodule EBossWeb.CoreComponents do
           >
             {render_slot(col, @row_item.(row))}
           </td>
-          <td :if={@action != []} class="w-0 font-semibold">
+          <td :if={@action != []} class="ui-table-actions w-0">
             <div class="flex gap-3">
               <%= for action <- @action do %>
                 {render_slot(action, @row_item.(row))}
@@ -367,7 +368,7 @@ defmodule EBossWeb.CoreComponents do
     <ul class="ui-list">
       <li :for={item <- @item} class="ui-list-row">
         <div class="ui-list-title">{item.title}</div>
-        <div class="ui-copy-muted">{render_slot(item)}</div>
+        <div class="ui-text-body" data-tone="soft">{render_slot(item)}</div>
       </li>
     </ul>
     """

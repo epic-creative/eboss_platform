@@ -82,6 +82,8 @@ defmodule EBossWeb.UIComponents do
   attr :eyebrow, :string, default: nil
   attr :title, :string, required: true
   attr :subtitle, :string, default: nil
+  attr :title_size, :string, values: ~w(hero xl lg md sm), default: "lg"
+  attr :eyebrow_tone, :string, values: ~w(warning soft muted accent), default: "warning"
   attr :title_class, :any, default: nil
   attr :class, :any, default: nil
 
@@ -95,8 +97,8 @@ defmodule EBossWeb.UIComponents do
       @class
     ]}>
       <div class="space-y-2">
-        <p :if={@eyebrow} class="ui-kicker">{@eyebrow}</p>
-        <h1 class={["ui-section-header__title", @title_class]}>{@title}</h1>
+        <p :if={@eyebrow} class="ui-kicker" data-tone={@eyebrow_tone}>{@eyebrow}</p>
+        <h1 class={["ui-section-header__title", @title_class]} data-size={@title_size}>{@title}</h1>
         <p :if={@subtitle} class="ui-section-header__subtitle">{@subtitle}</p>
       </div>
       <div :if={@actions != []} class="flex-none">

@@ -21,8 +21,8 @@ const countParity = computed(() => (props.count % 2 === 0 ? "even" : "odd"))
     <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
       <div class="space-y-2">
         <UiBadge tone="primary">Frontend foundation</UiBadge>
-        <h2 class="ui-heading text-3xl">{{ headline }}</h2>
-        <p class="max-w-2xl text-sm leading-6 text-ui-text-soft">{{ subhead }}</p>
+        <h2 class="ui-text-display" data-size="lg">{{ headline }}</h2>
+        <p class="ui-text-body max-w-2xl" data-tone="soft">{{ subhead }}</p>
       </div>
 
       <UiButton variant="ghost" tone="neutral" size="sm" class="self-start" @click="detailsOpen = !detailsOpen">
@@ -32,10 +32,10 @@ const countParity = computed(() => (props.count % 2 === 0 ? "even" : "odd"))
 
     <div v-if="detailsOpen" class="mt-6 grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
       <UiPanel surface="solid" class="p-5">
-        <p class="text-sm text-ui-text-soft">LiveView state over LiveVue props</p>
+        <p class="ui-text-body" data-size="sm" data-tone="soft">LiveView state over LiveVue props</p>
 
         <div class="mt-4 flex items-end gap-3">
-          <span class="text-5xl font-semibold leading-none">{{ count }}</span>
+          <span class="ui-text-display" data-size="hero">{{ count }}</span>
           <UiBadge tone="primary">{{ countParity }}</UiBadge>
         </div>
 

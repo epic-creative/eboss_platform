@@ -42,7 +42,7 @@ defmodule EBossWeb.Auth.ConfirmLive do
             eyebrow="Email confirmation"
             title="Confirm your account"
             subtitle="Use the button below to verify the email address attached to this account."
-            title_class="text-3xl"
+            title_size="md"
           />
 
           <.form_errors form={@form} />

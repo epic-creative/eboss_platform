@@ -29,7 +29,8 @@ withDefaults(
         <TooltipContent
           :side="side"
           :side-offset="10"
-          class="rounded-2xl border border-ui-border-subtle bg-ui-surface-elevated px-3 py-2 text-sm text-ui-text shadow-[0_20px_60px_rgba(2,10,23,0.28)] backdrop-blur"
+          class="ui-text-body rounded-2xl border border-ui-border-subtle bg-ui-surface-elevated px-3 py-2 shadow-[0_20px_60px_rgba(2,10,23,0.28)] backdrop-blur"
+          data-size="sm"
         >
           {{ content }}
           <TooltipArrow class="fill-ui-surface-elevated" />

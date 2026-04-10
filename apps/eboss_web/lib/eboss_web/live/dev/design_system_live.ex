@@ -19,7 +19,7 @@ defmodule EBossWeb.Dev.DesignSystemLive do
           eyebrow="Development route"
           title="EBoss design system"
           subtitle="This surface makes the dashboard-derived visual DNA explicit so shared primitives, auth flows, and public-facing moments stay in one product language."
-          title_class="text-4xl"
+          title_size="lg"
         />
 
         <section class="ui-dev-preview__section">
@@ -27,16 +27,16 @@ defmodule EBossWeb.Dev.DesignSystemLive do
             eyebrow="Visual DNA"
             title="Operator console first, marketing polish second."
             subtitle="EBoss borrows shell discipline from the `jido_hub` dashboard reference and carries it across every surface without cloning that product."
-            title_class="text-2xl"
+            title_size="sm"
           />
           <div class="ui-dev-preview__grid ui-dev-preview__grid--2">
             <.panel tone="inverse" surface="solid" class="space-y-6">
               <div class="space-y-3">
                 <.badge tone="warning">Shared thesis</.badge>
-                <h2 class="ui-heading text-3xl sm:text-4xl">
+                <h2 class="ui-text-display" data-size="xl">
                   Calm control surfaces, framed precisely enough to carry real work.
                 </h2>
-                <p class="max-w-3xl text-sm leading-7 text-ui-text-soft sm:text-base">
+                <p class="ui-text-body max-w-3xl" data-size="lg" data-tone="soft">
                   The shell, borders, panels, and type hierarchy should do most of the brand work.
                   Accent and motion stay secondary. If a design needs loud color, playful type, or
                   floating fragments to feel interesting, it is drifting off-brand.
@@ -45,15 +45,15 @@ defmodule EBossWeb.Dev.DesignSystemLive do
 
               <div class="ui-dev-preview__grid ui-dev-preview__grid--2">
                 <div class="rounded-[1.35rem] border border-ui-border-subtle bg-ui-panel-muted/70 p-4">
-                  <p class="ui-kicker text-ui-text-soft">Lean on</p>
-                  <p class="mt-3 text-sm leading-6 text-ui-text-muted">
+                  <p class="ui-text-meta" data-tone="soft">Lean on</p>
+                  <p class="ui-text-body mt-3" data-tone="muted">
                     cool surfaces, stable shell chrome, restrained type, mono metadata, and
                     utility-led emphasis
                   </p>
                 </div>
                 <div class="rounded-[1.35rem] border border-ui-border-subtle bg-ui-panel-muted/70 p-4">
-                  <p class="ui-kicker text-ui-text-soft">Reject</p>
-                  <p class="mt-3 text-sm leading-6 text-ui-text-muted">
+                  <p class="ui-text-meta" data-tone="soft">Reject</p>
+                  <p class="ui-text-body mt-3" data-tone="muted">
                     neon gradients, borderless cards, pitch-deck heroes, and decorative motion that
                     competes with state clarity
                   </p>
@@ -68,8 +68,8 @@ defmodule EBossWeb.Dev.DesignSystemLive do
                 padding="sm"
                 class="space-y-2"
               >
-                <p class="ui-kicker text-ui-text-soft">{rule.title}</p>
-                <p class="text-sm leading-6 text-ui-text-muted">{rule.copy}</p>
+                <p class="ui-text-meta" data-tone="soft">{rule.title}</p>
+                <p class="ui-text-body" data-tone="muted">{rule.copy}</p>
               </.panel>
             </div>
           </div>
@@ -80,16 +80,16 @@ defmodule EBossWeb.Dev.DesignSystemLive do
             eyebrow="Surface expression"
             title="One visual system, three modes of expression"
             subtitle="Dashboard stays densest, auth keeps the same trust cues with more breathing room, and public pages become more narrative without going soft or generic."
-            title_class="text-2xl"
+            title_size="sm"
           />
           <div class="ui-dev-preview__grid ui-dev-preview__grid--3">
             <.panel surface="floating" class="space-y-5">
               <div class="space-y-3">
                 <.badge tone="warning">Dashboard surfaces</.badge>
-                <h3 class="ui-heading text-2xl">
+                <h3 class="ui-text-title" data-size="xl">
                   Strong chrome, compact hierarchy, status-first emphasis.
                 </h3>
-                <p class="text-sm leading-6 text-ui-text-soft">
+                <p class="ui-text-body" data-tone="soft">
                   This is the clearest expression of the system: framed navigation, dense groupings,
                   and signal-rich panels that stay calm under load.
                 </p>
@@ -106,9 +106,9 @@ defmodule EBossWeb.Dev.DesignSystemLive do
                   :for={item <- dashboard_signals()}
                   class="rounded-[1.35rem] border border-ui-border-subtle bg-ui-panel-muted/70 p-4"
                 >
-                  <p class="ui-kicker text-ui-text-soft">{item.label}</p>
-                  <p class="mt-2 text-lg font-semibold text-ui-text">{item.value}</p>
-                  <p class="mt-1 text-sm leading-6 text-ui-text-muted">{item.copy}</p>
+                  <p class="ui-text-meta" data-tone="soft">{item.label}</p>
+                  <p class="ui-text-title mt-2" data-size="md">{item.value}</p>
+                  <p class="ui-text-body mt-1" data-tone="muted">{item.copy}</p>
                 </div>
               </div>
             </.panel>
@@ -127,10 +127,10 @@ defmodule EBossWeb.Dev.DesignSystemLive do
             <.panel tone="primary" surface="floating" class="space-y-5">
               <div class="space-y-3">
                 <.badge tone="primary">Public surfaces</.badge>
-                <h3 class="ui-heading text-3xl">
+                <h3 class="ui-text-display" data-size="lg">
                   Narrative rhythm, still anchored in product infrastructure.
                 </h3>
-                <p class="text-sm leading-7 text-ui-text-soft">
+                <p class="ui-text-body" data-size="lg" data-tone="soft">
                   Public pages can stretch out and sell the system, but they should stay rooted in
                   the same cool palette, precise shell framing, and proof-first content blocks.
                 </p>
@@ -146,8 +146,8 @@ defmodule EBossWeb.Dev.DesignSystemLive do
                   :for={item <- public_proof_points()}
                   class="rounded-[1.35rem] border border-ui-border-subtle bg-ui-panel-muted/70 p-4"
                 >
-                  <p class="ui-kicker text-ui-text-soft">{item.label}</p>
-                  <p class="mt-2 text-sm leading-6 text-ui-text-muted">{item.copy}</p>
+                  <p class="ui-text-meta" data-tone="soft">{item.label}</p>
+                  <p class="ui-text-body mt-2" data-tone="muted">{item.copy}</p>
                 </div>
               </div>
             </.panel>
@@ -159,7 +159,7 @@ defmodule EBossWeb.Dev.DesignSystemLive do
             eyebrow="Buttons"
             title="Action styles"
             subtitle="Solid, outline, subtle, ghost, and loading states."
-            title_class="text-2xl"
+            title_size="sm"
           />
           <.panel surface="floating" class="p-6">
             <div class="flex flex-wrap gap-3">
@@ -177,7 +177,7 @@ defmodule EBossWeb.Dev.DesignSystemLive do
             eyebrow="Fields"
             title="Form primitives"
             subtitle="Inputs, select, textarea, and checkbox all share one contract."
-            title_class="text-2xl"
+            title_size="sm"
           />
           <.panel surface="floating" class="p-6">
             <div class="ui-dev-preview__grid ui-dev-preview__grid--2">
@@ -229,7 +229,7 @@ defmodule EBossWeb.Dev.DesignSystemLive do
             eyebrow="Feedback"
             title="Alerts and status"
             subtitle="Inline feedback components for success, warning, and errors."
-            title_class="text-2xl"
+            title_size="sm"
           />
           <div class="ui-dev-preview__grid ui-dev-preview__grid--3">
             <div class="ui-alert" data-tone="primary">
@@ -262,7 +262,7 @@ defmodule EBossWeb.Dev.DesignSystemLive do
             eyebrow="Patterns"
             title="Panels, nav, and empty states"
             subtitle="Shared patterns still inherit the same shell language and status semantics."
-            title_class="text-2xl"
+            title_size="sm"
           />
           <div class="ui-dev-preview__grid ui-dev-preview__grid--2">
             <.panel surface="floating" class="space-y-5">
@@ -285,11 +285,11 @@ defmodule EBossWeb.Dev.DesignSystemLive do
 
             <.panel tone="inverse" surface="solid" class="space-y-4">
               <div class="space-y-2">
-                <p class="ui-kicker">Pattern rule</p>
-                <p class="text-xl font-semibold text-ui-text">
+                <p class="ui-text-meta">Pattern rule</p>
+                <p class="ui-text-title" data-size="md">
                   Patterns should reveal the system, not invent a new one.
                 </p>
-                <p class="text-sm leading-6 text-ui-text-soft">
+                <p class="ui-text-body" data-tone="soft">
                   If a shared pattern needs a one-off surface treatment to feel useful, the system is
                   missing a primitive. Tighten the primitive instead of styling around it.
                 </p>

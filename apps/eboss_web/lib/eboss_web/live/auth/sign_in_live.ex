@@ -96,15 +96,15 @@ defmodule EBossWeb.Auth.SignInLive do
             eyebrow="Account access"
             title="Sign in"
             subtitle="Your account session is handled by AshAuthentication. This page keeps the experience first-party."
-            title_class="text-3xl"
+            title_size="md"
           />
           <.auth_nav current_path="/sign-in" />
 
           <div class="space-y-8">
             <div class="space-y-4">
               <div class="space-y-1">
-                <h2 class="text-lg font-semibold text-ui-text">Password</h2>
-                <p class="text-sm text-ui-text-soft">
+                <h2 class="ui-text-title" data-size="md">Password</h2>
+                <p class="ui-text-body" data-size="sm" data-tone="soft">
                   Use the password flow for a normal sign-in session.
                 </p>
               </div>
@@ -135,7 +135,7 @@ defmodule EBossWeb.Auth.SignInLive do
                 <div class="flex items-center justify-between gap-4">
                   <a
                     href={~p"/forgot-password"}
-                    class="text-sm font-medium text-ui-accent hover:text-ui-accent-strong"
+                    class="ui-text-link"
                   >
                     Forgot your password?
                   </a>
@@ -150,8 +150,8 @@ defmodule EBossWeb.Auth.SignInLive do
 
             <div class="space-y-4">
               <div class="space-y-1">
-                <h2 class="text-lg font-semibold text-ui-text">Magic link</h2>
-                <p class="text-sm text-ui-text-soft">
+                <h2 class="ui-text-title" data-size="md">Magic link</h2>
+                <p class="ui-text-body" data-size="sm" data-tone="soft">
                   Request a one-time sign-in link for an existing account.
                 </p>
               </div>

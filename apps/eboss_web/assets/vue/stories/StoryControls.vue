@@ -21,7 +21,7 @@ const emit = defineEmits<{
 <template>
   <div class="flex flex-wrap items-center gap-3">
     <div class="flex items-center gap-2">
-      <span class="ui-kicker text-ui-text-soft">Theme</span>
+      <span class="ui-text-meta" data-tone="soft">Theme</span>
       <UiButton
         size="sm"
         :variant="props.theme === 'dark' ? 'solid' : 'outline'"
@@ -41,7 +41,7 @@ const emit = defineEmits<{
     </div>
 
     <div class="flex items-center gap-2">
-      <span class="ui-kicker text-ui-text-soft">Density</span>
+      <span class="ui-text-meta" data-tone="soft">Density</span>
       <UiButton
         size="sm"
         :variant="props.density === 'default' ? 'solid' : 'outline'"

@@ -69,7 +69,7 @@ defmodule EBossWeb.Auth.ResetPasswordLive do
             eyebrow="Reset password"
             title="Set a new password"
             subtitle="Choose a fresh password and we will sign you back into the application."
-            title_class="text-3xl"
+            title_size="md"
           />
 
           <.form_errors form={@form} />
