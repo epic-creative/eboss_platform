@@ -39,26 +39,20 @@ and a small Folio graph for local auth and API testing.
 
 ## Browser Smoke
 
-After `mix setup`, run the Playwright bootstrap smoke from the web assets app:
+After `mix setup`, prepare deterministic browser state and run the Playwright auth/public smoke subset from the web assets app:
 
 ```bash
 cd apps/eboss_web/assets
+npm run playwright:setup
 npm run playwright:smoke
 ```
 
-The bootstrap smoke stays self-contained on a checked-in fixture page so the runner is proven before auth/public browser coverage lands. Smoke specs live in `apps/eboss_web/assets/tests/playwright/smoke`, future regression coverage lives in `apps/eboss_web/assets/tests/playwright/regression`, and generated traces, screenshots, and reports stay under `apps/eboss_web/assets/test-results/playwright/`.
-
-For deterministic auth/public browser setup, prepare the dedicated browser-test user and storage states from `apps/eboss_web/assets`:
-
-```bash
-npm run playwright:setup
-```
+The smoke lane keeps the checked-in bootstrap fixture as a runner sanity check and adds app-backed coverage for the anonymous home shell, the dashboard-to-sign-in auth boundary, and the authenticated dashboard handoff. Smoke specs live in `apps/eboss_web/assets/tests/playwright/smoke`, future regression coverage lives in `apps/eboss_web/assets/tests/playwright/regression`, and generated traces, screenshots, and reports stay under `apps/eboss_web/assets/test-results/playwright/`.
 
 The default browser-test account is `playwright-auth@localhost` / `playwright-pass-123`.
 
-Then start the test server and run the setup verification subset:
-
 ```bash
-npm run playwright:server:test
 npm run playwright:verify-setup
 ```
+
+The Playwright runner starts the Phoenix test server automatically for the smoke and setup-verification lanes. Use `npm run playwright:server:test` only when you want the test server running outside the Playwright process.

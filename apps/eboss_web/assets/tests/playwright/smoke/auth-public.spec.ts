@@ -1,0 +1,53 @@
+import { expect, test } from "playwright/test";
+
+import { openPreparedPage } from "../support/prepared-state";
+
+test.describe("auth and public smoke", () => {
+  test("anonymous public state renders the shared home shell", async ({ browser }) => {
+    const { context, page } = await openPreparedPage(browser, "public", "/");
+
+    await expect(page.getByRole("navigation", { name: "Public routes" })).toBeVisible();
+    await expect(page.getByRole("contentinfo", { name: "Public shell footer" })).toBeVisible();
+    await expect(page.getByTestId("public-shell-context-action")).toBeVisible();
+    await expect(page.getByTestId("home-hero")).toBeVisible();
+    await expect(
+      page.getByRole("heading", {
+        name: "A calmer launch page for teams that need the shell to stay precise.",
+      }),
+    ).toBeVisible();
+
+    await context.close();
+  });
+
+  test("anonymous public state is redirected to sign-in for dashboard access", async ({
+    browser,
+  }) => {
+    const { context, page } = await openPreparedPage(browser, "public", "/dashboard");
+
+    await expect(page).toHaveURL(/\/sign-in(?:\?.*)?$/);
+    await expect(page.getByTestId("auth-shell")).toBeVisible();
+    await expect(page.getByRole("navigation", { name: "Authentication routes" })).toBeVisible();
+    await expect(page.getByRole("form", { name: "Password sign-in" })).toBeVisible();
+    await expect(page.getByRole("form", { name: "Magic-link request" })).toBeVisible();
+
+    await context.close();
+  });
+
+  test("authenticated state lands on the dashboard shell", async ({ browser }) => {
+    const { context, page, preparedState } = await openPreparedPage(
+      browser,
+      "authenticated",
+      "/dashboard",
+    );
+
+    await expect(page).toHaveURL(/\/dashboard$/);
+    await expect(
+      page.getByRole("heading", {
+        name: new RegExp(`Welcome back, @${preparedState.user.username}\\.`, "i"),
+      }),
+    ).toBeVisible();
+    await expect(page.getByRole("button", { name: "Sign out" })).toBeVisible();
+
+    await context.close();
+  });
+});

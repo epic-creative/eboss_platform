@@ -1971,3 +1971,81 @@ Running ExUnit with seed: 686604, max_cases: 20
 .....................................................................
 Finished in 9.0 seconds (0.3s async, 8.6s sync)
 69 tests, 0 failures
+1) changed files
+
+- [README.md](/Users/mhostetler/Source/EBoss/eboss_platform/README.md)
+- [apps/eboss_web/assets/playwright.config.ts](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/playwright.config.ts)
+- [apps/eboss_web/assets/tests/playwright/README.md](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/tests/playwright/README.md)
+- [apps/eboss_web/assets/tests/playwright/setup/state-ready.spec.ts](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/tests/playwright/setup/state-ready.spec.ts)
+- [apps/eboss_web/assets/tests/playwright/smoke/auth-public.spec.ts](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/tests/playwright/smoke/auth-public.spec.ts)
+- [apps/eboss_web/assets/tests/playwright/support/prepared-state.ts](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/assets/tests/playwright/support/prepared-state.ts)
+- [apps/eboss_web/test/eboss_web/playwright_tooling_test.exs](/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_web/test/eboss_web/playwright_tooling_test.exs)
+
+2) tests/commands executed
+
+- Passed: `ERL_LIBS=_build/test/lib elixir -e 'ExUnit.start(); Code.require_file("apps/eboss_web/test/eboss_web/playwright_tooling_test.exs"); ...'`
+- Passed: local TypeScript check over the changed Playwright files using `./node_modules/.bin/tsc --noEmit ...`
+- Passed: `git diff --check`
+- Failed: `mix precommit`
+  - blocked by `Mix.PubSub` socket open failure: `failed to open a TCP socket ... reason: :eperm`
+- Failed: `cd apps/eboss_web/assets && npm run playwright:setup`
+  - same `Mix.PubSub` `:eperm` blocker
+- Failed: `cd apps/eboss_web/assets && npm run playwright:smoke`
+  - blocked earlier by npm network resolution: `getaddrinfo ENOTFOUND registry.npmjs.org`
+- Failed exploratory app-start path under plain `elixir`
+  - blocked by sandboxed TCP access to Postgres: `tcp connect (localhost:5432): not owner - :eperm`
+
+3) acceptance criteria coverage
+
+- Critical auth/public flows are covered in the new smoke lane:
+  - anonymous home shell
+  - anonymous dashboard access redirecting to `/sign-in`
+  - authenticated dashboard handoff
+- The smoke suite is kept small and stable:
+  - reused deterministic prepared state through a shared helper
+  - route-entry assertions only
+  - `domcontentloaded` navigation to avoid waiting on unrelated asset loads
+  - Playwright config now auto-starts the Phoenix test server
+- Separation from deeper regression coverage is explicit:
+  - smoke stays under `tests/playwright/smoke`
+  - regression stays under `tests/playwright/regression`
+  - docs call out that deeper sign-in and dashboard behavior belongs to later suites
+
+4) blockers/assumptions
+
+- Blocker: I could not leave `mix precommit` passing in this sandbox. `mix` cannot open its local PubSub TCP socket here, so all mix-backed verification paths fail before reaching app code.
+- Blocker: I could not complete an actual Playwright smoke run here because npm cannot resolve `registry.npmjs.org`, so the `playwright@1.59.1` package fetch fails.
+- Blocker: Direct Elixir app startup against Postgres is also sandboxed off with TCP `:eperm`.
+- Assumption: for `ST-TST-004`, the intended “highest-signal” scope is route-level confidence only. I deliberately did not add sign-in interaction regression checks or broader dashboard coverage so this stays within `ST-TST-004` and out of `ST-TST-005` / `ST-TST-009`.
+==> eboss_data
+There are no tests to run
+==> eboss_accounts
+Running ExUnit with seed: 723435, max_cases: 20
+
+............
+Finished in 8.1 seconds (0.00s async, 8.1s sync)
+12 tests, 0 failures
+==> eboss_tenancy
+Running ExUnit with seed: 337251, max_cases: 20
+
+............
+Finished in 7.2 seconds (0.00s async, 7.2s sync)
+12 tests, 0 failures
+==> eboss_workspaces
+Running ExUnit with seed: 12821, max_cases: 20
+
+............
+Finished in 6.3 seconds (0.00s async, 6.3s sync)
+12 tests, 0 failures
+==> eboss_folio
+Running ExUnit with seed: 138621, max_cases: 20
+
+...........
+Finished in 4.4 seconds (0.00s async, 4.4s sync)
+11 tests, 0 failures
+==> eboss_web
+Running ExUnit with seed: 506421, max_cases: 20
+
+.....................................................................
+Finished in 9.3 seconds (0.3s async, 8.9s sync)
+69 tests, 0 failures
