@@ -67,4 +67,4 @@ mix frontend.gate
 
 That command runs `npm run vue:test`, `npm run playwright:setup`, and `npm run playwright:smoke` from `apps/eboss_web/assets`.
 
-GitHub Actions runs the same gate in the `Frontend Confidence` workflow on pushes and pull requests. CI pins `PLAYWRIGHT_BROWSER_CHANNEL=chromium`, so failures in either the Vitest lane or the Playwright smoke lane fail the workflow directly.
+GitHub Actions runs the same gate in the `Frontend Confidence` workflow on pushes and pull requests. Local and CI runs default to `PLAYWRIGHT_BROWSER_CHANNEL=chromium`, so failures in either the Vitest lane or the Playwright smoke lane fail the workflow directly. Override the channel only when a different installed browser is required for debugging.

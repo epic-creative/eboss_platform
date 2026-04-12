@@ -30,8 +30,7 @@ defmodule EBossWeb.FrontendGateTest do
     assert workflow =~ "PLAYWRIGHT_BROWSER_CHANNEL: chromium"
     assert workflow =~ "npm ci"
 
-    assert workflow =~
-             "npm exec --yes --package=playwright@1.59.1 playwright install --with-deps chromium"
+    assert workflow =~ "npx playwright install --with-deps chromium"
 
     assert workflow =~ "mix frontend.gate"
 

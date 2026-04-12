@@ -127,6 +127,11 @@ defmodule EBossWeb.Layouts do
                   </.badge>
                   <form action={~p"/logout"} method="post">
                     <input type="hidden" name="_method" value="delete" />
+                    <input
+                      type="hidden"
+                      name="_csrf_token"
+                      value={Plug.CSRFProtection.get_csrf_token()}
+                    />
                     <.button
                       type="submit"
                       tone="neutral"

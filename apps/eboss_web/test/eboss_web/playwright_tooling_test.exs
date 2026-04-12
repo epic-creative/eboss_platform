@@ -15,20 +15,19 @@ defmodule EBossWeb.PlaywrightToolingTest do
     config = File.read!(Path.join(@assets_dir, "playwright.config.ts"))
     readme = File.read!(Path.join(@playwright_dir, "README.md"))
 
-    assert get_in(package_json, ["scripts", "playwright:test"]) ==
-             "npm exec --yes --package=playwright@1.59.1 playwright test"
+    assert get_in(package_json, ["scripts", "playwright:test"]) == "playwright test"
 
     assert get_in(package_json, ["scripts", "playwright:smoke"]) ==
-             "npm exec --yes --package=playwright@1.59.1 playwright test tests/playwright/smoke"
+             "playwright test tests/playwright/smoke"
 
     assert get_in(package_json, ["scripts", "playwright:smoke:dashboard"]) ==
-             "npm exec --yes --package=playwright@1.59.1 playwright test tests/playwright/smoke/dashboard-shell.spec.ts"
+             "playwright test tests/playwright/smoke/dashboard-shell.spec.ts"
 
     assert get_in(package_json, ["scripts", "playwright:report"]) ==
-             "npm exec --yes --package=playwright@1.59.1 playwright show-report test-results/playwright/report"
+             "playwright show-report test-results/playwright/report"
 
     assert get_in(package_json, ["scripts", "playwright:server:test"]) ==
-             "cd .. && EBOSS_ENV=test PHX_HOST=localhost MIX_ENV=test mix phx.server"
+             "cd .. && PHX_SERVER=true EBOSS_ENV=test PHX_HOST=localhost MIX_ENV=test mix phx.server"
 
     assert get_in(package_json, ["scripts", "playwright:setup"]) ==
              "cd .. && EBOSS_ENV=test PHX_HOST=localhost MIX_ENV=test mix eboss.playwright.setup"
@@ -43,7 +42,7 @@ defmodule EBossWeb.PlaywrightToolingTest do
     assert File.exists?(Path.join(@playwright_dir, ".auth/.gitignore"))
 
     assert get_in(package_json, ["scripts", "playwright:verify-setup"]) ==
-             "npm exec --yes --package=playwright@1.59.1 playwright test tests/playwright/setup"
+             "playwright test tests/playwright/setup"
 
     assert config =~ ~s(testDir: "./tests/playwright")
     assert config =~ ~s(outputDir: "test-results/playwright/results")

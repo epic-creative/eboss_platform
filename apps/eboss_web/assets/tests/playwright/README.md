@@ -67,6 +67,6 @@ Tooling decisions:
 - The bootstrap smoke stays self-contained on a checked-in HTML fixture, and the smoke lane now adds the smallest app-backed auth/public checks that reuse deterministic state from `playwright:setup`.
 - The dashboard shell smoke stays route-focused: it checks shell landmarks, section/state coverage, and the shell-owned links/actions that should stay stable while deeper workflows continue to move.
 - Smoke coverage stops at route entry, redirect, and authenticated handoff. Deeper sign-in regressions and broader dashboard behavior stay in dedicated follow-on suites.
-- The bootstrap suite defaults to the locally installed Google Chrome channel. Override with `PLAYWRIGHT_BROWSER_CHANNEL` if another installed browser should drive the run.
+- Local and CI runs default to the Playwright-managed `chromium` channel. Override `PLAYWRIGHT_BROWSER_CHANNEL` only when another installed browser should drive a local debugging session.
 - Deterministic browser setup lives in a test-only Mix task so CI and local runs can recreate the same user and storage-state files without manual accounts or hand-built sessions.
-- The first `npm run playwright:*` execution downloads `playwright@1.59.1` into the npm cache unless it is already present.
+- Install asset dependencies with `npm install` or `npm ci` first so the local Playwright package and CLI are available before running the browser suite.

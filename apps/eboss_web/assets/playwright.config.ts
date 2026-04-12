@@ -1,6 +1,6 @@
 import { defineConfig } from "playwright/test";
 
-const browserChannel = process.env.PLAYWRIGHT_BROWSER_CHANNEL ?? "chrome";
+const browserChannel = process.env.PLAYWRIGHT_BROWSER_CHANNEL ?? "chromium";
 const baseUrl = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:4002";
 
 export default defineConfig({

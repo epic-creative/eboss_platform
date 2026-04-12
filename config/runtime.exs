@@ -151,6 +151,10 @@ config :eboss_web, EBossWeb.Endpoint,
   static_url: static_url,
   url: endpoint_url
 
+if System.get_env("PHX_SERVER") do
+  config :eboss_web, EBossWeb.Endpoint, server: true
+end
+
 if config_env() == :prod do
   database_url =
     System.get_env("DATABASE_URL") ||

@@ -2,13 +2,13 @@
   "scripts": {
     "histoire": "histoire dev --config histoire.config.ts --host 127.0.0.1 --port 6006",
     "histoire:build": "histoire build --config histoire.config.ts",
-    "playwright:report": "npm exec --yes --package=playwright@1.59.1 playwright show-report test-results/playwright/report",
-    "playwright:server:test": "cd .. && EBOSS_ENV=test PHX_HOST=localhost MIX_ENV=test mix phx.server",
+    "playwright:report": "playwright show-report test-results/playwright/report",
+    "playwright:server:test": "cd .. && PHX_SERVER=true EBOSS_ENV=test PHX_HOST=localhost MIX_ENV=test mix phx.server",
     "playwright:setup": "cd .. && EBOSS_ENV=test PHX_HOST=localhost MIX_ENV=test mix eboss.playwright.setup",
-    "playwright:smoke": "npm exec --yes --package=playwright@1.59.1 playwright test tests/playwright/smoke",
-    "playwright:smoke:dashboard": "npm exec --yes --package=playwright@1.59.1 playwright test tests/playwright/smoke/dashboard-shell.spec.ts",
-    "playwright:verify-setup": "npm exec --yes --package=playwright@1.59.1 playwright test tests/playwright/setup",
-    "playwright:test": "npm exec --yes --package=playwright@1.59.1 playwright test",
+    "playwright:smoke": "playwright test tests/playwright/smoke",
+    "playwright:smoke:dashboard": "playwright test tests/playwright/smoke/dashboard-shell.spec.ts",
+    "playwright:verify-setup": "playwright test tests/playwright/setup",
+    "playwright:test": "playwright test",
     "vue:test": "vitest run --config vitest.config.ts",
     "vue:test:watch": "vitest --config vitest.config.ts",
     "vue:check": "vue-tsc --noEmit"
@@ -27,6 +27,7 @@
   },
   "devDependencies": {
     "@histoire/plugin-vue": "^1.0.0-beta.1",
+    "@playwright/test": "^1.59.1",
     "@tailwindcss/vite": "^4.1.12",
     "@vitejs/plugin-vue": "^6.0.5",
     "@vue/test-utils": "^2.4.6",

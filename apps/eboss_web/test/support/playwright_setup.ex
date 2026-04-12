@@ -2,10 +2,11 @@ defmodule EBossWeb.PlaywrightSetup do
   @moduledoc false
 
   import Phoenix.ConnTest
+  import Plug.Conn
 
   alias EBoss.Accounts
   alias EBoss.Repo
-  alias EBossWeb.AuthForms
+  alias AshAuthentication.Info
 
   @endpoint EBossWeb.Endpoint
 
@@ -111,18 +112,13 @@ defmodule EBossWeb.PlaywrightSetup do
         authorize?: false
       )
 
-    sign_in_path =
-      Path.join([
-        AuthForms.auth_routes_prefix(),
-        AuthForms.subject_name_string(),
-        "password",
-        "sign_in_with_token"
-      ])
+    session_key = "#{Info.authentication_subject_name!(EBoss.Accounts.User)}_token"
 
     conn =
       build_conn()
       |> init_test_session(%{})
-      |> dispatch(@endpoint, :get, sign_in_path, %{token: signed_in_user.__metadata__.token})
+      |> put_session(session_key, signed_in_user.__metadata__.token)
+      |> dispatch(@endpoint, :get, "/", %{})
 
     conn
     |> Map.fetch!(:resp_cookies)

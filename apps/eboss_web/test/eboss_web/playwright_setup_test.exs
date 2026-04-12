@@ -1,7 +1,10 @@
 defmodule EBossWeb.PlaywrightSetupTest do
   use EBoss.DataCase, async: false
 
+  import Phoenix.ConnTest
+
   alias EBoss.Accounts
+  alias EBossWeb.Endpoint
   alias EBossWeb.PlaywrightSetup
 
   test "prepare! writes deterministic public and authenticated storage state" do
@@ -43,6 +46,14 @@ defmodule EBossWeb.PlaywrightSetupTest do
 
     assert is_binary(value)
     assert value != ""
+
+    dashboard_conn =
+      build_conn()
+      |> put_req_cookie("_eboss_web_key", value)
+      |> dispatch(Endpoint, :get, "/dashboard", %{})
+
+    assert dashboard_conn.status == 200
+    assert to_string(dashboard_conn.assigns.current_user.email) == summary.credentials.email
 
     assert metadata == %{
              "base_url" => base_url,

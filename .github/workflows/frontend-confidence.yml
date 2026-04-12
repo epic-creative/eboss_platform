@@ -55,7 +55,7 @@ jobs:
         working-directory: apps/eboss_web/assets
 
       - name: Install Playwright browser
-        run: npm exec --yes --package=playwright@1.59.1 playwright install --with-deps chromium
+        run: npx playwright install --with-deps chromium
         working-directory: apps/eboss_web/assets
 
       - name: Run frontend gate

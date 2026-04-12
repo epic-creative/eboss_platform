@@ -26,5 +26,8 @@ erl_crash.dump
 # Local environment overrides.
 .env
 
+# Ralph loop log output.
+.ralph_wiggum_loop.log
+
 # Browser-test generated artifacts.
 /apps/eboss_web/assets/test-results/
