@@ -19,6 +19,12 @@ defmodule EBossWeb.JsonApiTest do
     assert Map.has_key?(spec["paths"], "/api/v1/orgs/{owner_handle}/workspaces/{slug}")
     assert Map.has_key?(spec["paths"], "/api/v1/users/{owner_handle}/workspaces/{slug}/bootstrap")
     assert Map.has_key?(spec["paths"], "/api/v1/orgs/{owner_handle}/workspaces/{slug}/bootstrap")
+
+    assert get_in(spec, ["components", "schemas", "WorkspaceSummary", "properties", "full_path"]) ==
+             %{
+               "type" => "string",
+               "nullable" => true
+             }
   end
 
   test "swagger ui is exposed for the v1 json api", %{conn: conn} do
@@ -245,6 +251,79 @@ defmodule EBossWeb.JsonApiTest do
            ] = payload["accessible_workspaces"]
 
     assert workspace_slug == workspace.slug
+  end
+
+  test "bootstrap endpoints require authentication", %{conn: conn} do
+    owner = register_user()
+
+    workspace =
+      Workspaces.create_workspace!(
+        %{
+          name: "Auth Required Workspace",
+          owner_type: :user,
+          owner_id: owner.id
+        },
+        actor: owner
+      )
+
+    conn =
+      conn
+      |> put_req_header("accept", "application/json")
+      |> get("/api/v1/users/#{owner.username}/workspaces/#{workspace.slug}/bootstrap")
+
+    assert %{
+             "error" => %{
+               "code" => "authentication_required",
+               "message" => "Authentication is required"
+             }
+           } = json_response(conn, 401)
+  end
+
+  test "bootstrap endpoints return forbidden for inaccessible workspaces", %{conn: conn} do
+    owner = register_user()
+    outsider = register_user()
+    api_key = create_api_key(outsider)
+
+    workspace =
+      Workspaces.create_workspace!(
+        %{
+          name: "Forbidden Bootstrap Workspace",
+          owner_type: :user,
+          owner_id: owner.id
+        },
+        actor: owner
+      )
+
+    conn =
+      conn
+      |> put_req_header("authorization", "Bearer #{api_key}")
+      |> put_req_header("accept", "application/json")
+      |> get("/api/v1/users/#{owner.username}/workspaces/#{workspace.slug}/bootstrap")
+
+    assert %{
+             "error" => %{
+               "code" => "workspace_forbidden",
+               "message" => "Workspace access is forbidden"
+             }
+           } = json_response(conn, 403)
+  end
+
+  test "bootstrap endpoints return not found for unknown workspaces", %{conn: conn} do
+    owner = register_user()
+    api_key = create_api_key(owner)
+
+    conn =
+      conn
+      |> put_req_header("authorization", "Bearer #{api_key}")
+      |> put_req_header("accept", "application/json")
+      |> get("/api/v1/users/#{owner.username}/workspaces/missing-workspace/bootstrap")
+
+    assert %{
+             "error" => %{
+               "code" => "workspace_not_found",
+               "message" => "Workspace not found"
+             }
+           } = json_response(conn, 404)
   end
 
   defp create_api_key(user) do

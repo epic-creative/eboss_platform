@@ -3,8 +3,7 @@ defmodule EBossWeb.ApiSpec do
 
   def spec do
     EBossWeb.JsonApiRouter.spec()
-    |> Jason.encode_to_iodata!()
-    |> Jason.decode!()
+    |> normalize()
     |> merge_paths(bootstrap_paths())
     |> merge_components(bootstrap_components())
   end
@@ -21,6 +20,20 @@ defmodule EBossWeb.ApiSpec do
       end)
     end)
   end
+
+  defp normalize(%_{} = struct), do: struct |> Map.from_struct() |> normalize()
+
+  defp normalize(map) when is_map(map) do
+    Enum.into(map, %{}, fn {key, value} ->
+      {normalize_key(key), normalize(value)}
+    end)
+  end
+
+  defp normalize(list) when is_list(list), do: Enum.map(list, &normalize/1)
+  defp normalize(value), do: value
+
+  defp normalize_key(key) when is_atom(key), do: Atom.to_string(key)
+  defp normalize_key(key), do: key
 
   defp bootstrap_paths do
     %{
@@ -75,8 +88,8 @@ defmodule EBossWeb.ApiSpec do
             "id" => %{"type" => "string"},
             "name" => %{"type" => "string"},
             "slug" => %{"type" => "string"},
-            "full_path" => %{"type" => ["string", "null"]},
-            "visibility" => %{"type" => ["string", "null"]},
+            "full_path" => %{"type" => "string", "nullable" => true},
+            "visibility" => %{"type" => "string", "nullable" => true},
             "owner_type" => %{"type" => "string"},
             "owner_id" => %{"type" => "string"},
             "owner_handle" => %{"type" => "string"},

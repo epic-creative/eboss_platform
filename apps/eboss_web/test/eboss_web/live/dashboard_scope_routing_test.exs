@@ -81,10 +81,15 @@ defmodule EBossWeb.DashboardScopeRoutingTest do
         username: "empty_shell_user"
       })
 
-    assert {:ok, _view, html} = live(context.conn, ~p"/dashboard")
+    assert {:ok, view, html} = live(context.conn, ~p"/dashboard")
     assert html =~ "No accessible workspaces yet."
     assert html =~ "Create or join a workspace to continue."
     assert html =~ "No accessible workspace"
+
+    current_scope = current_scope(view)
+    refute is_nil(current_scope)
+    assert current_scope.empty?
+    assert current_scope.dashboard_path == "/dashboard"
   end
 
   test "unknown canonical workspace routes fall back to the authenticated empty shell when none exist",

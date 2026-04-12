@@ -10,11 +10,11 @@ defmodule EBossWeb.LiveUserAuth do
   use EBossWeb, :verified_routes
 
   def on_mount(:live_user_optional, _params, _session, socket) do
-    {:cont, normalize_socket(socket, assign_scope?: true)}
+    {:cont, normalize_socket(socket, current_scope: nil)}
   end
 
   def on_mount(:live_user_required, _params, _session, socket) do
-    socket = normalize_socket(socket, assign_scope?: false)
+    socket = normalize_socket(socket, current_scope: :app_scope)
 
     if socket.assigns.current_user do
       {:cont, socket}
@@ -24,7 +24,7 @@ defmodule EBossWeb.LiveUserAuth do
   end
 
   def on_mount(:live_no_user, _params, _session, socket) do
-    socket = normalize_socket(socket, assign_scope?: true)
+    socket = normalize_socket(socket, current_scope: nil)
 
     if socket.assigns.current_user do
       {:halt,
@@ -37,10 +37,12 @@ defmodule EBossWeb.LiveUserAuth do
   defp normalize_socket(socket, opts) do
     socket = assign_new(socket, :current_user, fn -> nil end)
 
-    if Keyword.get(opts, :assign_scope?, true) do
-      assign_new(socket, :current_scope, fn -> nil end)
-    else
-      socket
+    case Keyword.get(opts, :current_scope, nil) do
+      :app_scope ->
+        assign_new(socket, :current_scope, fn -> AppScope.empty(socket.assigns.current_user) end)
+
+      scope ->
+        assign_new(socket, :current_scope, fn -> scope end)
     end
   end
 end

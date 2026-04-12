@@ -33,7 +33,7 @@ defmodule EBoss.Workspaces do
     resource(EBoss.Workspaces.WorkspaceMembership)
   end
 
-  alias EBoss.Workspaces.{Workspace, WorkspaceMembership}
+  alias EBoss.Workspaces.{RouteAccess, Workspace, WorkspaceMembership}
   defdelegate list_workspaces(opts \\ []), to: Workspace
   defdelegate list_workspaces!(opts \\ []), to: Workspace
   defdelegate create_workspace(attrs, opts \\ []), to: Workspace
@@ -66,4 +66,14 @@ defmodule EBoss.Workspaces do
   defdelegate list_workspaces_for_owner!(owner_type, owner_id, opts \\ []), to: Workspace
   defdelegate create_workspace_membership(attrs, opts \\ []), to: WorkspaceMembership
   defdelegate create_workspace_membership!(attrs, opts \\ []), to: WorkspaceMembership
+
+  defdelegate resolve_workspace_route(
+                actor,
+                owner_type,
+                owner_handle,
+                slug,
+                accessible_workspaces \\ []
+              ),
+              to: RouteAccess,
+              as: :resolve
 end

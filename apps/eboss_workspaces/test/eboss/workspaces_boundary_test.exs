@@ -323,6 +323,46 @@ defmodule EBoss.WorkspacesBoundaryTest do
     end
   end
 
+  test "workspace route resolution distinguishes accessible, forbidden, missing, and unauthorized" do
+    owner = register_user()
+    outsider = register_user()
+
+    workspace =
+      Workspaces.create_workspace!(
+        %{
+          name: "Route Resolution Workspace",
+          owner_type: :user,
+          owner_id: owner.id
+        },
+        actor: owner
+      )
+
+    accessible_summary = %{
+      owner_type: :user,
+      owner_handle: owner.username,
+      slug: workspace.slug,
+      id: workspace.id
+    }
+
+    assert {:ok, ^accessible_summary} =
+             Workspaces.resolve_workspace_route(
+               owner,
+               :user,
+               owner.username,
+               workspace.slug,
+               [accessible_summary]
+             )
+
+    assert {:error, :forbidden} =
+             Workspaces.resolve_workspace_route(outsider, :user, owner.username, workspace.slug)
+
+    assert {:error, :not_found} =
+             Workspaces.resolve_workspace_route(owner, :user, owner.username, "missing-workspace")
+
+    assert {:error, :unauthorized} =
+             Workspaces.resolve_workspace_route(nil, :user, owner.username, workspace.slug)
+  end
+
   defp register_user(overrides \\ %{}) do
     params =
       Map.merge(

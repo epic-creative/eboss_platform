@@ -150,6 +150,53 @@ defmodule EBossWeb.JsonApiHttpTest do
     assert org_response.body["owner"]["handle"] == organization.slug
   end
 
+  test "workspace bootstrap endpoints return 401, 403, and 404 with distinct semantics", %{
+    req: req
+  } do
+    owner = register_user()
+    outsider = register_user()
+    owner_api_key = create_api_key(owner)
+    outsider_api_key = create_api_key(outsider)
+
+    workspace =
+      Workspaces.create_workspace!(
+        %{
+          name: "HTTP Bootstrap Status Workspace",
+          owner_type: :user,
+          owner_id: owner.id
+        },
+        actor: owner
+      )
+
+    unauthenticated_response =
+      req
+      |> json_req()
+      |> Req.get!(url: "/api/v1/users/#{owner.username}/workspaces/#{workspace.slug}/bootstrap")
+
+    assert unauthenticated_response.status == 401
+    assert unauthenticated_response.body["error"]["code"] == "authentication_required"
+
+    forbidden_response =
+      req
+      |> Req.merge(
+        headers: [{"authorization", "Bearer #{outsider_api_key}"}, {"accept", "application/json"}]
+      )
+      |> Req.get!(url: "/api/v1/users/#{owner.username}/workspaces/#{workspace.slug}/bootstrap")
+
+    assert forbidden_response.status == 403
+    assert forbidden_response.body["error"]["code"] == "workspace_forbidden"
+
+    missing_response =
+      req
+      |> Req.merge(
+        headers: [{"authorization", "Bearer #{owner_api_key}"}, {"accept", "application/json"}]
+      )
+      |> Req.get!(url: "/api/v1/users/#{owner.username}/workspaces/missing-workspace/bootstrap")
+
+    assert missing_response.status == 404
+    assert missing_response.body["error"]["code"] == "workspace_not_found"
+  end
+
   defp get_header(response, header) do
     response.headers
     |> Enum.filter(fn {key, _value} -> String.downcase(key) == String.downcase(header) end)

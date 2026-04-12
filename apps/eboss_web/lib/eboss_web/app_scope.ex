@@ -40,14 +40,14 @@ defmodule EBossWeb.AppScope do
   def default_dashboard_path(nil), do: ~p"/dashboard"
 
   def default_dashboard_path(current_user) do
-    case list_accessible_workspaces(current_user) do
+    case load_access_context(current_user).workspaces do
       [%{dashboard_path: dashboard_path} | _rest] -> dashboard_path
       [] -> ~p"/dashboard"
     end
   end
 
   def resolve_default(current_user) do
-    case list_accessible_workspaces(current_user) do
+    case load_access_context(current_user).workspaces do
       [%{dashboard_path: dashboard_path} | _rest] -> {:redirect, dashboard_path}
       [] -> {:ok, empty(current_user)}
     end
@@ -55,20 +55,51 @@ defmodule EBossWeb.AppScope do
 
   def resolve_workspace(current_user, owner_type, owner_handle, workspace_slug)
       when owner_type in [:user, :organization] do
-    accessible_workspaces = list_accessible_workspaces(current_user)
+    access_context = load_access_context(current_user)
 
-    case Enum.find(
-           accessible_workspaces,
-           &workspace_match?(&1, owner_type, owner_handle, workspace_slug)
+    case Workspaces.resolve_workspace_route(
+           current_user,
+           owner_type,
+           owner_handle,
+           workspace_slug,
+           access_context.workspaces
          ) do
-      nil ->
-        case accessible_workspaces do
-          [%{dashboard_path: dashboard_path} | _rest] -> {:redirect, dashboard_path}
-          [] -> {:ok, empty(current_user)}
-        end
+      {:ok, current_workspace} ->
+        {:ok, build_scope(current_user, current_workspace, access_context)}
 
-      current_workspace ->
-        {:ok, build_scope(current_user, current_workspace, accessible_workspaces)}
+      {:error, :forbidden} ->
+        fallback_scope(current_user, access_context.workspaces)
+
+      {:error, :not_found} ->
+        fallback_scope(current_user, access_context.workspaces)
+
+      {:error, :unauthorized} ->
+        {:ok, empty(current_user)}
+    end
+  end
+
+  def fetch_workspace_scope(current_user, owner_type, owner_handle, workspace_slug)
+      when owner_type in [:user, :organization] do
+    access_context = load_access_context(current_user)
+
+    case Workspaces.resolve_workspace_route(
+           current_user,
+           owner_type,
+           owner_handle,
+           workspace_slug,
+           access_context.workspaces
+         ) do
+      {:ok, current_workspace} ->
+        {:ok, build_scope(current_user, current_workspace, access_context)}
+
+      {:error, :forbidden} ->
+        {:error, :forbidden}
+
+      {:error, :not_found} ->
+        {:error, :not_found}
+
+      {:error, :unauthorized} ->
+        {:error, :unauthorized}
     end
   end
 
@@ -111,17 +142,29 @@ defmodule EBossWeb.AppScope do
     end
   end
 
-  defp list_accessible_workspaces(nil), do: []
+  defp fallback_scope(_current_user, [%{dashboard_path: dashboard_path} | _rest]) do
+    {:redirect, dashboard_path}
+  end
 
-  defp list_accessible_workspaces(current_user) do
+  defp fallback_scope(current_user, []), do: {:ok, empty(current_user)}
+
+  defp load_access_context(nil), do: %{workspaces: [], organization_roles: %{}}
+
+  defp load_access_context(current_user) do
     case Workspaces.list_workspaces(actor: current_user, load: [:owner, :full_path]) do
       {:ok, workspaces} ->
-        workspaces
-        |> Enum.map(&workspace_summary/1)
-        |> Enum.sort_by(&workspace_sort_key/1)
+        workspace_summaries =
+          workspaces
+          |> Enum.map(&workspace_summary/1)
+          |> Enum.sort_by(&workspace_sort_key/1)
+
+        %{
+          workspaces: workspace_summaries,
+          organization_roles: organization_roles_by_id(current_user, workspace_summaries)
+        }
 
       _ ->
-        []
+        %{workspaces: [], organization_roles: %{}}
     end
   end
 
@@ -151,21 +194,17 @@ defmodule EBossWeb.AppScope do
   defp owner_rank(:user), do: 0
   defp owner_rank(:organization), do: 1
 
-  defp workspace_match?(workspace, owner_type, owner_handle, workspace_slug) do
-    workspace.owner_type == owner_type and workspace.owner_handle == owner_handle and
-      workspace.slug == workspace_slug
-  end
-
-  defp build_scope(current_user, current_workspace, accessible_workspaces) do
+  defp build_scope(current_user, current_workspace, access_context) do
     owner = owner_summary(current_workspace)
-    capabilities = capabilities(current_user, current_workspace)
+    capabilities = capabilities(current_user, current_workspace, access_context)
 
     %__MODULE__{
       current_user: current_user,
       current_workspace: current_workspace,
       owner: owner,
       capabilities: capabilities,
-      accessible_workspaces: mark_current_workspace(accessible_workspaces, current_workspace.id),
+      accessible_workspaces:
+        mark_current_workspace(access_context.workspaces, current_workspace.id),
       dashboard_path: current_workspace.dashboard_path,
       empty?: false
     }
@@ -191,7 +230,7 @@ defmodule EBossWeb.AppScope do
     }
   end
 
-  defp capabilities(current_user, %{owner_type: :user, owner_id: owner_id}) do
+  defp capabilities(current_user, %{owner_type: :user, owner_id: owner_id}, _access_context) do
     manages_workspace? = not is_nil(current_user) and current_user.id == owner_id
 
     %{
@@ -202,14 +241,13 @@ defmodule EBossWeb.AppScope do
     }
   end
 
-  defp capabilities(current_user, %{owner_type: :organization, owner_id: organization_id}) do
-    organization_owner? =
-      not is_nil(current_user) and Organizations.owner?(current_user.id, organization_id)
-
-    organization_admin? =
-      not is_nil(current_user) and Organizations.admin?(current_user.id, organization_id)
-
-    manages_workspace? = organization_owner? or organization_admin?
+  defp capabilities(
+         _current_user,
+         %{owner_type: :organization, owner_id: organization_id},
+         access_context
+       ) do
+    role = Map.get(access_context.organization_roles, organization_id, :none)
+    manages_workspace? = role in [:owner, :admin]
 
     %{
       read_workspace: true,
@@ -237,5 +275,15 @@ defmodule EBossWeb.AppScope do
       username: user.username,
       role: user.role
     }
+  end
+
+  defp organization_roles_by_id(current_user, workspaces) do
+    organization_ids =
+      workspaces
+      |> Enum.filter(&(&1.owner_type == :organization))
+      |> Enum.map(& &1.owner_id)
+      |> Enum.uniq()
+
+    Organizations.roles_by_organization_ids(current_user.id, organization_ids)
   end
 end

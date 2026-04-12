@@ -13,6 +13,7 @@ defmodule EBoss.Organizations do
   defdelegate owner?(actor_id, organization_id, opts \\ []), to: Authorization
   defdelegate admin?(actor_id, organization_id, opts \\ []), to: Authorization
   defdelegate owner_or_admin?(actor_id, organization_id, opts \\ []), to: Authorization
+  defdelegate roles_by_organization_ids(actor_id, organization_ids, opts \\ []), to: Authorization
   defdelegate create_organization(attrs, opts \\ []), to: Organization
   defdelegate create_organization!(attrs, opts \\ []), to: Organization
   defdelegate update_organization(organization, attrs, opts \\ []), to: Organization
