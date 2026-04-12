@@ -5,7 +5,9 @@ defmodule EBossWeb.PlaywrightSetup do
   import Plug.Conn
 
   alias EBoss.Accounts
+  alias EBoss.Workspaces
   alias EBoss.Repo
+  alias EBossWeb.AppScope
   alias AshAuthentication.Info
 
   @endpoint EBossWeb.Endpoint
@@ -14,6 +16,8 @@ defmodule EBossWeb.PlaywrightSetup do
   @default_email "playwright-auth@localhost"
   @default_username "playwright_auth_user"
   @default_password "playwright-pass-123"
+  @default_workspace_name "Playwright Workspace"
+  @default_workspace_slug "playwright-workspace"
   @default_state_dir Path.expand("../../assets/tests/playwright/.auth", __DIR__)
   @session_cookie_key "_eboss_web_key"
 
@@ -25,6 +29,8 @@ defmodule EBossWeb.PlaywrightSetup do
     File.mkdir_p!(state_dir)
 
     user = ensure_browser_test_user!(credentials)
+    workspace = ensure_browser_test_workspace!(user)
+    dashboard_path = AppScope.dashboard_path(:user, user.username, workspace.slug)
 
     public_storage_state_path = Path.join(state_dir, "public.json")
     authenticated_storage_state_path = Path.join(state_dir, "authenticated.json")
@@ -42,7 +48,13 @@ defmodule EBossWeb.PlaywrightSetup do
         public: public_storage_state_path,
         authenticated: authenticated_storage_state_path
       },
-      user: Map.take(credentials, [:email, :username])
+      dashboard_path: dashboard_path,
+      user: Map.take(credentials, [:email, :username]),
+      workspace: %{
+        name: workspace.name,
+        slug: workspace.slug,
+        owner_handle: user.username
+      }
     }
 
     write_json!(metadata_path, metadata)
@@ -53,7 +65,9 @@ defmodule EBossWeb.PlaywrightSetup do
       metadata_path: metadata_path,
       public_storage_state_path: public_storage_state_path,
       authenticated_storage_state_path: authenticated_storage_state_path,
-      user: user
+      user: user,
+      workspace: workspace,
+      dashboard_path: dashboard_path
     }
   end
 
@@ -103,6 +117,32 @@ defmodule EBossWeb.PlaywrightSetup do
     )
 
     Accounts.get_user_by_email!(credentials.email, authorize?: false)
+  end
+
+  defp ensure_browser_test_workspace!(user) do
+    case Workspaces.list_workspaces(actor: user) do
+      {:ok, workspaces} ->
+        case Enum.find(workspaces, fn workspace ->
+               workspace.owner_type == :user and workspace.owner_id == user.id and
+                 workspace.slug == @default_workspace_slug
+             end) do
+          nil ->
+            Workspaces.create_workspace!(
+              %{
+                name: @default_workspace_name,
+                owner_type: :user,
+                owner_id: user.id
+              },
+              actor: user
+            )
+
+          workspace ->
+            workspace
+        end
+
+      {:error, error} ->
+        raise "failed to resolve Playwright workspace: #{Exception.message(error)}"
+    end
   end
 
   defp authenticated_storage_state!(credentials, base_url) do

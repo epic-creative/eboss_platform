@@ -1,6 +1,7 @@
 defmodule EBossWeb.HomeLive do
   use EBossWeb, :live_view
 
+  alias EBossWeb.AppScope
   alias EBossWeb.BrowserTestContracts
 
   @public_section_patterns EBossWeb.PublicPagePatterns
@@ -12,7 +13,7 @@ defmodule EBossWeb.HomeLive do
       |> assign(:page_title, "EBoss")
 
     if socket.assigns.current_user do
-      {:ok, redirect(socket, to: ~p"/dashboard")}
+      {:ok, redirect(socket, to: AppScope.default_dashboard_path(socket.assigns.current_user))}
     else
       {:ok, socket}
     end

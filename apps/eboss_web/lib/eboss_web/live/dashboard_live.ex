@@ -1,13 +1,62 @@
 defmodule EBossWeb.DashboardLive do
   use EBossWeb, :live_view
 
+  alias EBossWeb.AppScope
+
   @impl true
-  def mount(_params, _session, socket) do
-    {:ok, assign(socket, :page_title, "Dashboard")}
+  def mount(params, _session, socket) do
+    case resolve_scope(socket.assigns.current_user, socket.assigns.live_action, params) do
+      {:redirect, dashboard_path} ->
+        {:ok, redirect(socket, to: dashboard_path)}
+
+      {:ok, current_scope} ->
+        {:ok,
+         socket
+         |> assign(:current_scope, current_scope)
+         |> assign(:page_title, "Dashboard")}
+    end
   end
 
   @impl true
   def render(assigns) do
+    current_scope = assigns[:current_scope]
+
+    current_workspace =
+      if current_scope, do: Map.get(current_scope, :current_workspace), else: nil
+
+    dashboard_path =
+      if current_scope,
+        do: Map.get(current_scope, :dashboard_path, "/dashboard"),
+        else: "/dashboard"
+
+    assigns =
+      assigns
+      |> assign(:current_workspace, current_workspace)
+      |> assign(:dashboard_path, dashboard_path)
+      |> assign(
+        :dashboard_description,
+        if(current_workspace,
+          do:
+            "The shared shell is now resolved to #{current_workspace.full_path}, so route work can evolve without resetting navigation, identity, session controls, or lightweight command cues.",
+          else:
+            "The authenticated shell is ready, but this account does not have an accessible workspace route yet. Keep the frame stable while onboarding or access-grant flows complete."
+        )
+      )
+      |> assign(
+        :workspace_label,
+        if(current_workspace,
+          do: current_workspace.name,
+          else: "No workspace selected"
+        )
+      )
+      |> assign(
+        :workspace_hint,
+        if(current_workspace,
+          do: current_workspace.full_path,
+          else: "Authenticated empty state"
+        )
+      )
+
     ~H"""
     <Layouts.app
       flash={@flash}
@@ -16,7 +65,8 @@ defmodule EBossWeb.DashboardLive do
     >
       <.dashboard_shell
         current_user={@current_user}
-        current_path="/dashboard"
+        current_scope={@current_scope}
+        current_path={@dashboard_path}
         shell_label="EBoss dashboard"
         shell_title="Operator workspace"
         shell_copy="Keep the authenticated product frame stable while workspaces, folio, and future signed-in routes deepen inside it."
@@ -27,7 +77,7 @@ defmodule EBossWeb.DashboardLive do
             class="ui-dashboard-page-heading"
             eyebrow="EBoss dashboard"
             title={"Welcome back, @#{Map.get(@current_user, :username)}."}
-            description="The main dashboard now lives inside the shared operator shell, so route work can evolve without resetting navigation, identity, session controls, or lightweight command cues."
+            description={@dashboard_description}
             title_tag="h1"
             title_size="xl"
             data-dashboard-contract="page-header"
@@ -42,15 +92,22 @@ defmodule EBossWeb.DashboardLive do
               <.badge tone="neutral">Stable shell chrome</.badge>
             </:signal>
             <:signal>
-              <.badge tone="neutral">Command cues visible</.badge>
+              <.badge tone="neutral">
+                {if @current_workspace, do: @current_workspace.full_path, else: "Awaiting workspace"}
+              </.badge>
             </:signal>
             <:actions>
               <.dashboard_action_bar>
                 <.button href="#dashboard-utilities" variant="outline" tone="neutral" size="sm">
                   Command surface
                 </.button>
-                <.button href="#dashboard-structure" variant="ghost" tone="neutral" size="sm">
-                  Panel grouping
+                <.button
+                  href={if @current_workspace, do: "#dashboard-structure", else: "#dashboard-access"}
+                  variant="ghost"
+                  tone="neutral"
+                  size="sm"
+                >
+                  {if @current_workspace, do: "Panel grouping", else: "Workspace access"}
                 </.button>
               </.dashboard_action_bar>
             </:actions>
@@ -59,6 +116,7 @@ defmodule EBossWeb.DashboardLive do
 
         <:sidebar_footer>
           <.dashboard_quick_actions
+            :if={@current_workspace}
             id="dashboard-quick-actions"
             title="Quick actions"
             description="Mnemonic route cues keep the next jump obvious while the dashboard stays visually calm."
@@ -96,7 +154,7 @@ defmodule EBossWeb.DashboardLive do
           </.dashboard_quick_actions>
         </:sidebar_footer>
 
-        <div class="ui-dashboard-page" data-dashboard-contract="page-content">
+        <div :if={@current_workspace} class="ui-dashboard-page" data-dashboard-contract="page-content">
           <.dashboard_utility_strip
             id="dashboard-utilities"
             class="lg:col-span-2"
@@ -106,8 +164,8 @@ defmodule EBossWeb.DashboardLive do
             <:item
               id="primary-lane"
               label="Primary lane"
-              value="Launch surface"
-              hint="Route-owned workspace entry"
+              value={@workspace_label}
+              hint={@workspace_hint}
               href="#dashboard-launchpad"
               shortcut="GL"
               tone="primary"
@@ -172,7 +230,7 @@ defmodule EBossWeb.DashboardLive do
             <.DashboardLaunchpad
               username={Map.get(@current_user, :username)}
               email={to_string(Map.get(@current_user, :email))}
-              workspaceLabel="Workspace routes and JSON:API stay available inside the shared product frame."
+              workspaceLabel={"Current workspace route: #{@current_workspace.full_path}."}
               folioLabel="Folio stays workspace-scoped while reusing the same signed-in shell."
             />
           </.dashboard_section>
@@ -322,8 +380,89 @@ defmodule EBossWeb.DashboardLive do
             </div>
           </.dashboard_section>
         </div>
+
+        <div
+          :if={is_nil(@current_workspace)}
+          class="ui-dashboard-page"
+          data-dashboard-contract="page-content"
+        >
+          <.dashboard_utility_strip
+            id="dashboard-utilities"
+            class="lg:col-span-2"
+            title="Command surface"
+            description="Keep the signed-in shell useful even before a concrete workspace route is available."
+          >
+            <:item
+              id="workspace-access"
+              label="Workspace access"
+              value="No accessible workspace"
+              hint="Request access or create your first workspace."
+              href="#dashboard-access"
+              shortcut="GW"
+              tone="warning"
+              icon="hero-user-plus"
+            />
+            <:item
+              id="shell-frame"
+              label="Shell frame"
+              value="Authenticated empty state"
+              hint="Header, identity, and session controls remain stable."
+              href="#dashboard-top"
+              shortcut="GT"
+              tone="neutral"
+              icon="hero-shield-check"
+            />
+          </.dashboard_utility_strip>
+
+          <.dashboard_section id="dashboard-access" section="launchpad">
+            <.dashboard_header
+              eyebrow="Workspace access"
+              title="No accessible workspaces yet."
+              description="The authenticated frame is active, but you still need a workspace route before scoped product surfaces can mount."
+            >
+              <:signal>
+                <.badge tone="neutral">Empty shell state</.badge>
+              </:signal>
+              <:signal>
+                <.badge tone="neutral">Waiting for workspace access</.badge>
+              </:signal>
+            </.dashboard_header>
+
+            <.dashboard_empty_state
+              density="sparse"
+              title="Create or join a workspace to continue."
+              description="Keep the shell mounted so onboarding, invite acceptance, and future workspace creation can reuse the same signed-in frame."
+              details={[
+                "The canonical dashboard route will become workspace-aware as soon as one route is available.",
+                "Bootstrap APIs and upcoming LiveVue surfaces can rely on the same scope contract once a workspace exists."
+              ]}
+            >
+              <:actions>
+                <.button href={~p"/"} variant="outline" tone="neutral" size="sm">
+                  Back to home
+                </.button>
+              </:actions>
+            </.dashboard_empty_state>
+          </.dashboard_section>
+        </div>
       </.dashboard_shell>
     </Layouts.app>
     """
   end
+
+  defp resolve_scope(current_user, :user_workspace, %{
+         "owner_handle" => owner_handle,
+         "workspace_slug" => workspace_slug
+       }) do
+    AppScope.resolve_workspace(current_user, :user, owner_handle, workspace_slug)
+  end
+
+  defp resolve_scope(current_user, :org_workspace, %{
+         "owner_handle" => owner_handle,
+         "workspace_slug" => workspace_slug
+       }) do
+    AppScope.resolve_workspace(current_user, :organization, owner_handle, workspace_slug)
+  end
+
+  defp resolve_scope(current_user, _live_action, _params), do: {:ok, AppScope.empty(current_user)}
 end

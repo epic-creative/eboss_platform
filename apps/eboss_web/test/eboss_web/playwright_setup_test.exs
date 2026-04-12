@@ -21,6 +21,8 @@ defmodule EBossWeb.PlaywrightSetupTest do
 
     assert summary.user.email |> to_string() == summary.credentials.email
     assert summary.user.username == summary.credentials.username
+    assert summary.workspace.slug == "playwright-workspace"
+    assert summary.dashboard_path == "/users/playwright_auth_user/playwright-workspace/dashboard"
 
     public_state = read_json!(summary.public_storage_state_path)
     authenticated_state = read_json!(summary.authenticated_storage_state_path)
@@ -47,16 +49,25 @@ defmodule EBossWeb.PlaywrightSetupTest do
     assert is_binary(value)
     assert value != ""
 
-    dashboard_conn =
+    dashboard_redirect_conn =
       build_conn()
       |> put_req_cookie("_eboss_web_key", value)
       |> dispatch(Endpoint, :get, "/dashboard", %{})
 
+    assert redirected_to(dashboard_redirect_conn) == summary.dashboard_path
+
+    dashboard_conn =
+      build_conn()
+      |> put_req_cookie("_eboss_web_key", value)
+      |> dispatch(Endpoint, :get, summary.dashboard_path, %{})
+
     assert dashboard_conn.status == 200
     assert to_string(dashboard_conn.assigns.current_user.email) == summary.credentials.email
+    assert html_response(dashboard_conn, 200) =~ "@playwright_auth_user/playwright-workspace"
 
     assert metadata == %{
              "base_url" => base_url,
+             "dashboard_path" => summary.dashboard_path,
              "storage_state" => %{
                "authenticated" => summary.authenticated_storage_state_path,
                "public" => summary.public_storage_state_path
@@ -64,6 +75,11 @@ defmodule EBossWeb.PlaywrightSetupTest do
              "user" => %{
                "email" => summary.credentials.email,
                "username" => summary.credentials.username
+             },
+             "workspace" => %{
+               "name" => "Playwright Workspace",
+               "owner_handle" => summary.credentials.username,
+               "slug" => "playwright-workspace"
              }
            }
 
@@ -80,6 +96,8 @@ defmodule EBossWeb.PlaywrightSetupTest do
 
     assert rerun.user.email == summary.user.email
     assert rerun.user.username == summary.user.username
+    assert rerun.workspace.slug == summary.workspace.slug
+    assert rerun.dashboard_path == summary.dashboard_path
     assert File.exists?(rerun.public_storage_state_path)
     assert File.exists?(rerun.authenticated_storage_state_path)
   end

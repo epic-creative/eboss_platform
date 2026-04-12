@@ -20,6 +20,15 @@ defmodule EBoss.Organizations.Organization do
     base_filter?(true)
   end
 
+  code_interface do
+    define(:create_organization, action: :create)
+    define(:update_organization, action: :update)
+    define(:admin_update_organization, action: :admin_update)
+    define(:transfer_organization_ownership, action: :transfer_ownership, args: [:new_owner_id])
+    define(:destroy_organization, action: :destroy)
+    define(:get_organization, action: :read, get_by: [:id])
+  end
+
   cloak do
     vault(EBoss.Vault)
     attributes([:settings])

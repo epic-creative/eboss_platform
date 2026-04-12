@@ -1,17 +1,19 @@
 import { expect, test } from "playwright/test";
 import type { Browser } from "playwright/test";
 
-import { openPreparedPage } from "../support/prepared-state";
+import { openPreparedDashboard } from "../support/prepared-state";
 
 async function openDashboard(browser: Browser) {
-  return openPreparedPage(browser, "authenticated", "/dashboard");
+  return openPreparedDashboard(browser);
 }
 
 test.describe("dashboard smoke", () => {
   test("authenticated state renders the stable dashboard shell surfaces", async ({ browser }) => {
     const { context, page, preparedState } = await openDashboard(browser);
 
-    await expect(page).toHaveURL(/\/dashboard$/);
+    await expect(page).toHaveURL(
+      new URL(preparedState.dashboard_path, preparedState.base_url).toString(),
+    );
     await expect(page.getByTestId("dashboard-shell")).toBeVisible();
     await expect(page.getByRole("region", { name: "Dashboard shell" })).toBeVisible();
     await expect(page.getByRole("complementary", { name: "Dashboard sidebar" })).toBeVisible();
@@ -36,19 +38,28 @@ test.describe("dashboard smoke", () => {
   });
 
   test("dashboard shell links keep section navigation stable", async ({ browser }) => {
-    const { context, page } = await openDashboard(browser);
+    const { context, page, preparedState } = await openDashboard(browser);
 
     const quickActions = page.getByRole("navigation", { name: "Dashboard quick actions" });
     const commandSurface = page.getByRole("region", { name: "Dashboard command surface" });
 
     await quickActions.getByRole("link", { name: /Audit fallback states/i }).click();
-    await expect(page).toHaveURL(/\/dashboard#dashboard-states$/);
+    await expect(page).toHaveURL(
+      new URL(`${preparedState.dashboard_path}#dashboard-states`, preparedState.base_url).toString(),
+    );
 
     await commandSurface.getByRole("link", { name: /Primary lane/i }).click();
-    await expect(page).toHaveURL(/\/dashboard#dashboard-launchpad$/);
+    await expect(page).toHaveURL(
+      new URL(
+        `${preparedState.dashboard_path}#dashboard-launchpad`,
+        preparedState.base_url,
+      ).toString(),
+    );
 
     await commandSurface.getByRole("link", { name: /State audit/i }).click();
-    await expect(page).toHaveURL(/\/dashboard#dashboard-states$/);
+    await expect(page).toHaveURL(
+      new URL(`${preparedState.dashboard_path}#dashboard-states`, preparedState.base_url).toString(),
+    );
 
     await expect(page.getByRole("region", { name: "Dashboard state surface" })).toBeVisible();
     await expect(page.getByRole("region", { name: "Dashboard empty state" })).toBeVisible();

@@ -294,7 +294,7 @@ defmodule EBossWeb.DesignSurfaceTest do
     assert dashboard_live =~ "<.dashboard_utility_strip"
     assert dashboard_live =~ "<.dashboard_quick_actions"
     assert dashboard_live =~ "<.dashboard_panel_group"
-    assert dashboard_live =~ ~s(current_path="/dashboard")
+    assert dashboard_live =~ ~s(current_path={@dashboard_path})
     assert dashboard_live =~ ~s(data-dashboard-contract="page-header")
     assert dashboard_live =~ ~s(data-dashboard-contract="page-content")
     assert dashboard_live =~ ~s(section="launchpad")

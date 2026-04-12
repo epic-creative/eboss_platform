@@ -1,5 +1,5 @@
 import { expect, test } from "playwright/test";
-import { openPreparedPage } from "../support/prepared-state";
+import { openPreparedDashboard, openPreparedPage } from "../support/prepared-state";
 
 test("public setup state opens the anonymous home surface", async ({ browser }) => {
   const { context, page } = await openPreparedPage(browser, "public", "/");
@@ -11,12 +11,9 @@ test("public setup state opens the anonymous home surface", async ({ browser }) 
 });
 
 test("authenticated setup state opens the dashboard shell", async ({ browser }) => {
-  const { context, page, preparedState } = await openPreparedPage(
-    browser,
-    "authenticated",
-    "/dashboard",
-  );
+  const { context, page, preparedState } = await openPreparedDashboard(browser);
 
+  await expect(page).toHaveURL(new URL(preparedState.dashboard_path, preparedState.base_url).toString());
   await expect(
     page.getByRole("heading", {
       name: new RegExp(`Welcome back, @${preparedState.user.username}\\.`, "i"),

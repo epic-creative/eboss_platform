@@ -17,6 +17,8 @@ defmodule EBossWeb.JsonApiTest do
     assert Map.has_key?(spec["paths"], "/api/v1/workspaces/{id}")
     assert Map.has_key?(spec["paths"], "/api/v1/users/{owner_handle}/workspaces/{slug}")
     assert Map.has_key?(spec["paths"], "/api/v1/orgs/{owner_handle}/workspaces/{slug}")
+    assert Map.has_key?(spec["paths"], "/api/v1/users/{owner_handle}/workspaces/{slug}/bootstrap")
+    assert Map.has_key?(spec["paths"], "/api/v1/orgs/{owner_handle}/workspaces/{slug}/bootstrap")
   end
 
   test "swagger ui is exposed for the v1 json api", %{conn: conn} do
@@ -139,6 +141,112 @@ defmodule EBossWeb.JsonApiTest do
     assert payload["data"]["attributes"]["owner_type"] == "organization"
   end
 
+  test "authenticated clients can fetch a user workspace bootstrap payload", %{conn: conn} do
+    owner = register_user()
+    api_key = create_api_key(owner)
+
+    current_workspace =
+      Workspaces.create_workspace!(
+        %{
+          name: "Bootstrap Workspace",
+          owner_type: :user,
+          owner_id: owner.id
+        },
+        actor: owner
+      )
+
+    secondary_workspace =
+      Workspaces.create_workspace!(
+        %{
+          name: "Secondary Workspace",
+          owner_type: :user,
+          owner_id: owner.id
+        },
+        actor: owner
+      )
+
+    conn =
+      conn
+      |> put_req_header("authorization", "Bearer #{api_key}")
+      |> put_req_header("accept", "application/json")
+      |> get("/api/v1/users/#{owner.username}/workspaces/#{current_workspace.slug}/bootstrap")
+
+    payload = json_response(conn, 200)
+
+    assert payload["current_user"]["username"] == owner.username
+    assert payload["workspace"]["id"] == current_workspace.id
+    assert payload["workspace"]["slug"] == current_workspace.slug
+
+    assert payload["workspace"]["dashboard_path"] ==
+             "/users/#{owner.username}/#{current_workspace.slug}/dashboard"
+
+    assert payload["owner"]["type"] == "user"
+    assert payload["owner"]["handle"] == owner.username
+
+    assert payload["capabilities"] == %{
+             "manage_folio" => true,
+             "manage_workspace" => true,
+             "read_folio" => true,
+             "read_workspace" => true
+           }
+
+    assert Enum.any?(payload["accessible_workspaces"], fn workspace ->
+             workspace["slug"] == current_workspace.slug and workspace["current?"]
+           end)
+
+    assert Enum.any?(payload["accessible_workspaces"], fn workspace ->
+             workspace["slug"] == secondary_workspace.slug and workspace["current?"] == false
+           end)
+  end
+
+  test "organization members receive read-only org bootstrap capabilities", %{conn: conn} do
+    owner = register_user()
+    member = register_user()
+    organization = Organizations.create_organization!(%{name: "Bootstrap Org"}, actor: owner)
+
+    create_org_membership(owner, organization, member, :member)
+
+    api_key = create_api_key(member)
+
+    workspace =
+      Workspaces.create_workspace!(
+        %{
+          name: "Bootstrap Org Workspace",
+          owner_type: :organization,
+          owner_id: organization.id
+        },
+        actor: owner
+      )
+
+    conn =
+      conn
+      |> put_req_header("authorization", "Bearer #{api_key}")
+      |> put_req_header("accept", "application/json")
+      |> get("/api/v1/orgs/#{organization.slug}/workspaces/#{workspace.slug}/bootstrap")
+
+    payload = json_response(conn, 200)
+
+    assert payload["workspace"]["id"] == workspace.id
+    assert payload["owner"]["type"] == "organization"
+    assert payload["owner"]["handle"] == organization.slug
+
+    assert payload["capabilities"] == %{
+             "manage_folio" => false,
+             "manage_workspace" => false,
+             "read_folio" => false,
+             "read_workspace" => true
+           }
+
+    assert [
+             %{
+               "slug" => workspace_slug,
+               "current?" => true
+             }
+           ] = payload["accessible_workspaces"]
+
+    assert workspace_slug == workspace.slug
+  end
+
   defp create_api_key(user) do
     api_key =
       EBoss.Accounts.ApiKey
@@ -149,15 +257,5 @@ defmodule EBossWeb.JsonApiTest do
       |> Ash.create!(authorize?: false)
 
     api_key.__metadata__.plaintext_api_key
-  end
-
-  defp create_org_membership(owner, organization, user, role) do
-    EBoss.Organizations.Membership
-    |> Ash.Changeset.for_create(:create, %{
-      organization_id: organization.id,
-      user_id: user.id,
-      role: role
-    })
-    |> Ash.create!(actor: owner)
   end
 end

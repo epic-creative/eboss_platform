@@ -5,15 +5,16 @@ defmodule EBossWeb.LiveUserAuth do
 
   import Phoenix.Component
   alias Phoenix.LiveView
+  alias EBossWeb.AppScope
 
   use EBossWeb, :verified_routes
 
   def on_mount(:live_user_optional, _params, _session, socket) do
-    {:cont, normalize_socket(socket)}
+    {:cont, normalize_socket(socket, assign_scope?: true)}
   end
 
   def on_mount(:live_user_required, _params, _session, socket) do
-    socket = normalize_socket(socket)
+    socket = normalize_socket(socket, assign_scope?: false)
 
     if socket.assigns.current_user do
       {:cont, socket}
@@ -23,18 +24,23 @@ defmodule EBossWeb.LiveUserAuth do
   end
 
   def on_mount(:live_no_user, _params, _session, socket) do
-    socket = normalize_socket(socket)
+    socket = normalize_socket(socket, assign_scope?: true)
 
     if socket.assigns.current_user do
-      {:halt, LiveView.redirect(socket, to: ~p"/dashboard")}
+      {:halt,
+       LiveView.redirect(socket, to: AppScope.default_dashboard_path(socket.assigns.current_user))}
     else
       {:cont, socket}
     end
   end
 
-  defp normalize_socket(socket) do
-    socket
-    |> assign_new(:current_user, fn -> nil end)
-    |> assign_new(:current_scope, fn -> nil end)
+  defp normalize_socket(socket, opts) do
+    socket = assign_new(socket, :current_user, fn -> nil end)
+
+    if Keyword.get(opts, :assign_scope?, true) do
+      assign_new(socket, :current_scope, fn -> nil end)
+    else
+      socket
+    end
   end
 end

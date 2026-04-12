@@ -110,42 +110,12 @@ defmodule EBoss.Accounts do
     end
   end
 
-  def get_user(id, opts \\ []) do
-    Ash.get(User, id, default_action_opts(opts))
-  end
-
-  def get_user!(id, opts \\ []) do
-    case get_user(id, opts) do
-      {:ok, user} -> user
-      {:error, error} -> raise error
-    end
-  end
-
-  def get_user_by_email(email, opts \\ []) do
-    User
-    |> Ash.Query.for_read(:get_by_email, %{email: email})
-    |> Ash.read_one(default_action_opts(opts))
-  end
-
-  def get_user_by_email!(email, opts \\ []) do
-    case get_user_by_email(email, opts) do
-      {:ok, user} -> user
-      {:error, error} -> raise error
-    end
-  end
-
-  def get_user_by_username(username, opts \\ []) do
-    User
-    |> Ash.Query.for_read(:get_by_username, %{username: username})
-    |> Ash.read_one(default_action_opts(opts))
-  end
-
-  def get_user_by_username!(username, opts \\ []) do
-    case get_user_by_username(username, opts) do
-      {:ok, user} -> user
-      {:error, error} -> raise error
-    end
-  end
+  defdelegate get_user(id, opts \\ []), to: User
+  defdelegate get_user!(id, opts \\ []), to: User
+  defdelegate get_user_by_email(email, opts \\ []), to: User
+  defdelegate get_user_by_email!(email, opts \\ []), to: User
+  defdelegate get_user_by_username(username, opts \\ []), to: User
+  defdelegate get_user_by_username!(username, opts \\ []), to: User
 
   defp default_action_opts(opts) do
     opts

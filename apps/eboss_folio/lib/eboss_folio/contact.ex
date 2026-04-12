@@ -38,8 +38,7 @@ defmodule EBossFolio.Contact do
 
   policies do
     policy action_type(:read) do
-      authorize_if(expr(workspace.owner_type == :user and workspace.owner_id == ^actor(:id)))
-      authorize_if(relates_to_actor_via([:workspace, :organization, :owner]))
+      authorize_if(EBossFolio.Checks.ActorOwnsWorkspaceFilter)
     end
 
     policy action_type([:create, :update]) do

@@ -7,6 +7,7 @@ const preparedStatePath = path.resolve(__dirname, "..", ".auth", "prepared-state
 
 export type PreparedState = {
   base_url: string;
+  dashboard_path: string;
   storage_state: {
     public: string;
     authenticated: string;
@@ -14,6 +15,11 @@ export type PreparedState = {
   user: {
     email: string;
     username: string;
+  };
+  workspace: {
+    name: string;
+    slug: string;
+    owner_handle: string;
   };
 };
 
@@ -45,4 +51,11 @@ export async function openPreparedPage(
   });
 
   return { context, page, preparedState };
+}
+
+export async function openPreparedDashboard(
+  browser: Browser,
+): Promise<{ context: BrowserContext; page: Page; preparedState: PreparedState }> {
+  const preparedState = loadPreparedState();
+  return openPreparedPage(browser, "authenticated", preparedState.dashboard_path);
 }

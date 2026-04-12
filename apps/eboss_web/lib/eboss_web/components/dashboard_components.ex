@@ -16,6 +16,7 @@ defmodule EBossWeb.DashboardComponents do
   alias EBossWeb.BrowserTestContracts
 
   attr(:current_user, :map, required: true)
+  attr(:current_scope, :map, default: nil)
   attr(:current_path, :string, default: nil)
   attr(:shell_label, :string, default: "Authenticated product surface")
   attr(:shell_title, :string, default: "EBoss control center")
@@ -30,7 +31,23 @@ defmodule EBossWeb.DashboardComponents do
   slot(:sidebar_footer)
 
   def dashboard_shell(assigns) do
-    assigns = assign(assigns, :nav_groups, dashboard_nav_groups(assigns.current_path))
+    current_scope = assigns.current_scope
+
+    assigns =
+      assigns
+      |> assign(
+        :current_workspace,
+        if(current_scope, do: Map.get(current_scope, :current_workspace), else: nil)
+      )
+      |> assign(
+        :accessible_workspaces,
+        if(current_scope, do: Map.get(current_scope, :accessible_workspaces, []), else: [])
+      )
+      |> assign(
+        :capabilities,
+        if(current_scope, do: Map.get(current_scope, :capabilities, %{}), else: %{})
+      )
+      |> assign(:nav_groups, dashboard_nav_groups(current_scope, assigns.current_path))
 
     ~H"""
     <section
@@ -60,7 +77,9 @@ defmodule EBossWeb.DashboardComponents do
 
             <div class="ui-dashboard-shell__identity-signals">
               <.badge tone="neutral">@{Map.get(@current_user, :username)}</.badge>
-              <.badge tone="neutral">Signed in</.badge>
+              <.badge tone="neutral">
+                {if @current_workspace, do: @current_workspace.full_path, else: "No workspace"}
+              </.badge>
             </div>
           </div>
 
@@ -93,19 +112,64 @@ defmodule EBossWeb.DashboardComponents do
             class="ui-dashboard-shell__context"
             data-dashboard-chrome="context"
           >
-            <p class="ui-text-meta" data-tone="soft">Operator context</p>
+            <p class="ui-text-meta" data-tone="soft">Workspace context</p>
 
             <div class="space-y-2">
-              <p class="ui-text-title" data-size="sm">@{Map.get(@current_user, :username)}</p>
+              <p class="ui-text-title" data-size="sm">
+                {if @current_workspace, do: @current_workspace.name, else: "No accessible workspace"}
+              </p>
               <p class="ui-text-body" data-size="sm" data-tone="muted">
-                {to_string(Map.get(@current_user, :email))}
+                {if @current_workspace,
+                  do: @current_workspace.full_path,
+                  else: to_string(Map.get(@current_user, :email))}
               </p>
             </div>
 
             <p class="ui-text-body" data-size="sm" data-tone="soft">
-              Session controls stay in the product header while route-level work can change without
-              breaking the frame.
+              <%= if @current_workspace do %>
+                Session controls stay in the product header while the route resolves one stable
+                workspace context for the shell and upcoming product surfaces.
+              <% else %>
+                The shell stays stable even before a workspace is selected, so auth recovery and
+                first-access onboarding do not need a separate signed-in layout.
+              <% end %>
             </p>
+
+            <div :if={@accessible_workspaces != []} class="space-y-2">
+              <p class="ui-text-meta" data-tone="soft">Workspace switcher</p>
+
+              <div class="flex flex-col gap-2">
+                <a
+                  :for={workspace <- @accessible_workspaces}
+                  href={workspace.dashboard_path}
+                  class="ui-dashboard-shell__workspace-link"
+                  data-current={Map.get(workspace, :current?, false)}
+                  data-dashboard-workspace-link={workspace.slug}
+                >
+                  <div class="space-y-1">
+                    <p class="ui-text-title" data-size="sm">{workspace.name}</p>
+                    <p class="ui-text-body" data-size="sm" data-tone="muted">{workspace.full_path}</p>
+                  </div>
+
+                  <.badge tone={
+                    if Map.get(workspace, :current?, false), do: "primary", else: "neutral"
+                  }>
+                    {if Map.get(workspace, :current?, false), do: "Current", else: "Open"}
+                  </.badge>
+                </a>
+              </div>
+            </div>
+
+            <div :if={@current_workspace} class="flex flex-wrap gap-2">
+              <.badge tone="neutral">
+                {if Map.get(@capabilities, :manage_workspace),
+                  do: "Workspace admin",
+                  else: "Read only"}
+              </.badge>
+              <.badge tone="neutral">
+                {if Map.get(@capabilities, :manage_folio), do: "Folio access", else: "Folio locked"}
+              </.badge>
+            </div>
           </.panel>
 
           <div :if={@sidebar_footer != []} class="ui-dashboard-shell__sidebar-footer">
@@ -654,7 +718,16 @@ defmodule EBossWeb.DashboardComponents do
     """
   end
 
-  defp dashboard_nav_groups(current_path) do
+  defp dashboard_nav_groups(current_scope, current_path) do
+    current_workspace =
+      if(current_scope, do: Map.get(current_scope, :current_workspace), else: nil)
+
+    dashboard_path =
+      if(current_scope,
+        do: Map.get(current_scope, :dashboard_path, "/dashboard"),
+        else: "/dashboard"
+      )
+
     [
       %{
         id: "primary-routes",
@@ -666,12 +739,16 @@ defmodule EBossWeb.DashboardComponents do
             label: "Dashboard",
             meta: "Current route",
             meta_tone: "primary",
-            detail: "Shared operator workspace",
+            detail:
+              if(current_workspace,
+                do: current_workspace.full_path,
+                else: "Authenticated shell entry"
+              ),
             badge: "Current",
             badge_tone: "primary",
             icon: "hero-home",
-            path: ~p"/dashboard",
-            active?: current_path == "/dashboard",
+            path: dashboard_path,
+            active?: current_path == dashboard_path,
             state: "active"
           }
         ]

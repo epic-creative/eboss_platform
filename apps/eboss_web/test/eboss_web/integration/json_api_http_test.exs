@@ -11,6 +11,16 @@ defmodule EBossWeb.JsonApiHttpTest do
     assert Map.has_key?(response.body["paths"], "/api/v1/workspaces")
     assert Map.has_key?(response.body["paths"], "/api/v1/users/{owner_handle}/workspaces/{slug}")
     assert Map.has_key?(response.body["paths"], "/api/v1/orgs/{owner_handle}/workspaces/{slug}")
+
+    assert Map.has_key?(
+             response.body["paths"],
+             "/api/v1/users/{owner_handle}/workspaces/{slug}/bootstrap"
+           )
+
+    assert Map.has_key?(
+             response.body["paths"],
+             "/api/v1/orgs/{owner_handle}/workspaces/{slug}/bootstrap"
+           )
   end
 
   test "user-owned workspaces are reachable over http by id and owner handle route", %{req: req} do
@@ -77,6 +87,67 @@ defmodule EBossWeb.JsonApiHttpTest do
     assert response.body["data"]["id"] == workspace.id
     assert response.body["data"]["attributes"]["owner_type"] == "organization"
     assert response.body["data"]["attributes"]["slug"] == workspace.slug
+  end
+
+  test "workspace bootstrap endpoints are reachable over http for user and org routes", %{
+    req: req
+  } do
+    owner = register_user()
+    member = register_user()
+    organization = Organizations.create_organization!(%{name: "Bootstrap HTTP Org"}, actor: owner)
+
+    create_org_membership(owner, organization, member, :member)
+
+    user_api_key = create_api_key(owner)
+    member_api_key = create_api_key(member)
+
+    user_workspace =
+      Workspaces.create_workspace!(
+        %{
+          name: "Bootstrap HTTP Workspace",
+          owner_type: :user,
+          owner_id: owner.id
+        },
+        actor: owner
+      )
+
+    org_workspace =
+      Workspaces.create_workspace!(
+        %{
+          name: "Bootstrap HTTP Org Workspace",
+          owner_type: :organization,
+          owner_id: organization.id
+        },
+        actor: owner
+      )
+
+    user_response =
+      req
+      |> Req.merge(
+        headers: [{"authorization", "Bearer #{user_api_key}"}, {"accept", "application/json"}]
+      )
+      |> Req.get!(
+        url: "/api/v1/users/#{owner.username}/workspaces/#{user_workspace.slug}/bootstrap"
+      )
+
+    assert user_response.status == 200
+    assert user_response.body["workspace"]["slug"] == user_workspace.slug
+    assert user_response.body["capabilities"]["manage_folio"] == true
+    assert user_response.body["owner"]["handle"] == owner.username
+
+    org_response =
+      req
+      |> Req.merge(
+        headers: [{"authorization", "Bearer #{member_api_key}"}, {"accept", "application/json"}]
+      )
+      |> Req.get!(
+        url: "/api/v1/orgs/#{organization.slug}/workspaces/#{org_workspace.slug}/bootstrap"
+      )
+
+    assert org_response.status == 200
+    assert org_response.body["workspace"]["slug"] == org_workspace.slug
+    assert org_response.body["capabilities"]["manage_folio"] == false
+    assert org_response.body["owner"]["handle"] == organization.slug
   end
 
   defp get_header(response, header) do

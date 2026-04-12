@@ -52,7 +52,9 @@ defmodule EBossWeb.Router do
     ash_authentication_live_session :authenticated_routes,
       otp_app: :eboss_accounts,
       on_mount: {EBossWeb.LiveUserAuth, :live_user_required} do
-      live "/dashboard", DashboardLive
+      live "/dashboard", DashboardRedirectLive
+      live "/users/:owner_handle/:workspace_slug/dashboard", DashboardLive, :user_workspace
+      live "/orgs/:owner_handle/:workspace_slug/dashboard", DashboardLive, :org_workspace
     end
   end
 
@@ -69,6 +71,12 @@ defmodule EBossWeb.Router do
     pipe_through :api
 
     get "/open_api", OpenApiController, :show
+
+    get "/users/:owner_handle/workspaces/:slug/bootstrap",
+        WorkspaceBootstrapController,
+        :show_user
+
+    get "/orgs/:owner_handle/workspaces/:slug/bootstrap", WorkspaceBootstrapController, :show_org
     forward "/", JsonApiRouter
   end
 

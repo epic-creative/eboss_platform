@@ -124,6 +124,29 @@ defmodule EBossWeb.AuthLiveTest do
     assert {:error, {:redirect, %{to: "/dashboard"}}} = live(conn, ~p"/forgot-password")
   end
 
+  test "signed-in visitors with an accessible workspace are redirected to the canonical workspace route",
+       %{conn: conn} do
+    context =
+      register_and_log_in_user(%{conn: conn}, %{
+        email: "canonical-auth@example.com",
+        username: "canonical_auth_user"
+      })
+
+    workspace =
+      create_user_workspace(context.current_user, %{
+        name: "Canonical Auth Workspace"
+      })
+
+    dashboard_path = dashboard_path(:user, context.current_user.username, workspace.slug)
+
+    assert {:error, {:redirect, %{to: ^dashboard_path}}} = live(context.conn, ~p"/")
+    assert {:error, {:redirect, %{to: ^dashboard_path}}} = live(context.conn, ~p"/sign-in")
+    assert {:error, {:redirect, %{to: ^dashboard_path}}} = live(context.conn, ~p"/register")
+
+    assert {:error, {:redirect, %{to: ^dashboard_path}}} =
+             live(context.conn, ~p"/forgot-password")
+  end
+
   test "anonymous visitors are redirected to sign-in for the dashboard", %{conn: conn} do
     assert {:error, {:redirect, %{to: "/sign-in"}}} = live(conn, ~p"/dashboard")
   end
@@ -145,8 +168,20 @@ defmodule EBossWeb.AuthLiveTest do
     assert sign_in_shell.component == "AuthScene"
     assert sign_in_shell.props["title"] == "Sign in without leaving the product"
 
-    context = register_and_log_in_user(%{conn: conn})
-    {:ok, dashboard, _html} = live(context.conn, ~p"/dashboard")
+    context =
+      register_and_log_in_user(%{conn: conn}, %{
+        email: "dashboard-vue@example.com",
+        username: "dashboard_vue_user"
+      })
+
+    workspace =
+      create_user_workspace(context.current_user, %{
+        name: "Dashboard Vue Workspace"
+      })
+
+    {:ok, dashboard, _html} =
+      live(context.conn, dashboard_path(:user, context.current_user.username, workspace.slug))
+
     dashboard_shell = get_vue(dashboard, name: "DashboardLaunchpad")
 
     assert dashboard_shell.component == "DashboardLaunchpad"

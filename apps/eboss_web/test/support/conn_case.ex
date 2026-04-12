@@ -17,6 +17,11 @@ defmodule EBossWeb.ConnCase do
 
   use ExUnit.CaseTemplate
   @endpoint EBossWeb.Endpoint
+
+  alias EBoss.Organizations
+  alias EBoss.Workspaces
+  alias EBossWeb.AppScope
+
   using do
     quote do
       # The default endpoint for testing
@@ -87,5 +92,57 @@ defmodule EBossWeb.ConnCase do
       )
 
     Map.put(log_in_user(context, user), :current_user, user)
+  end
+
+  def create_user_workspace(owner, attrs \\ %{}) do
+    workspace_attrs =
+      Map.merge(
+        %{
+          name: "Workspace #{System.unique_integer([:positive])}",
+          owner_type: :user,
+          owner_id: owner.id
+        },
+        attrs
+      )
+
+    Workspaces.create_workspace!(workspace_attrs, actor: owner)
+  end
+
+  def create_organization(owner, attrs \\ %{}) do
+    organization_attrs =
+      Map.merge(
+        %{name: "Organization #{System.unique_integer([:positive])}"},
+        attrs
+      )
+
+    Organizations.create_organization!(organization_attrs, actor: owner)
+  end
+
+  def create_org_workspace(owner, attrs \\ %{}) do
+    organization = create_organization(owner, Map.take(attrs, [:name]))
+
+    workspace =
+      create_user_workspace(owner, %{
+        name:
+          Map.get(attrs, :workspace_name, "Org Workspace #{System.unique_integer([:positive])}"),
+        owner_type: :organization,
+        owner_id: organization.id
+      })
+
+    {organization, workspace}
+  end
+
+  def create_org_membership(owner, organization, user, role \\ :member) do
+    EBoss.Organizations.Membership
+    |> Ash.Changeset.for_create(:create, %{
+      organization_id: organization.id,
+      user_id: user.id,
+      role: role
+    })
+    |> Ash.create!(actor: owner)
+  end
+
+  def dashboard_path(owner_type, owner_handle, workspace_slug) do
+    AppScope.dashboard_path(owner_type, owner_handle, workspace_slug)
   end
 end

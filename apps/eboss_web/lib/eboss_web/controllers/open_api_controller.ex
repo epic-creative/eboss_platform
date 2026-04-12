@@ -2,6 +2,6 @@ defmodule EBossWeb.OpenApiController do
   use EBossWeb, :controller
 
   def show(conn, _params) do
-    json(conn, EBossWeb.JsonApiRouter.spec())
+    json(conn, EBossWeb.ApiSpec.spec())
   end
 end

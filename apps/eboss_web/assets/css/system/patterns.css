@@ -482,6 +482,41 @@
   list-style: none;
 }
 
+.ui-dashboard-shell__workspace-link {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: var(--space-cluster);
+  min-width: 0;
+  padding: calc(var(--space-panel-sm) * 0.78);
+  border: 1px solid color-mix(in srgb, var(--color-border-subtle) 92%, transparent);
+  border-radius: calc(var(--radius-card) - 6px);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, white 3%, transparent), transparent 24%),
+    color-mix(in srgb, var(--color-ui-surface-solid) 92%, transparent);
+  text-decoration: none;
+  transition:
+    transform var(--motion-fast) var(--ease-standard),
+    border-color var(--motion-fast) var(--ease-standard),
+    background-color var(--motion-fast) var(--ease-standard);
+}
+
+.ui-dashboard-shell__workspace-link:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--color-accent) 20%, var(--color-border-strong));
+}
+
+.ui-dashboard-shell__workspace-link[data-current="true"] {
+  border-color: color-mix(in srgb, var(--color-accent) 28%, var(--color-border-strong));
+  background:
+    radial-gradient(circle at top left, color-mix(in srgb, var(--color-accent) 10%, transparent), transparent 48%),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--color-ui-surface-floating) 90%, transparent),
+      color-mix(in srgb, var(--color-ui-surface-solid) 96%, transparent)
+    );
+}
+
 .ui-dashboard-nav__item {
   position: relative;
   display: grid;

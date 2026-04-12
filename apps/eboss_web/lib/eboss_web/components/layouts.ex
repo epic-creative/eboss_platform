@@ -119,7 +119,12 @@ defmodule EBossWeb.Layouts do
                 <.theme_toggle />
 
                 <%= if @current_user do %>
-                  <.button navigate={~p"/dashboard"} variant="outline" tone="neutral" size="sm">
+                  <.button
+                    navigate={current_dashboard_path(@current_scope)}
+                    variant="outline"
+                    tone="neutral"
+                    size="sm"
+                  >
                     Dashboard
                   </.button>
                   <.badge tone="neutral" class="hidden sm:inline-flex">
@@ -258,6 +263,12 @@ defmodule EBossWeb.Layouts do
       </button>
     </div>
     """
+  end
+
+  defp current_dashboard_path(nil), do: ~p"/dashboard"
+
+  defp current_dashboard_path(current_scope) do
+    Map.get(current_scope, :dashboard_path, ~p"/dashboard")
   end
 
   attr(:current_path, :string, default: nil)

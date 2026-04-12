@@ -32,6 +32,30 @@ defmodule EBoss.Workspaces.Workspace do
     base_filter?(true)
   end
 
+  code_interface do
+    define(:list_workspaces, action: :read)
+    define(:create_workspace, action: :create)
+    define(:update_workspace, action: :update)
+    define(:destroy_workspace, action: :destroy)
+    define(:get_workspace, action: :read, get_by: [:id])
+
+    define(:get_workspace_by_owner_and_slug,
+      action: :by_slug,
+      args: [:owner_type, :owner_id, :slug],
+      get?: true,
+      not_found_error?: false
+    )
+
+    define(:get_workspace_by_owner_handle_and_slug,
+      action: :by_owner_handle_and_slug,
+      args: [:owner_type, :owner_handle, :slug],
+      get?: true,
+      not_found_error?: false
+    )
+
+    define(:list_workspaces_for_owner, action: :for_owner, args: [:owner_type, :owner_id])
+  end
+
   json_api do
     type("workspace")
   end

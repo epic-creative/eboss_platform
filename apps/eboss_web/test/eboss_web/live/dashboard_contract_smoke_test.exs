@@ -4,6 +4,7 @@ defmodule EBossWeb.DashboardContractSmokeTest do
   import Phoenix.LiveViewTest
 
   alias EBossWeb.BrowserTestContracts
+  alias EBossWeb.DashboardScope
 
   @endpoint EBossWeb.Endpoint
 
@@ -20,11 +21,14 @@ defmodule EBossWeb.DashboardContractSmokeTest do
   end
 
   test "dashboard live render exposes stable shell and state contracts" do
+    current_user = %{username: "contract_user", email: "contract@example.com"}
+    current_scope = DashboardScope.for_user(current_user, %{workspace_slug: "contract-workspace"})
+
     html =
       render_component(&EBossWeb.DashboardLive.render/1, %{
         flash: %{},
-        current_scope: nil,
-        current_user: %{username: "contract_user", email: "contract@example.com"}
+        current_scope: current_scope,
+        current_user: current_user
       })
 
     assert html =~ ~s(data-testid="#{BrowserTestContracts.dashboard_shell()}")
@@ -43,7 +47,7 @@ defmodule EBossWeb.DashboardContractSmokeTest do
       assert html =~ ~s(aria-label="#{BrowserTestContracts.dashboard_state_label(variant)}")
     end
 
-    assert html =~ ~s(href="/dashboard")
+    assert html =~ ~s(href="#{current_scope.dashboard_path}")
     assert html =~ ~s(href="#dashboard-launchpad")
     assert html =~ "Dashboard"
     assert html =~ "Open launch surface"

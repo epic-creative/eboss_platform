@@ -6,6 +6,7 @@ defmodule EBossWeb.DashboardLiveTest do
   import Phoenix.LiveViewTest
 
   alias EBossWeb.BrowserTestContracts
+  alias EBossWeb.DashboardScope
 
   @endpoint EBossWeb.Endpoint
 
@@ -23,11 +24,12 @@ defmodule EBossWeb.DashboardLiveTest do
 
   test "dashboard live render keeps the authenticated shell contract on the main surface" do
     current_user = %{username: "shell_user", email: "shell@example.com"}
+    current_scope = DashboardScope.for_user(current_user, %{workspace_slug: "shell-workspace"})
 
     html =
       render_component(&EBossWeb.DashboardLive.render/1, %{
         flash: %{},
-        current_scope: nil,
+        current_scope: current_scope,
         current_user: current_user
       })
 
@@ -55,7 +57,10 @@ defmodule EBossWeb.DashboardLiveTest do
     assert html =~ ~s(data-dashboard-state="error")
     assert html =~ "EBoss dashboard"
     assert html =~ "Operator workspace"
-    assert html =~ "The main dashboard now lives inside the shared operator shell"
+
+    assert html =~
+             "Keep the authenticated product frame stable while workspaces, folio, and future signed-in routes deepen inside it."
+
     assert html =~ "Primary routes"
     assert html =~ "Upcoming surfaces"
     assert html =~ "Secondary cues"

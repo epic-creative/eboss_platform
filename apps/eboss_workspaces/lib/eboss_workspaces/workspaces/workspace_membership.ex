@@ -24,6 +24,12 @@ defmodule EBoss.Workspaces.WorkspaceMembership do
     base_filter?(true)
   end
 
+  code_interface do
+    define(:create_workspace_membership, action: :create)
+    define(:update_workspace_membership, action: :update)
+    define(:destroy_workspace_membership, action: :destroy)
+  end
+
   actions do
     defaults([:read])
 

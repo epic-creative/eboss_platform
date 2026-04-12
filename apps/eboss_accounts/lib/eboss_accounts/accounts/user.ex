@@ -67,6 +67,9 @@ defmodule EBoss.Accounts.User do
   end
 
   code_interface do
+    define(:get_user, action: :read, get_by: [:id])
+    define(:get_user_by_email, action: :get_by_email, args: [:email])
+    define(:get_user_by_username, action: :get_by_username, args: [:username])
     define(:change_password, action: :change_password)
     define(:list_users, action: :admin_index)
     define(:suspend_user, action: :suspend)

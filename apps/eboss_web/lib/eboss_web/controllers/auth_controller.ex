@@ -3,9 +3,10 @@ defmodule EBossWeb.AuthController do
   use AshAuthentication.Phoenix.Controller
 
   alias AshAuthentication.Info
+  alias EBossWeb.AppScope
 
   def success(conn, activity, user, token) do
-    return_to = get_session(conn, :return_to) || ~p"/dashboard"
+    return_to = get_session(conn, :return_to) || AppScope.default_dashboard_path(user)
 
     message =
       case activity do

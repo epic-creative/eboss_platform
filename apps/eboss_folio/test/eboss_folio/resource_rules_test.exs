@@ -105,14 +105,19 @@ defmodule EBossFolio.ResourceRulesTest do
     assert Exception.message(delegation_error) =~ "same workspace"
   end
 
-  test "only workspace owners can read and write Folio resources" do
+  test "org admins can access org-owned Folio while members and non-owners cannot" do
     owner = TestSupport.register_user()
+    admin = TestSupport.register_user()
     member = TestSupport.register_user()
     {organization, workspace} = TestSupport.create_org_workspace(owner)
-    _membership = TestSupport.add_org_member(owner, organization, member)
+    _admin_membership = TestSupport.add_org_member(owner, organization, admin, :admin)
+    _member_membership = TestSupport.add_org_member(owner, organization, member)
 
     area =
       EBossFolio.create_area!(%{workspace_id: workspace.id, name: "Owner Area"}, actor: owner)
+
+    admin_area =
+      EBossFolio.create_area!(%{workspace_id: workspace.id, name: "Admin Area"}, actor: admin)
 
     assert {:error, create_error} =
              EBossFolio.create_area(%{workspace_id: workspace.id, name: "Member Area"},
@@ -123,8 +128,29 @@ defmodule EBossFolio.ResourceRulesTest do
              Ash.get(EBossFolio.Area, area.id, domain: EBossFolio, actor: member)
 
     assert Ash.get!(EBossFolio.Area, area.id, domain: EBossFolio, actor: owner).id == area.id
+    assert Ash.get!(EBossFolio.Area, area.id, domain: EBossFolio, actor: admin).id == area.id
+    assert admin_area.workspace_id == workspace.id
 
     assert Exception.message(create_error) =~ "forbidden"
     assert Exception.message(read_error) =~ "not found"
+
+    user_owned_workspace = TestSupport.create_user_workspace(owner)
+
+    user_area =
+      EBossFolio.create_area!(%{workspace_id: user_owned_workspace.id, name: "Private Area"},
+        actor: owner
+      )
+
+    assert {:error, user_workspace_create_error} =
+             EBossFolio.create_area(
+               %{workspace_id: user_owned_workspace.id, name: "Admin Cannot Create"},
+               actor: admin
+             )
+
+    assert {:error, user_workspace_read_error} =
+             Ash.get(EBossFolio.Area, user_area.id, domain: EBossFolio, actor: admin)
+
+    assert Exception.message(user_workspace_create_error) =~ "forbidden"
+    assert Exception.message(user_workspace_read_error) =~ "not found"
   end
 end
