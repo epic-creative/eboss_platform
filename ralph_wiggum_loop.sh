@@ -19,6 +19,8 @@ Options:
   --primary-effort LEVEL  Reasoning effort for primary model (default: xhigh)
   --fallback-model MODEL  Fallback model when primary runs get stuck (default: gpt-5.3-codex)
   --fallback-effort LEVEL Reasoning effort for fallback model (default: xhigh)
+  --codex-timeout-seconds N Wall-clock timeout for each codex exec (default: 2700, 0 disables)
+  --precommit-timeout-seconds N Wall-clock timeout for each mix precommit attempt (default: 1800, 0 disables)
   --profile PROFILE       Pass profile to codex exec
   --codex-arg ARG         Extra codex exec argument (repeatable)
   --stories-dir DIR       Directory containing story markdown files (default: specs/stories)
@@ -39,6 +41,8 @@ Environment variables:
   PRIMARY_REASONING_EFFORT Override primary effort (default: xhigh)
   FALLBACK_CODEX_MODEL    Override fallback model (default: gpt-5.3-codex)
   FALLBACK_REASONING_EFFORT Override fallback effort (default: xhigh)
+  CODEX_TIMEOUT_SECONDS   Override codex exec timeout in seconds (default: 2700)
+  PRECOMMIT_TIMEOUT_SECONDS Override mix precommit timeout in seconds (default: 1800)
 
 Examples:
   ./ralph_wiggum_loop.sh --dry-run
@@ -199,6 +203,7 @@ run_codex_prompt() {
   local prompt_file="$1"
   local mode="${2:-primary}"
   local -a cmd
+  local timeout_seconds="$CODEX_TIMEOUT_SECONDS"
 
   if [ "$mode" = "fallback" ]; then
     cmd=("${CODEX_FALLBACK_CMD[@]}")
@@ -206,21 +211,27 @@ run_codex_prompt() {
     cmd=("${CODEX_PRIMARY_CMD[@]}")
   fi
 
-  log "Running (${mode}): ${cmd[*]}"
-  "${cmd[@]}" < "$prompt_file" | tee -a "$LOG_FILE"
+  log "Running (${mode}, timeout=${timeout_seconds}s): ${cmd[*]}"
+  run_command_with_timeout "$timeout_seconds" "$prompt_file" "${cmd[@]}" 2>&1 | tee -a "$LOG_FILE"
 }
 
 run_codex_prompt_with_fallback() {
   local prompt_file="$1"
   local context="$2"
+  local primary_exit=0
 
   LAST_CODEX_RUN_MODE="primary"
   if run_codex_prompt "$prompt_file" "primary"; then
     return 0
   fi
+  primary_exit=$?
 
   LAST_CODEX_RUN_MODE="fallback"
-  log "Primary codex run failed for ${context}; retrying with fallback model ${FALLBACK_CODEX_MODEL} (reasoning effort ${FALLBACK_REASONING_EFFORT})"
+  if [ "$primary_exit" -eq 124 ]; then
+    log "Primary codex run timed out for ${context}; retrying with fallback model ${FALLBACK_CODEX_MODEL} (reasoning effort ${FALLBACK_REASONING_EFFORT})"
+  else
+    log "Primary codex run failed for ${context}; retrying with fallback model ${FALLBACK_CODEX_MODEL} (reasoning effort ${FALLBACK_REASONING_EFFORT})"
+  fi
   run_codex_prompt "$prompt_file" "fallback"
 }
 
@@ -235,9 +246,9 @@ run_precommit_with_fix_loops() {
   precommit_log="$(mktemp "${TMPDIR:-/tmp}/ralph-precommit.XXXXXX")"
 
   while true; do
-    log "Running mix precommit for ${story_id}"
+    log "Running mix precommit for ${story_id} (timeout=${PRECOMMIT_TIMEOUT_SECONDS}s)"
 
-    if mix precommit >"$precommit_log" 2>&1; then
+    if run_command_with_timeout "$PRECOMMIT_TIMEOUT_SECONDS" "" mix precommit >"$precommit_log" 2>&1; then
       cat "$precommit_log" >> "$LOG_FILE"
       rm -f "$precommit_log"
       return 0
@@ -296,6 +307,63 @@ run_precommit_with_fix_loops() {
   done
 }
 
+run_command_with_timeout() {
+  local timeout_seconds="$1"
+  local stdin_file="$2"
+  shift 2
+  local -a cmd=("$@")
+
+  if [ "$timeout_seconds" -le 0 ]; then
+    if [ -n "$stdin_file" ]; then
+      "${cmd[@]}" < "$stdin_file"
+    else
+      "${cmd[@]}"
+    fi
+
+    return
+  fi
+
+  python3 - "$timeout_seconds" "$stdin_file" "${cmd[@]}" <<'PY'
+import os
+import signal
+import subprocess
+import sys
+
+timeout_seconds = int(sys.argv[1])
+stdin_path = sys.argv[2]
+cmd = sys.argv[3:]
+
+stdin_handle = open(stdin_path, "rb") if stdin_path else None
+proc = subprocess.Popen(cmd, stdin=stdin_handle, start_new_session=True)
+
+try:
+    raise SystemExit(proc.wait(timeout=timeout_seconds))
+except subprocess.TimeoutExpired:
+    sys.stderr.write(
+        f"[ralph_wiggum_loop] timeout after {timeout_seconds}s: {' '.join(cmd)}\n"
+    )
+
+    try:
+        os.killpg(proc.pid, signal.SIGTERM)
+    except ProcessLookupError:
+        pass
+
+    try:
+        proc.wait(timeout=10)
+    except subprocess.TimeoutExpired:
+        try:
+            os.killpg(proc.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+        proc.wait()
+
+    raise SystemExit(124)
+finally:
+    if stdin_handle is not None:
+        stdin_handle.close()
+PY
+}
+
 START_AT=""
 END_AT=""
 ONLY_STORY=""
@@ -304,6 +372,8 @@ CODEX_MODEL="gpt-5.3-codex-spark"
 PRIMARY_REASONING_EFFORT="${PRIMARY_REASONING_EFFORT:-xhigh}"
 FALLBACK_CODEX_MODEL="${FALLBACK_CODEX_MODEL:-gpt-5.3-codex}"
 FALLBACK_REASONING_EFFORT="${FALLBACK_REASONING_EFFORT:-xhigh}"
+CODEX_TIMEOUT_SECONDS="${CODEX_TIMEOUT_SECONDS:-2700}"
+PRECOMMIT_TIMEOUT_SECONDS="${PRECOMMIT_TIMEOUT_SECONDS:-1800}"
 CODEX_PROFILE=""
 CODEX_EXTRA_ARGS=()
 STORIES_DIR="specs/stories"
@@ -368,6 +438,18 @@ while [ "$#" -gt 0 ]; do
       require_next_arg "$1" "$#"
       require_non_flag_value "$1" "$2"
       FALLBACK_REASONING_EFFORT="$2"
+      shift 2
+      ;;
+    --codex-timeout-seconds)
+      require_next_arg "$1" "$#"
+      require_non_flag_value "$1" "$2"
+      CODEX_TIMEOUT_SECONDS="$2"
+      shift 2
+      ;;
+    --precommit-timeout-seconds)
+      require_next_arg "$1" "$#"
+      require_non_flag_value "$1" "$2"
+      PRECOMMIT_TIMEOUT_SECONDS="$2"
       shift 2
       ;;
     --profile)
@@ -443,12 +525,15 @@ done
 
 is_non_negative_integer "$MAX_STORIES" || fail "--max must be a non-negative integer"
 is_non_negative_integer "$MAX_FIX_ATTEMPTS" || fail "--max-fix-attempts must be a non-negative integer"
+is_non_negative_integer "$CODEX_TIMEOUT_SECONDS" || fail "--codex-timeout-seconds must be a non-negative integer"
+is_non_negative_integer "$PRECOMMIT_TIMEOUT_SECONDS" || fail "--precommit-timeout-seconds must be a non-negative integer"
 if [ -n "$EXPECTED_STORY_COUNT" ]; then
   is_non_negative_integer "$EXPECTED_STORY_COUNT" || fail "EXPECTED_STORY_COUNT must be a non-negative integer"
 fi
 
 command -v rg >/dev/null 2>&1 || fail "ripgrep (rg) is required"
 command -v git >/dev/null 2>&1 || fail "git is required"
+command -v python3 >/dev/null 2>&1 || fail "python3 is required for timeout enforcement"
 if [ "$DRY_RUN" -eq 0 ]; then
   command -v codex >/dev/null 2>&1 || fail "codex CLI is required"
 fi
@@ -592,6 +677,8 @@ log "Selected stories: ${#selected_stories[@]}"
 log "Log file: $LOG_FILE"
 log "Primary model: ${CODEX_MODEL} (model_reasoning_effort=${PRIMARY_REASONING_EFFORT})"
 log "Fallback model: ${FALLBACK_CODEX_MODEL} (model_reasoning_effort=${FALLBACK_REASONING_EFFORT})"
+log "Codex timeout: ${CODEX_TIMEOUT_SECONDS}s"
+log "Precommit timeout: ${PRECOMMIT_TIMEOUT_SECONDS}s"
 
 if [ "$DRY_RUN" -eq 1 ]; then
   idx=0

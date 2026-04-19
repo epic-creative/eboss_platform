@@ -4,6 +4,11 @@ defmodule EBossFolio do
   """
 
   use Ash.Domain, otp_app: :eboss_folio
+  import Ash.Expr
+  require Ash.Query
+
+  alias EBossFolio.Project
+  alias EBossFolio.Task
 
   resources do
     resource EBossFolio.Area do
@@ -63,6 +68,24 @@ defmodule EBossFolio do
 
     resource EBossFolio.RevisionEvent do
       define(:list_revision_events, action: :list)
+    end
+  end
+
+  def bootstrap_summary_counts(workspace_id, opts \\ []) when is_binary(workspace_id) do
+    with {:ok, project_count} <- count_records(Project, workspace_id, opts),
+         {:ok, task_count} <- count_records(Task, workspace_id, opts) do
+      {:ok, %{projects: project_count, tasks: task_count}}
+    end
+  end
+
+  defp count_records(resource, workspace_id_value, opts) do
+    query =
+      resource
+      |> Ash.Query.for_read(:read)
+      |> Ash.Query.filter(expr(workspace_id == ^workspace_id_value))
+
+    with {:ok, records} <- Ash.read(query, opts) do
+      {:ok, length(records)}
     end
   end
 end

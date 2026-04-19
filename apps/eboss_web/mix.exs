@@ -64,6 +64,7 @@ defmodule EBossWeb.MixProject do
       {:ash_json_api, "~> 1.6"},
       {:ash_phoenix, "~> 2.3"},
       {:eboss_accounts, in_umbrella: true},
+      {:eboss_folio, in_umbrella: true},
       {:eboss_data, in_umbrella: true},
       {:eboss_workspaces, in_umbrella: true},
       {:jason, "~> 1.2"},

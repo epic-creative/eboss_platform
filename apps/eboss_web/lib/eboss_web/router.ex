@@ -71,6 +71,7 @@ defmodule EBossWeb.Router do
     get "/open_api", OpenApiController, :show
 
     get "/:owner_slug/workspaces/:slug/bootstrap", WorkspaceBootstrapController, :show
+    get "/:owner_slug/workspaces/:slug/apps/folio/bootstrap", FolioBootstrapController, :show
     forward "/", JsonApiRouter
   end
 

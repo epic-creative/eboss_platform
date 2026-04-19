@@ -3,6 +3,8 @@ defmodule EBossWeb.JsonApiHttpTest do
 
   @moduletag :integration
 
+  alias EBossFolio
+
   test "open api is reachable over the external http surface", %{req: req} do
     response = Req.get!(json_req(req), url: "/api/v1/open_api")
 
@@ -202,6 +204,105 @@ defmodule EBossWeb.JsonApiHttpTest do
         headers: [{"authorization", "Bearer #{owner_api_key}"}, {"accept", "application/json"}]
       )
       |> Req.get!(url: "/api/v1/#{owner.owner_slug}/workspaces/missing-workspace/bootstrap")
+
+    assert missing_response.status == 404
+    assert missing_response.body["error"]["code"] == "workspace_not_found"
+  end
+
+  test "folio bootstrap endpoint is reachable over http and returns summary counts", %{req: req} do
+    owner = register_user()
+    api_key = create_api_key(owner)
+
+    workspace =
+      Workspaces.create_workspace!(
+        %{
+          name: "HTTP Folio Bootstrap Workspace",
+          owner_type: :user,
+          owner_id: owner.id
+        },
+        actor: owner
+      )
+
+    EBossFolio.create_project!(%{workspace_id: workspace.id, title: "HTTP Project"}, actor: owner)
+
+    EBossFolio.create_task!(%{workspace_id: workspace.id, title: "HTTP Task"}, actor: owner)
+
+    response =
+      req
+      |> Req.merge(
+        headers: [{"authorization", "Bearer #{api_key}"}, {"accept", "application/json"}]
+      )
+      |> Req.get!(
+        url: "/api/v1/#{owner.owner_slug}/workspaces/#{workspace.slug}/apps/folio/bootstrap"
+      )
+
+    assert response.status == 200
+    assert response.body["scope"]["app_key"] == "folio"
+    assert response.body["scope"]["capabilities"] == %{"manage" => true, "read" => true}
+    assert response.body["summary_counts"] == %{"projects" => 1, "tasks" => 1}
+  end
+
+  test "folio bootstrap endpoints return 401, 403, and 404 with distinct semantics", %{req: req} do
+    owner = register_user()
+    member = register_user()
+    organization = Organizations.create_organization!(%{name: "HTTP Folio Org"}, actor: owner)
+
+    create_org_membership(owner, organization, member, :member)
+
+    owner_api_key = create_api_key(owner)
+    member_api_key = create_api_key(member)
+
+    workspace =
+      Workspaces.create_workspace!(
+        %{
+          name: "HTTP Folio Status Workspace",
+          owner_type: :user,
+          owner_id: owner.id
+        },
+        actor: owner
+      )
+
+    org_workspace =
+      Workspaces.create_workspace!(
+        %{
+          name: "HTTP Folio Locked Org Workspace",
+          owner_type: :organization,
+          owner_id: organization.id
+        },
+        actor: owner
+      )
+
+    unauthenticated_response =
+      req
+      |> json_req()
+      |> Req.get!(
+        url: "/api/v1/#{owner.owner_slug}/workspaces/#{workspace.slug}/apps/folio/bootstrap"
+      )
+
+    assert unauthenticated_response.status == 401
+    assert unauthenticated_response.body["error"]["code"] == "authentication_required"
+
+    forbidden_response =
+      req
+      |> Req.merge(
+        headers: [{"authorization", "Bearer #{member_api_key}"}, {"accept", "application/json"}]
+      )
+      |> Req.get!(
+        url:
+          "/api/v1/#{organization.owner_slug}/workspaces/#{org_workspace.slug}/apps/folio/bootstrap"
+      )
+
+    assert forbidden_response.status == 403
+    assert forbidden_response.body["error"]["code"] == "workspace_forbidden"
+
+    missing_response =
+      req
+      |> Req.merge(
+        headers: [{"authorization", "Bearer #{owner_api_key}"}, {"accept", "application/json"}]
+      )
+      |> Req.get!(
+        url: "/api/v1/#{owner.owner_slug}/workspaces/missing-workspace/apps/folio/bootstrap"
+      )
 
     assert missing_response.status == 404
     assert missing_response.body["error"]["code"] == "workspace_not_found"

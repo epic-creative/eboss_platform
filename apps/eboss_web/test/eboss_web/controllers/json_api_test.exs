@@ -1,6 +1,7 @@
 defmodule EBossWeb.JsonApiTest do
   use EBossWeb.ConnCase, async: false
 
+  alias EBossFolio
   alias EBoss.Workspaces
   alias EBoss.Organizations
 
@@ -272,6 +273,85 @@ defmodule EBossWeb.JsonApiTest do
     assert Enum.any?(payload["accessible_workspaces"], fn workspace ->
              workspace["slug"] == secondary_workspace.slug and workspace["current?"] == false
            end)
+  end
+
+  test "authenticated clients can fetch a folio bootstrap payload", %{conn: conn} do
+    owner = register_user()
+    api_key = create_api_key(owner)
+
+    current_workspace =
+      Workspaces.create_workspace!(
+        %{
+          name: "Folio Bootstrap Workspace",
+          owner_type: :user,
+          owner_id: owner.id
+        },
+        actor: owner
+      )
+
+    EBossFolio.create_project!(%{workspace_id: current_workspace.id, title: "Mount Project"},
+      actor: owner
+    )
+
+    EBossFolio.create_task!(%{workspace_id: current_workspace.id, title: "Mount Task"},
+      actor: owner
+    )
+
+    conn =
+      conn
+      |> put_req_header("authorization", "Bearer #{api_key}")
+      |> put_req_header("accept", "application/json")
+      |> get(
+        "/api/v1/#{owner.owner_slug}/workspaces/#{current_workspace.slug}/apps/folio/bootstrap"
+      )
+
+    payload = json_response(conn, 200)
+
+    assert payload["scope"]["app_key"] == "folio"
+    assert payload["scope"]["workspace"]["id"] == current_workspace.id
+    assert payload["scope"]["owner"]["slug"] == owner.owner_slug
+    assert payload["scope"]["app"]["key"] == "folio"
+    assert payload["scope"]["capabilities"] == %{"read" => true, "manage" => true}
+
+    assert payload["scope"]["app_path"] ==
+             "/#{owner.owner_slug}/#{current_workspace.slug}/apps/folio"
+
+    assert payload["summary_counts"] == %{"projects" => 1, "tasks" => 1}
+  end
+
+  test "folio bootstrap endpoints forbid users without folio read access", %{conn: conn} do
+    owner = register_user()
+    member = register_user()
+    organization = Organizations.create_organization!(%{name: "Folio Org"}, actor: owner)
+
+    create_org_membership(owner, organization, member, :member)
+
+    api_key = create_api_key(member)
+
+    workspace =
+      Workspaces.create_workspace!(
+        %{
+          name: "Folio Read-Locked Org Workspace",
+          owner_type: :organization,
+          owner_id: organization.id
+        },
+        actor: owner
+      )
+
+    conn =
+      conn
+      |> put_req_header("authorization", "Bearer #{api_key}")
+      |> put_req_header("accept", "application/json")
+      |> get(
+        "/api/v1/#{organization.owner_slug}/workspaces/#{workspace.slug}/apps/folio/bootstrap"
+      )
+
+    assert %{
+             "error" => %{
+               "code" => "workspace_forbidden",
+               "message" => "Workspace access is forbidden"
+             }
+           } = json_response(conn, 403)
   end
 
   test "organization members receive read-only org bootstrap capabilities", %{conn: conn} do
