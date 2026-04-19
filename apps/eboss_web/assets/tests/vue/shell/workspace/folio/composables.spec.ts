@@ -3,7 +3,9 @@ import { nextTick } from "vue"
 
 import {
   folioProjectsPath,
+  folioActivityPath,
   useFolioProjects,
+  useFolioActivity,
   useFolioWorkspaceScope,
 } from "@/vue/shell/workspace/folio"
 import type { WorkspaceScope } from "@/vue/shell/workspace/types"
@@ -96,6 +98,7 @@ describe("folio composables", () => {
     const projectsQuery = useFolioProjects(scopeRef, { autoFetch: true })
 
     await nextTick()
+    await projectsQuery.refresh()
 
     expect(global.fetch).toHaveBeenCalledWith(
       folioProjectsPath({ ownerSlug: "alpha-team", workspaceSlug: "main-workspace" }),
@@ -103,6 +106,90 @@ describe("folio composables", () => {
     )
     expect(projectsQuery.projects.value).toHaveLength(1)
     expect(projectsQuery.projects.value[0].title).toBe("New project")
+  })
+
+  it("loads an activity response and exposes events", async () => {
+    vi.spyOn(global, "fetch").mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        scope: {
+          app_key: "folio",
+          workspace: {
+            id: "workspace-id",
+            name: "Main Workspace",
+            slug: "main-workspace",
+            full_path: "/alpha-team/main-workspace",
+            visibility: "private",
+            owner_type: "user",
+            owner_id: "owner-id",
+            owner_slug: "alpha-team",
+            owner_display_name: "Alpha Team",
+            dashboard_path: "/alpha-team/main-workspace",
+            "current?": true,
+          },
+          owner: {
+            type: "user",
+            id: "owner-id",
+            slug: "alpha-team",
+            display_name: "Alpha Team",
+          },
+          app: {
+            key: "folio",
+            label: "Folio",
+            default_path: "/alpha-team/main-workspace/apps/folio",
+            enabled: true,
+            capabilities: { read: true, manage: true },
+          },
+          capabilities: { read: true, manage: true },
+          workspace_path: "/alpha-team/main-workspace",
+          app_path: "/alpha-team/main-workspace/apps/folio",
+        },
+        events: [
+          {
+            id: "event-001",
+            app_key: "folio",
+            provider_key: "activity",
+            provider_event_id: "evt-20260419",
+            occurred_at: "2026-04-19T12:00:00Z",
+            actor: {
+              type: "system",
+              id: "system-operator",
+              label: "Builder",
+            },
+            action: "created",
+            summary: "Project Atlas was created",
+            subject: {
+              type: "project",
+              id: "project-1",
+              label: "Atlas Service",
+            },
+            details: "A new project has been provisioned.",
+            status: "success",
+            changes: {
+              status: { before: "pending", after: "active" },
+            },
+            metadata: {
+              source: "bootstrap",
+            },
+            resource_path: "/alpha-team/main-workspace/projects/project-1",
+          },
+        ],
+      }),
+    } as Response)
+
+    const scopeRef = useFolioWorkspaceScope(scope())
+    const activityQuery = useFolioActivity(scopeRef, { autoFetch: true })
+
+    await nextTick()
+    await activityQuery.refresh()
+
+    expect(global.fetch).toHaveBeenCalledWith(
+      folioActivityPath({ ownerSlug: "alpha-team", workspaceSlug: "main-workspace" }),
+      expect.any(Object),
+    )
+    expect(activityQuery.events.value).toHaveLength(1)
+    expect(activityQuery.events.value[0].id).toBe("event-001")
   })
 
   it("suppresses auto-fetch when disabled and can be refreshed manually", async () => {

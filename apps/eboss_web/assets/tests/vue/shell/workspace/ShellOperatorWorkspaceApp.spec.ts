@@ -46,6 +46,7 @@ const appRoute = (appKey: string, appSurface: string | null = null) => ({
   app_key: appKey,
   app_surface: appSurface,
 })
+const nextMacrotask = () => new Promise((resolve) => setTimeout(resolve, 0))
 
 describe("ShellOperatorWorkspaceApp", () => {
   afterEach(() => {
@@ -295,6 +296,7 @@ describe("ShellOperatorWorkspaceApp", () => {
     })
 
     await nextTick()
+    await nextMacrotask()
 
     expect(global.fetch).toHaveBeenCalledWith(
       "/api/v1/primary-owner/workspaces/primary-workspace/apps/folio/projects",
@@ -303,5 +305,125 @@ describe("ShellOperatorWorkspaceApp", () => {
     expect(wrapper.get('[data-testid="workspace-page-projects"]').text()).toContain("Atlas Service")
     expect(wrapper.get('[data-testid="workspace-page-projects"]').text()).toContain("Nimbus Engine")
     expect(wrapper.get('[data-testid="workspace-page-projects"]').text()).not.toContain("API Gateway")
+  })
+
+  it("renders real folio activity on folio activity surface", async () => {
+    vi.spyOn(global, "fetch").mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        scope: {
+          app_key: "folio",
+          workspace: {
+            id: "workspace-1",
+            name: "Primary Workspace",
+            slug: "primary-workspace",
+            full_path: "/primary-owner/primary-workspace",
+            visibility: "private",
+            owner_type: "user",
+            owner_id: "owner-1",
+            owner_slug: "primary-owner",
+            owner_display_name: "Primary Owner",
+            dashboard_path: "/primary-owner/primary-workspace",
+            "current?": true,
+          },
+          owner: {
+            type: "user",
+            id: "owner-1",
+            slug: "primary-owner",
+            display_name: "Primary Owner",
+          },
+          app: {
+            key: "folio",
+            label: "Folio",
+            default_path: "/primary-owner/primary-workspace/apps/folio",
+            enabled: true,
+            capabilities: { read: true, manage: true },
+          },
+          capabilities: { read: true, manage: true },
+          workspace_path: "/primary-owner/primary-workspace",
+          app_path: "/primary-owner/primary-workspace/apps/folio",
+        },
+        events: [
+          {
+            id: "event-001",
+            app_key: "folio",
+            provider_key: "activity",
+            provider_event_id: "evt-20260419",
+            occurred_at: "2026-04-19T12:00:00Z",
+            actor: {
+              type: "system",
+              id: "system-operator",
+              label: "Builder",
+            },
+            action: "created",
+            summary: "Project Atlas was created",
+            subject: {
+              type: "project",
+              id: "project-1",
+              label: "Atlas Service",
+            },
+            details: "A new project has been provisioned.",
+            status: "success",
+            changes: {
+              status: { before: "pending", after: "active" },
+            },
+            metadata: {
+              source: "bootstrap",
+            },
+            resource_path: "/primary-owner/primary-workspace/projects/project-1",
+          },
+        ],
+      }),
+    } as Response)
+
+    const wrapper = mountComponent(ShellOperatorWorkspaceApp, {
+      props: {
+        currentUser: {
+          username: "operator",
+          email: "operator@example.com",
+        },
+        currentScope: scope({
+          apps: {
+            folio: {
+              key: "folio",
+              label: "Folio",
+              defaultPath: "/primary-owner/primary-workspace/apps/folio",
+              enabled: true,
+              capabilities: {
+                read: true,
+                manage: true,
+              },
+            },
+          },
+        }),
+        currentPage: appRoute("folio", "activity"),
+        currentPath: "/primary-owner/primary-workspace/apps/folio/activity",
+        signOutPath: "/sign-out",
+        csrfToken: "csrf-token",
+      },
+      global: {
+        stubs: {
+          ThemeToggleButton: {
+            template: "<button data-testid=\"theme-toggle-stub\" />",
+          },
+        },
+      },
+    })
+
+    await nextTick()
+    await nextMacrotask()
+
+    expect(global.fetch).toHaveBeenCalledWith(
+      "/api/v1/primary-owner/workspaces/primary-workspace/apps/folio/activity",
+      expect.any(Object),
+    )
+    expect(wrapper.get('[data-testid="workspace-page-activity"]').text()).toContain("Project Atlas was created")
+
+    await wrapper.get('[data-testid="activity-row-event-001"]').trigger("click")
+    await nextTick()
+
+    expect(wrapper.get('[data-testid="workspace-page-activity"]').text()).toContain("Builder")
+    expect(wrapper.get('[data-testid="workspace-page-activity"]').text()).toContain("View resource")
   })
 })

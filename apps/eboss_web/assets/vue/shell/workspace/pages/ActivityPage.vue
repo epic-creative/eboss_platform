@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from "vue"
 import {
   AlertTriangle,
   ArrowUpRight,
@@ -9,21 +10,107 @@ import {
 
 import InspectorPane from "../InspectorPane.vue"
 import WorkspacePageHeader from "../WorkspacePageHeader.vue"
-import type { ActivityEvent } from "../types"
+import type { FolioActivityEvent } from "../folio/types"
+
+interface ActivityChangeEntry {
+  field: string
+  from: string
+  to: string
+}
 
 const props = defineProps<{
   workspaceReference: string
-  activityEvents: ActivityEvent[]
-  selectedActivity: ActivityEvent | null
+  activityEvents: FolioActivityEvent[]
+  selectedActivity: FolioActivityEvent | null
 }>()
 
 const emit = defineEmits<{
-  "update:selectedActivity": [value: ActivityEvent | null]
+  "update:selectedActivity": [value: FolioActivityEvent | null]
 }>()
 
-const toggleActivity = (event: ActivityEvent) => {
+const toggleActivity = (event: FolioActivityEvent) => {
   emit("update:selectedActivity", props.selectedActivity?.id === event.id ? null : event)
 }
+
+const actorLabel = (activity: FolioActivityEvent) =>
+  activity.actor.label ?? activity.actor.id ?? activity.actor.type ?? "system"
+
+const subjectLabel = (activity: FolioActivityEvent) =>
+  activity.subject.label ?? activity.subject.id ?? activity.subject.type
+
+const statusClass = (status: string | null | undefined) =>
+  status === "success"
+    ? "text-[hsl(var(--so-success))]"
+    : status === "warning"
+      ? "text-[hsl(var(--so-warning))]"
+      : status === "pending"
+        ? "text-[hsl(var(--so-warning))]"
+        : status === "info"
+          ? "text-[hsl(var(--so-primary))]"
+          : "text-[hsl(var(--so-muted-foreground))]"
+
+const statusIconClass = (status: string | null | undefined) =>
+  status === "success"
+    ? "text-[hsl(var(--so-success))]"
+    : status === "info" || status === "pending"
+      ? "text-[hsl(var(--so-primary))]"
+      : "text-[hsl(var(--so-warning))]"
+
+const statusIcon = (status: string | null | undefined) => {
+  if (status === "success") {
+    return CheckCircle2
+  }
+
+  if (status === "warning" || status === "error") {
+    return AlertTriangle
+  }
+
+  return Clock
+}
+
+const formatValue = (value: unknown): string => {
+  if (value === null || value === undefined) return "—"
+  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") return String(value)
+  return JSON.stringify(value)
+}
+
+const formatDateTime = (value: string): string => {
+  const parsed = new Date(value)
+  return Number.isNaN(parsed.valueOf())
+    ? value
+    : `${parsed.toLocaleDateString()} ${parsed.toLocaleTimeString()}`
+}
+
+const changesFor = (activity: FolioActivityEvent | null): ActivityChangeEntry[] => {
+  if (!activity?.changes || typeof activity.changes !== "object") return []
+
+  return Object.entries(activity.changes)
+    .filter(([, change]) => change !== null && change !== undefined)
+    .map(([field, change]) => {
+      const value = change as Record<string, unknown>
+      if (
+        value &&
+        typeof value === "object" &&
+        !Array.isArray(value) &&
+        (Object.prototype.hasOwnProperty.call(value, "before") ||
+          Object.prototype.hasOwnProperty.call(value, "after"))
+      ) {
+        return {
+          field,
+          from: formatValue(value.before),
+          to: formatValue(value.after),
+        }
+      }
+
+      return {
+        field,
+        from: "—",
+        to: formatValue(change),
+      }
+    })
+}
+
+const selectedActivityChanges = computed(() => changesFor(props.selectedActivity))
 </script>
 
 <template>
@@ -54,37 +141,31 @@ const toggleActivity = (event: ActivityEvent) => {
             type="button"
             class="flex w-full items-start gap-4 px-4 py-3 text-left transition-colors"
             :class="selectedActivity?.id === event.id ? 'so-row-selected' : 'hover:bg-[hsl(var(--so-accent))/0.3]'"
+            :data-testid="`activity-row-${event.id}`"
             @click="toggleActivity(event)"
           >
-            <span class="so-font-mono w-20 shrink-0 pt-0.5 text-[11px] text-[hsl(var(--so-primary))]">{{ event.hash }}</span>
+            <span class="so-font-mono w-20 shrink-0 pt-0.5 text-[11px] text-[hsl(var(--so-primary))]">{{ event.provider_event_id }}</span>
 
             <div class="min-w-0 flex-1">
-              <p class="text-sm">{{ event.action }}</p>
+              <p class="text-sm">{{ event.summary }}</p>
               <p class="mt-0.5 text-[11px] text-[hsl(var(--so-muted-foreground))]">
-                by <span class="so-font-mono">{{ event.user }}</span>
-                <CheckCircle2
-                  v-if="event.status === 'success'"
-                  class="ml-1.5 inline h-3 w-3 text-[hsl(var(--so-success))]"
-                />
-                <Clock
-                  v-else-if="event.status === 'pending'"
-                  class="ml-1.5 inline h-3 w-3 text-[hsl(var(--so-warning))]"
-                />
-                <AlertTriangle
-                  v-else
-                  class="ml-1.5 inline h-3 w-3 text-[hsl(var(--so-warning))]"
+                by <span class="so-font-mono">{{ actorLabel(event) }}</span>
+                <component
+                  :is="statusIcon(event.status)"
+                  class="ml-1.5 inline h-3 w-3"
+                  :class="statusIconClass(event.status)"
                 />
               </p>
             </div>
 
             <span class="hidden w-16 text-center sm:block">
               <span class="so-font-mono rounded border border-[hsl(var(--so-border))] px-1.5 py-0.5 text-[10px] text-[hsl(var(--so-muted-foreground))]">
-                {{ event.type }}
+                {{ event.subject.type }}
               </span>
             </span>
 
             <span class="so-font-mono w-24 shrink-0 text-right text-[11px] text-[hsl(var(--so-muted-foreground))]">
-              {{ event.time }}
+              {{ formatDateTime(event.occurred_at) }}
             </span>
           </button>
         </div>
@@ -92,8 +173,8 @@ const toggleActivity = (event: ActivityEvent) => {
 
       <InspectorPane
         :open="!!selectedActivity"
-        :title="selectedActivity?.action || ''"
-        :subtitle="selectedActivity?.hash"
+        :title="selectedActivity?.summary || ''"
+        :subtitle="selectedActivity?.provider_event_id"
         @close="emit('update:selectedActivity', null)"
       >
         <template #actions>
@@ -106,25 +187,22 @@ const toggleActivity = (event: ActivityEvent) => {
           <div class="space-y-2.5 border-t border-[hsl(var(--so-border))] pt-3 first:border-t-0 first:pt-0">
             <div class="flex items-center justify-between">
               <span class="so-font-mono text-[11px] text-[hsl(var(--so-muted-foreground))]">Actor</span>
-              <span class="text-xs text-[hsl(var(--so-primary))]">{{ selectedActivity.user }}</span>
+              <span class="text-xs text-[hsl(var(--so-primary))]">{{ actorLabel(selectedActivity) }}</span>
             </div>
 
             <div class="flex items-center justify-between">
               <span class="so-font-mono text-[11px] text-[hsl(var(--so-muted-foreground))]">Resource</span>
-              <span class="text-xs">{{ selectedActivity.resource }}</span>
+              <span class="text-xs">{{ subjectLabel(selectedActivity) }}</span>
             </div>
 
             <div class="flex items-center justify-between">
               <span class="so-font-mono text-[11px] text-[hsl(var(--so-muted-foreground))]">Type</span>
-              <span class="text-xs capitalize">{{ selectedActivity.type }}</span>
+              <span class="text-xs capitalize">{{ selectedActivity.subject.type }}</span>
             </div>
 
             <div class="flex items-center justify-between">
               <span class="so-font-mono text-[11px] text-[hsl(var(--so-muted-foreground))]">Status</span>
-              <span
-                class="flex items-center gap-1.5 capitalize"
-                :class="selectedActivity.status === 'success' ? 'text-[hsl(var(--so-success))]' : 'text-[hsl(var(--so-warning))]'"
-              >
+              <span class="flex items-center gap-1.5 capitalize" :class="statusClass(selectedActivity.status)">
                 <span class="h-1.5 w-1.5 rounded-full bg-current" />
                 {{ selectedActivity.status }}
               </span>
@@ -132,23 +210,28 @@ const toggleActivity = (event: ActivityEvent) => {
 
             <div class="flex items-center justify-between">
               <span class="so-font-mono text-[11px] text-[hsl(var(--so-muted-foreground))]">Time</span>
-              <span class="so-font-mono text-xs">{{ selectedActivity.time }}</span>
+              <span class="so-font-mono text-xs">{{ formatDateTime(selectedActivity.occurred_at) }}</span>
             </div>
 
             <div class="flex items-center justify-between">
-              <span class="so-font-mono text-[11px] text-[hsl(var(--so-muted-foreground))]">IP</span>
-              <span class="so-font-mono text-xs">{{ selectedActivity.ip }}</span>
+              <span class="so-font-mono text-[11px] text-[hsl(var(--so-muted-foreground))]">Source</span>
+              <span class="so-font-mono text-xs">{{ selectedActivity.metadata.source || "—" }}</span>
             </div>
           </div>
 
           <div class="space-y-2.5 border-t border-[hsl(var(--so-border))] pt-3">
             <h4 class="so-font-mono mb-1 text-[11px] text-[hsl(var(--so-muted-foreground))]">Details</h4>
-            <p class="text-xs text-[hsl(var(--so-muted-foreground))]">{{ selectedActivity.details }}</p>
+            <p class="text-xs text-[hsl(var(--so-muted-foreground))]">
+              {{ selectedActivity.details || selectedActivity.summary }}
+            </p>
           </div>
 
-          <div v-if="selectedActivity.changes?.length" class="space-y-2.5 border-t border-[hsl(var(--so-border))] pt-3">
+          <div
+            v-if="selectedActivityChanges.length"
+            class="space-y-2.5 border-t border-[hsl(var(--so-border))] pt-3"
+          >
             <h4 class="so-font-mono mb-2 text-[11px] text-[hsl(var(--so-muted-foreground))]">Changes</h4>
-            <div v-for="change in selectedActivity.changes" :key="change.field" class="text-xs">
+            <div v-for="change in selectedActivityChanges" :key="change.field" class="text-xs">
               <span class="so-font-mono text-[hsl(var(--so-muted-foreground))]">{{ change.field }}</span>
               <div class="mt-0.5 flex items-center gap-2">
                 <span class="so-font-mono text-[hsl(var(--so-destructive))/0.7] line-through">{{ change.from }}</span>
@@ -159,9 +242,17 @@ const toggleActivity = (event: ActivityEvent) => {
           </div>
 
           <div class="border-t border-[hsl(var(--so-border))] pt-3">
-            <button type="button" class="so-button-secondary w-full justify-start">
+            <a
+              v-if="selectedActivity.resource_path"
+              :href="selectedActivity.resource_path"
+              class="so-button-secondary w-full justify-start inline-flex items-center"
+            >
               <ArrowUpRight class="h-3 w-3" />
               View resource
+            </a>
+            <button v-else type="button" class="so-button-secondary w-full justify-start" disabled>
+              <ArrowUpRight class="h-3 w-3" />
+              Resource link unavailable
             </button>
           </div>
         </div>

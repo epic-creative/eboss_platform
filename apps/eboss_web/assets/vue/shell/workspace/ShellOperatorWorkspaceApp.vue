@@ -16,13 +16,15 @@ import AccessPage from "./pages/AccessPage.vue"
 import DashboardPage from "./pages/DashboardPage.vue"
 import EmptyWorkspacePage from "./pages/EmptyWorkspacePage.vue"
 import MembersPage from "./pages/MembersPage.vue"
+import ActivityPage from "./pages/ActivityPage.vue"
 import ProjectsPage from "./pages/ProjectsPage.vue"
 import SettingsPage from "./pages/SettingsPage.vue"
 import {
+  useFolioActivity,
   useFolioProjects,
   useFolioWorkspaceScope,
 } from "./folio"
-import type { FolioProjectSummary } from "./folio/types"
+import type { FolioActivityEvent, FolioProjectSummary } from "./folio/types"
 import type {
   AccessAuditRecord,
   AccessTab,
@@ -57,15 +59,11 @@ const selectedRole = ref<RoleRecord | null>(null)
 const selectedKey = ref<ApiKeyRecord | null>(null)
 const selectedAccessAudit = ref<AccessAuditRecord | null>(null)
 const selectedProject = ref<Project | null>(null)
+const selectedActivity = ref<FolioActivityEvent | null>(null)
 const selectedProjectFilter = ref<ProjectFilter>("all")
 const projectFilters = ["all", "active", "paused", "archived"] satisfies ProjectFilter[]
-const folioWorkspaceScope = useFolioWorkspaceScope(props.currentScope)
-const isFolioAppRoute = computed(() => isAppRoute.value && currentAppPage.value?.app_key === "folio")
-const folioProjectsQuery = useFolioProjects(folioWorkspaceScope, {
-  autoFetch: true,
-  enabled: isFolioAppRoute,
-})
-const folioProjects = computed(() => folioProjectsQuery.projects.value.map(mapFolioProject))
+const isWorkspaceRoute = computed(() => props.currentPage.type === "workspace")
+const isAppRoute = computed(() => props.currentPage.type === "app")
 
 const formatFolioDate = (value: string | null): string => value ?? "—"
 const mapFolioProjectStatus = (status: string): Project["status"] =>
@@ -101,13 +99,29 @@ const currentWorkspaceKey = computed(() =>
 const basePath = computed(() => props.currentScope.dashboardPath || props.currentPath)
 const dashboardHref = computed(() => props.currentScope.dashboardPath || "/dashboard")
 const avatarInitials = computed(() => props.currentUser.username.slice(0, 2).toUpperCase())
-const isWorkspaceRoute = computed(() => props.currentPage.type === "workspace")
-const isAppRoute = computed(() => props.currentPage.type === "app")
 const isAppNavigation = (page: WorkspaceNavigationContext): page is AppNavigation =>
   page.type === "app"
 const currentAppPage = computed<AppNavigation | null>(() =>
   isAppNavigation(props.currentPage) ? props.currentPage : null,
 )
+const isFolioAppRoute = computed(() => isAppRoute.value && currentAppPage.value?.app_key === "folio")
+const isFolioProjectsSurface = computed(
+  () => isFolioAppRoute.value && currentAppPage.value?.app_surface === "projects",
+)
+const isFolioActivitySurface = computed(
+  () => isFolioAppRoute.value && currentAppPage.value?.app_surface === "activity",
+)
+const folioWorkspaceScope = useFolioWorkspaceScope(props.currentScope)
+const folioProjectsQuery = useFolioProjects(folioWorkspaceScope, {
+  autoFetch: true,
+  enabled: isFolioProjectsSurface,
+})
+const folioProjects = computed(() => folioProjectsQuery.projects.value.map(mapFolioProject))
+const folioActivityQuery = useFolioActivity(folioWorkspaceScope, {
+  autoFetch: true,
+  enabled: isFolioActivitySurface,
+})
+const folioActivities = computed(() => folioActivityQuery.events.value)
 const activeWorkspaceSurface = computed(() =>
   isWorkspaceRoute.value && props.currentPage.type === "workspace" ? props.currentPage.surface : "dashboard"
 )
@@ -139,6 +153,7 @@ const clearInspectors = () => {
   selectedKey.value = null
   selectedAccessAudit.value = null
   selectedProject.value = null
+  selectedActivity.value = null
 }
 
 const resetWorkspaceState = () => {
@@ -314,7 +329,7 @@ watch(currentWorkspaceKey, () => {
             />
 
             <ProjectsPage
-              v-else-if="isFolioAppRoute"
+              v-else-if="isFolioProjectsSurface"
               :workspace-reference="workspaceReference"
               :project-filters="projectFilters"
               :project-filter="selectedProjectFilter"
@@ -322,6 +337,13 @@ watch(currentWorkspaceKey, () => {
               :selected-project="selectedProject"
               @update:project-filter="selectedProjectFilter = $event"
               @update:selected-project="selectedProject = $event"
+            />
+            <ActivityPage
+              v-else-if="isFolioActivitySurface"
+              :workspace-reference="workspaceReference"
+              :activity-events="folioActivities"
+              :selected-activity="selectedActivity"
+              @update:selected-activity="selectedActivity = $event"
             />
 
             <div
