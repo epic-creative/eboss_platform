@@ -21,6 +21,38 @@ Establish the first real app contract for a workspace by defining the Folio API 
 - Keep the contract focused on the first read surfaces rather than every future Folio resource.
 - Make the contract app-aware so it fits the broader workspace app platform.
 
+#### ST-FOL-001 Contract Draft (MVP)
+- **Route family**: all new Folio API endpoints are workspace-scoped and app-aware.
+  - Base path: `/api/v1/{owner_slug}/workspaces/{slug}`
+  - Folio app namespace: `/apps/folio`
+  - Contracted endpoints for this story:
+    - `GET /api/v1/{owner_slug}/workspaces/{slug}/apps/folio/bootstrap`
+    - `GET /api/v1/{owner_slug}/workspaces/{slug}/apps/folio/projects`
+    - `GET /api/v1/{owner_slug}/workspaces/{slug}/apps/folio/tasks`
+- **Scope contract**
+  - `{owner_slug}` and `{slug}` resolve through the same workspace scope logic used by the shell and workspace bootstrap (`AppScope.fetch_workspace_scope/3`).
+  - Workspace bootstrap remains authoritative for:
+    - workspace identity and route context
+    - raw capabilities (`read_workspace`, `manage_workspace`, `read_folio`, `manage_folio`)
+    - app registry entries in `apps["folio"]`
+  - Folio bootstrap and read endpoints are derived from that workspace scope, not re-resolving workspace access independently.
+- **Payload shape (contract minimum)**
+  - `GET .../apps/folio/bootstrap`:
+    - `scope.workspace`: workspace snapshot (`id`, `name`, `slug`, `owner_slug`, `owner_type`, `dashboard_path`, etc.)
+    - `scope.owner`: owner summary (`type`, `id`, `slug`, `display_name`)
+    - `scope.app`: the Folio app registry entry from workspace bootstrap
+    - `scope.capabilities`: app-level `{ read, manage }`
+    - optional `summary_counts` block for first render helpers (for example: `projects`, `tasks`)
+  - `GET .../projects`:
+    - `{ scope, projects: [...] }`
+    - each project item includes at minimum: `id`, `title`, `status`, `priority_position`, `due_at?`, `review_at?`
+  - `GET .../tasks`:
+    - `{ scope, tasks: [...] }`
+    - each task item includes at minimum: `id`, `title`, `status`, `priority_position`, `project_id?`, `due_at?`, `review_at?`
+- **Narrowness rule**
+  - No mutation, search, pagination, or activity routes in this story.
+  - Scope-aware filtering and relation expansion are intentionally deferred until subsequent stories.
+
 #### Acceptance Criteria
 - The Folio API contract is explicit about route shape, payload structure, and scope rules.
 - The contract fits cleanly under the workspace app platform.

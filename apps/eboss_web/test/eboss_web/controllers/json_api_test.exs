@@ -17,11 +17,56 @@ defmodule EBossWeb.JsonApiTest do
     assert Map.has_key?(spec["paths"], "/api/v1/workspaces/{id}")
     assert Map.has_key?(spec["paths"], "/api/v1/{owner_slug}/workspaces/{slug}/bootstrap")
 
+    assert Map.has_key?(
+             spec["paths"],
+             "/api/v1/{owner_slug}/workspaces/{slug}/apps/folio/bootstrap"
+           )
+
+    assert Map.has_key?(
+             spec["paths"],
+             "/api/v1/{owner_slug}/workspaces/{slug}/apps/folio/projects"
+           )
+
+    assert Map.has_key?(spec["paths"], "/api/v1/{owner_slug}/workspaces/{slug}/apps/folio/tasks")
+
     assert get_in(spec, ["components", "schemas", "WorkspaceSummary", "properties", "full_path"]) ==
              %{
                "type" => "string",
                "nullable" => true
              }
+
+    assert get_in(spec, ["components", "schemas", "FolioAppScope"])["required"] == [
+             "app_key",
+             "workspace",
+             "owner",
+             "app",
+             "capabilities",
+             "app_path"
+           ]
+
+    assert get_in(spec, [
+             "components",
+             "schemas",
+             "FolioAppBootstrap",
+             "properties",
+             "scope",
+             "$ref"
+           ]) ==
+             "#/components/schemas/FolioAppScope"
+
+    assert get_in(spec, [
+             "components",
+             "schemas",
+             "FolioProjectsResponse",
+             "properties",
+             "projects"
+           ])["type"] ==
+             "array"
+
+    assert get_in(spec, ["components", "schemas", "FolioTasksResponse", "properties", "tasks"])[
+             "type"
+           ] ==
+             "array"
 
     assert is_map(
              get_in(spec, ["components", "schemas", "WorkspaceBootstrap", "properties", "apps"])
@@ -210,6 +255,15 @@ defmodule EBossWeb.JsonApiTest do
                "label" => "Folio"
              }
            }
+
+    assert payload["workspace"]["dashboard_path"] ==
+             "/#{owner.owner_slug}/#{current_workspace.slug}"
+
+    assert payload["apps"]["folio"]["default_path"] ==
+             "/#{owner.owner_slug}/#{current_workspace.slug}/apps/folio"
+
+    assert payload["apps"]["folio"]["default_path"] ==
+             "#{payload["workspace"]["dashboard_path"]}/apps/folio"
 
     assert Enum.any?(payload["accessible_workspaces"], fn workspace ->
              workspace["slug"] == current_workspace.slug and workspace["current?"]

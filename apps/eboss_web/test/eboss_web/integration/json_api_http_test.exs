@@ -14,6 +14,21 @@ defmodule EBossWeb.JsonApiHttpTest do
              response.body["paths"],
              "/api/v1/{owner_slug}/workspaces/{slug}/bootstrap"
            )
+
+    assert Map.has_key?(
+             response.body["paths"],
+             "/api/v1/{owner_slug}/workspaces/{slug}/apps/folio/bootstrap"
+           )
+
+    assert Map.has_key?(
+             response.body["paths"],
+             "/api/v1/{owner_slug}/workspaces/{slug}/apps/folio/projects"
+           )
+
+    assert Map.has_key?(
+             response.body["paths"],
+             "/api/v1/{owner_slug}/workspaces/{slug}/apps/folio/tasks"
+           )
   end
 
   test "user-owned workspaces are reachable over http by id", %{req: req} do

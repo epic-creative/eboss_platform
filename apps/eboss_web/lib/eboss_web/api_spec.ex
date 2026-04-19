@@ -5,7 +5,9 @@ defmodule EBossWeb.ApiSpec do
     EBossWeb.JsonApiRouter.spec()
     |> normalize()
     |> merge_paths(bootstrap_paths())
+    |> merge_paths(folio_app_paths())
     |> merge_components(bootstrap_components())
+    |> merge_components(folio_app_components())
   end
 
   defp merge_paths(spec, extra_paths) do
@@ -180,6 +182,192 @@ defmodule EBossWeb.ApiSpec do
             "apps",
             "accessible_workspaces"
           ]
+        }
+      }
+    }
+  end
+
+  defp folio_app_paths do
+    %{
+      "/api/v1/{owner_slug}/workspaces/{slug}/apps/folio/bootstrap" =>
+        folio_bootstrap_path_item(),
+      "/api/v1/{owner_slug}/workspaces/{slug}/apps/folio/projects" => folio_projects_path_item(),
+      "/api/v1/{owner_slug}/workspaces/{slug}/apps/folio/tasks" => folio_tasks_path_item()
+    }
+  end
+
+  defp folio_bootstrap_path_item do
+    %{
+      "get" => %{
+        "summary" => "Get workspace-scoped Folio app bootstrap payload",
+        "description" =>
+          "Returns the authenticated Folio app scope derived from workspace bootstrap for a workspace.",
+        "parameters" => workspace_path_parameters(),
+        "responses" => %{
+          "200" => %{
+            "description" => "Folio bootstrap payload",
+            "content" => %{
+              "application/json" => %{
+                "schema" => %{"$ref" => "#/components/schemas/FolioAppBootstrap"}
+              }
+            }
+          },
+          "401" => %{"description" => "Authentication required"},
+          "403" => %{"description" => "Workspace access is forbidden"},
+          "404" => %{"description" => "Workspace not found"}
+        }
+      }
+    }
+  end
+
+  defp folio_projects_path_item do
+    %{
+      "get" => %{
+        "summary" => "List workspace-scoped Folio projects",
+        "description" =>
+          "Returns a workspace-scoped read-only list of project summaries for the Folio app.",
+        "parameters" => workspace_path_parameters(),
+        "responses" => %{
+          "200" => %{
+            "description" => "Folio projects list payload",
+            "content" => %{
+              "application/json" => %{
+                "schema" => %{"$ref" => "#/components/schemas/FolioProjectsResponse"}
+              }
+            }
+          },
+          "401" => %{"description" => "Authentication required"},
+          "403" => %{"description" => "Workspace access is forbidden"},
+          "404" => %{"description" => "Workspace not found"}
+        }
+      }
+    }
+  end
+
+  defp folio_tasks_path_item do
+    %{
+      "get" => %{
+        "summary" => "List workspace-scoped Folio tasks",
+        "description" =>
+          "Returns a workspace-scoped read-only list of task summaries for the Folio app.",
+        "parameters" => workspace_path_parameters(),
+        "responses" => %{
+          "200" => %{
+            "description" => "Folio tasks list payload",
+            "content" => %{
+              "application/json" => %{
+                "schema" => %{"$ref" => "#/components/schemas/FolioTasksResponse"}
+              }
+            }
+          },
+          "401" => %{"description" => "Authentication required"},
+          "403" => %{"description" => "Workspace access is forbidden"},
+          "404" => %{"description" => "Workspace not found"}
+        }
+      }
+    }
+  end
+
+  defp workspace_path_parameters do
+    [
+      %{
+        "name" => "owner_slug",
+        "in" => "path",
+        "required" => true,
+        "schema" => %{"type" => "string"}
+      },
+      %{
+        "name" => "slug",
+        "in" => "path",
+        "required" => true,
+        "schema" => %{"type" => "string"}
+      }
+    ]
+  end
+
+  defp folio_app_components do
+    %{
+      "schemas" => %{
+        "FolioAppScope" => %{
+          "type" => "object",
+          "properties" => %{
+            "app_key" => %{"type" => "string", "enum" => ["folio"]},
+            "workspace" => %{"$ref" => "#/components/schemas/WorkspaceSummary"},
+            "owner" => %{"$ref" => "#/components/schemas/OwnerSummary"},
+            "app" => %{"$ref" => "#/components/schemas/WorkspaceApp"},
+            "capabilities" => %{"$ref" => "#/components/schemas/WorkspaceAppCapabilities"},
+            "workspace_path" => %{"type" => "string"},
+            "app_path" => %{"type" => "string"}
+          },
+          "required" => [
+            "app_key",
+            "workspace",
+            "owner",
+            "app",
+            "capabilities",
+            "app_path"
+          ]
+        },
+        "FolioAppBootstrap" => %{
+          "type" => "object",
+          "properties" => %{
+            "scope" => %{"$ref" => "#/components/schemas/FolioAppScope"},
+            "summary_counts" => %{
+              "type" => "object",
+              "properties" => %{
+                "projects" => %{"type" => "integer"},
+                "tasks" => %{"type" => "integer"}
+              }
+            }
+          },
+          "required" => ["scope"]
+        },
+        "FolioProjectSummary" => %{
+          "type" => "object",
+          "properties" => %{
+            "id" => %{"type" => "string"},
+            "title" => %{"type" => "string"},
+            "status" => %{"type" => "string"},
+            "priority_position" => %{"type" => "integer", "nullable" => true},
+            "due_at" => %{"type" => "string", "format" => "date-time", "nullable" => true},
+            "review_at" => %{"type" => "string", "format" => "date-time", "nullable" => true}
+          },
+          "required" => ["id", "title", "status"]
+        },
+        "FolioTaskSummary" => %{
+          "type" => "object",
+          "properties" => %{
+            "id" => %{"type" => "string"},
+            "title" => %{"type" => "string"},
+            "status" => %{"type" => "string"},
+            "project_id" => %{"type" => "string", "nullable" => true},
+            "priority_position" => %{"type" => "integer", "nullable" => true},
+            "due_at" => %{"type" => "string", "format" => "date-time", "nullable" => true},
+            "review_at" => %{"type" => "string", "format" => "date-time", "nullable" => true}
+          },
+          "required" => ["id", "title", "status"]
+        },
+        "FolioProjectsResponse" => %{
+          "type" => "object",
+          "properties" => %{
+            "scope" => %{"$ref" => "#/components/schemas/FolioAppScope"},
+            "projects" => %{
+              "type" => "array",
+              "items" => %{"$ref" => "#/components/schemas/FolioProjectSummary"}
+            }
+          },
+          "required" => ["scope", "projects"]
+        },
+        "FolioTasksResponse" => %{
+          "type" => "object",
+          "properties" => %{
+            "scope" => %{"$ref" => "#/components/schemas/FolioAppScope"},
+            "tasks" => %{
+              "type" => "array",
+              "items" => %{"$ref" => "#/components/schemas/FolioTaskSummary"}
+            }
+          },
+          "required" => ["scope", "tasks"]
         }
       }
     }
