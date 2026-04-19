@@ -7,7 +7,7 @@ defmodule EBoss.Workspaces.Workspace.Calculations.FullPath do
   def init(opts), do: {:ok, opts}
 
   @impl true
-  def load(_query, _opts, _context), do: [:owner_type, :owner_handle, :slug]
+  def load(_query, _opts, _context), do: [:owner_type, :owner_slug, :slug]
 
   @impl true
   def calculate(records, _opts, _context) do

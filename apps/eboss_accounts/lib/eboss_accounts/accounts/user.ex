@@ -70,6 +70,7 @@ defmodule EBoss.Accounts.User do
     define(:get_user, action: :read, get_by: [:id])
     define(:get_user_by_email, action: :get_by_email, args: [:email])
     define(:get_user_by_username, action: :get_by_username, args: [:username])
+    define(:get_user_by_owner_slug, action: :get_by_owner_slug, args: [:owner_slug])
     define(:change_password, action: :change_password)
     define(:list_users, action: :admin_index)
     define(:suspend_user, action: :suspend)
@@ -218,9 +219,11 @@ defmodule EBoss.Accounts.User do
       change(set_attribute(:email, arg(:email)))
       change(set_attribute(:username, arg(:username)))
       change(EBoss.Accounts.User.Changes.NormalizeUsername)
+      change(EBoss.Accounts.User.Changes.SetOwnerSlug)
       validate(EBoss.Accounts.User.Validations.ValidateSlug)
       change(AshAuthentication.Strategy.Password.HashPasswordChange)
       change(AshAuthentication.GenerateTokenChange)
+      change({EBoss.OwnerSlugs.Changes.ReserveOwnerSlug, owner_type: :user, field: :username})
       validate(AshAuthentication.Strategy.Password.PasswordConfirmationValidation)
 
       metadata :token, :string do
@@ -262,6 +265,20 @@ defmodule EBoss.Accounts.User do
         username_arg = Ash.Query.get_argument(query, :username)
         normalized = if username_arg, do: String.downcase(username_arg), else: ""
         Ash.Query.filter(query, expr(username == ^normalized))
+      end)
+    end
+
+    read :get_by_owner_slug do
+      get?(true)
+
+      argument :owner_slug, :string do
+        allow_nil?(false)
+      end
+
+      prepare(fn query, _context ->
+        owner_slug_arg = Ash.Query.get_argument(query, :owner_slug)
+        normalized = if owner_slug_arg, do: String.downcase(owner_slug_arg), else: ""
+        Ash.Query.filter(query, expr(owner_slug == ^normalized))
       end)
     end
 
@@ -362,6 +379,11 @@ defmodule EBoss.Accounts.User do
       )
     end
 
+    attribute :owner_slug, :string do
+      allow_nil?(false)
+      public?(true)
+    end
+
     attribute :hashed_password, :string do
       sensitive?(true)
     end
@@ -399,6 +421,7 @@ defmodule EBoss.Accounts.User do
   identities do
     identity(:unique_email, [:email])
     identity(:unique_username, [:username])
+    identity(:unique_owner_slug, [:owner_slug])
   end
 
   def has_role?(%{role: role}, check_role) when is_atom(check_role) do

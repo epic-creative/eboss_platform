@@ -822,41 +822,57 @@ defmodule EBossWeb.Dev.DesignSystemLive do
 
               <div id="auth-shell-preview" class="ui-preview-frame" data-theme="light">
                 <div class="p-6">
-                  <.auth_shell
-                    eyebrow="Auth shell"
-                    title="The shared auth surface stays in the same system."
-                    subtitle="The same panel language, navigation treatment, and form controls should hold up before the user reaches the private shell."
-                    detail_one="Entry flows should inherit the same shell materials and spacing."
-                    detail_two="Navigation between auth steps should feel related to the primary shell pills."
-                    detail_three="Validation and feedback should land inside the same frame vocabulary."
-                  >
+                  <.auth_shell current_path="/sign-in">
                     <.auth_page
-                      eyebrow="Entry flow"
                       title="Sign in"
-                      subtitle="Review auth framing, nav, and form controls without leaving the preview route."
-                      current_path="/sign-in"
+                      subtitle="Review the compact auth shell, card treatment, and form controls without leaving the preview route."
                     >
-                      <div class="space-y-4">
-                        <.input
-                          name="auth_email_preview"
-                          type="email"
-                          label="Email"
-                          autocomplete="email"
-                          value="operator@example.com"
-                        />
-                        <.input
-                          name="auth_password_preview"
-                          type="password"
-                          label="Password"
-                          autocomplete="current-password"
-                          value="supersecret123"
-                        />
+                      <div class="so-auth-card p-4">
+                        <div class="mb-4 flex items-center gap-1 rounded-md border border-[hsl(var(--so-border))] bg-[hsl(var(--so-muted))] p-1">
+                          <button
+                            type="button"
+                            class="so-underline-tab flex-1 justify-center is-active"
+                            aria-pressed="true"
+                          >
+                            Password
+                          </button>
+                          <button
+                            type="button"
+                            class="so-underline-tab flex-1 justify-center"
+                            aria-pressed="false"
+                          >
+                            Magic link
+                          </button>
+                        </div>
 
-                        <div class="flex items-center justify-between gap-4">
-                          <a href="#forgot-password" class="ui-text-link">
-                            Forgot your password?
-                          </a>
-                          <.button size="sm">Continue</.button>
+                        <div class="space-y-4">
+                          <.input
+                            name="auth_email_preview"
+                            type="email"
+                            label="Email"
+                            autocomplete="email"
+                            value="operator@example.com"
+                          />
+                          <.input
+                            name="auth_password_preview"
+                            type="password"
+                            label="Password"
+                            autocomplete="current-password"
+                            value="supersecret123"
+                          />
+
+                          <div class="flex justify-end">
+                            <a href="#forgot-password" class="ui-text-link text-xs">
+                              Forgot password?
+                            </a>
+                          </div>
+
+                          <button
+                            type="button"
+                            class="so-button-primary h-8 w-full justify-center text-xs"
+                          >
+                            Sign in
+                          </button>
                         </div>
                       </div>
 

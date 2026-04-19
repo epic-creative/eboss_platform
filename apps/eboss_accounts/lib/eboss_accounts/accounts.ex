@@ -116,6 +116,8 @@ defmodule EBoss.Accounts do
   defdelegate get_user_by_email!(email, opts \\ []), to: User
   defdelegate get_user_by_username(username, opts \\ []), to: User
   defdelegate get_user_by_username!(username, opts \\ []), to: User
+  defdelegate get_user_by_owner_slug(owner_slug, opts \\ []), to: User
+  defdelegate get_user_by_owner_slug!(owner_slug, opts \\ []), to: User
 
   defp default_action_opts(opts) do
     opts

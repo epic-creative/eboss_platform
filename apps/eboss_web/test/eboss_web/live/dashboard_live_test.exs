@@ -5,7 +5,6 @@ defmodule EBossWeb.DashboardLiveTest do
   import Phoenix.ConnTest
   import Phoenix.LiveViewTest
 
-  alias EBossWeb.BrowserTestContracts
   alias EBossWeb.DashboardScope
 
   @endpoint EBossWeb.Endpoint
@@ -22,7 +21,7 @@ defmodule EBossWeb.DashboardLiveTest do
     :ok
   end
 
-  test "dashboard live render keeps the authenticated shell contract on the main surface" do
+  test "dashboard live render mounts the workspace shell with serialized scope props" do
     current_user = %{username: "shell_user", email: "shell@example.com"}
     current_scope = DashboardScope.for_user(current_user, %{workspace_slug: "shell-workspace"})
 
@@ -33,54 +32,17 @@ defmodule EBossWeb.DashboardLiveTest do
         current_user: current_user
       })
 
-    assert html =~ ~s(data-testid="#{BrowserTestContracts.dashboard_shell()}")
-    assert html =~ ~s(aria-label="#{BrowserTestContracts.dashboard_navigation_label()}")
-    assert html =~ ~s(data-dashboard-shell-sidebar)
-    assert html =~ ~s(data-dashboard-shell-main)
-    assert html =~ ~s(data-dashboard-shell-header)
-    assert html =~ ~s(data-dashboard-shell-body)
-    assert html =~ ~s(data-dashboard-nav-group="primary-routes")
-    assert html =~ ~s(data-dashboard-nav-group="upcoming-surfaces")
-    assert html =~ ~s(data-dashboard-secondary-nav)
-    assert html =~ ~s(data-dashboard-contract="page-header")
-    assert html =~ ~s(data-dashboard-contract="page-content")
-    assert html =~ ~s(data-dashboard-section="launchpad")
-    assert html =~ ~s(data-dashboard-section="structure")
-    assert html =~ ~s(data-dashboard-section="states")
-    assert html =~ ~s(data-dashboard-utility-strip)
-    assert html =~ ~s(data-dashboard-utility-item="primary-lane")
-    assert html =~ ~s(data-dashboard-quick-actions)
-    assert html =~ ~s(data-dashboard-quick-action="open-launch-surface")
-    assert html =~ ~s(data-dashboard-panel-group="stack")
-    assert html =~ ~s(data-dashboard-state="empty")
-    assert html =~ ~s(data-dashboard-state="loading")
-    assert html =~ ~s(data-dashboard-state="error")
-    assert html =~ "EBoss dashboard"
-    assert html =~ "Operator workspace"
+    assert html =~ ~s(data-shell-mode="workspace")
+    assert html =~ ~s(data-name="ShellOperatorWorkspaceApp")
+    assert html =~ ~s(data-ssr="false")
+    assert html =~ current_scope.current_workspace.slug
+    assert html =~ current_scope.current_workspace.name
+    assert html =~ current_user.username
+    assert html =~ "currentWorkspace"
+    assert html =~ "accessibleWorkspaces"
+    assert html =~ "capabilities"
 
-    assert html =~
-             "Keep the authenticated product frame stable while workspaces, folio, and future signed-in routes deepen inside it."
-
-    assert html =~ "Primary routes"
-    assert html =~ "Upcoming surfaces"
-    assert html =~ "Secondary cues"
-    assert html =~ "Command surface"
-    assert html =~ "Quick actions"
-    assert html =~ "Launch surface"
-    assert html =~ "Panel groupings stay systematic instead of page-specific."
-    assert html =~ "Empty, loading, and error states stay in the dashboard language."
-    assert html =~ "The latest sync did not complete."
-    assert html =~ "@#{current_user.username}"
-
-    assert Regex.scan(~r/data-dashboard-header/, html) |> length() == 4
-    assert Regex.scan(~r/data-dashboard-action-bar/, html) |> length() == 4
-    assert Regex.scan(~r/data-dashboard-nav-group=/, html) |> length() == 2
-    assert Regex.scan(~r/aria-current="page"/, html) |> length() == 1
-    assert Regex.scan(~r/data-interactive="false"/, html) |> length() == 2
-    assert Regex.scan(~r/data-dashboard-utility-item=/, html) |> length() == 4
-    assert Regex.scan(~r/data-dashboard-quick-action=/, html) |> length() == 3
-
-    refute html =~ "Dark / compact"
+    refute html =~ ~s(data-shell-mode="product")
   end
 
   test "dashboard route redirects anonymous visitors to sign-in" do

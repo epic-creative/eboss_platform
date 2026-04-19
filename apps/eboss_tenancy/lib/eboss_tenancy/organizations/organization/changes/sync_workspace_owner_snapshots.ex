@@ -11,7 +11,7 @@ defmodule EBoss.Organizations.Organization.Changes.SyncWorkspaceOwnerSnapshots d
           WorkspaceOwnerSnapshots.sync_active(
             :organization,
             organization.id,
-            organization.slug,
+            organization.owner_slug,
             organization.name
           )
 

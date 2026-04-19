@@ -3,12 +3,12 @@ defmodule EBoss.Organizations.Organization.Validations.ValidateSlug do
 
   @impl true
   def validate(changeset, _opts, _context) do
-    slug = Ash.Changeset.get_attribute(changeset, :slug)
+    slug = Ash.Changeset.get_attribute(changeset, :owner_slug)
 
     if slug do
       case EBoss.Slugs.validate_slug(slug) do
         :ok -> :ok
-        {:error, reason} -> {:error, field: :slug, message: reason}
+        {:error, reason} -> {:error, field: :owner_slug, message: reason}
       end
     else
       :ok

@@ -1,13 +1,15 @@
 defmodule EBossWeb.DashboardScopeRoutingTest do
   use EBossWeb.ConnCase, async: false
 
+  import LiveVue.Test
+
   test "dashboard compatibility route redirects to the first canonical workspace route", %{
     conn: conn
   } do
     context =
       register_and_log_in_user(%{conn: conn}, %{
         email: "scope-routing@example.com",
-        username: "scope_routing_user"
+        username: "scope-routing-user"
       })
 
     user_workspace =
@@ -21,7 +23,7 @@ defmodule EBossWeb.DashboardScopeRoutingTest do
         workspace_name: "Secondary Scope Workspace"
       })
 
-    dashboard_path = dashboard_path(:user, context.current_user.username, user_workspace.slug)
+    dashboard_path = dashboard_path(context.current_user.owner_slug, user_workspace.slug)
 
     assert_redirect_path(live(context.conn, ~p"/dashboard"), dashboard_path)
   end
@@ -30,7 +32,7 @@ defmodule EBossWeb.DashboardScopeRoutingTest do
     context =
       register_and_log_in_user(%{conn: conn}, %{
         email: "canonical-workspace@example.com",
-        username: "canonical_workspace_user"
+        username: "canonical-workspace-user"
       })
 
     workspace =
@@ -38,12 +40,24 @@ defmodule EBossWeb.DashboardScopeRoutingTest do
         name: "Canonical Workspace"
       })
 
-    path = dashboard_path(:user, context.current_user.username, workspace.slug)
+    path = dashboard_path(context.current_user.owner_slug, workspace.slug)
 
     assert {:ok, view, html} = live(context.conn, path)
-    assert html =~ "Canonical Workspace"
-    assert html =~ "@canonical_workspace_user/#{workspace.slug}"
-    assert html =~ ~s(data-dashboard-workspace-link="#{workspace.slug}")
+    assert html =~ ~s(data-shell-mode="workspace")
+
+    workspace_shell = get_vue(view, name: "ShellOperatorWorkspaceApp")
+
+    assert workspace_shell.component == "ShellOperatorWorkspaceApp"
+    assert workspace_shell.ssr == false
+    assert workspace_shell.props["currentPage"] == "dashboard"
+    assert workspace_shell.props["currentPath"] == path
+    assert workspace_shell.props["currentUser"]["username"] == context.current_user.username
+    assert workspace_shell.props["currentScope"]["currentWorkspace"]["slug"] == workspace.slug
+
+    assert workspace_shell.props["currentScope"]["currentWorkspace"]["name"] ==
+             "Canonical Workspace"
+
+    assert workspace_shell.props["currentScope"]["dashboardPath"] == path
 
     current_scope = current_scope(view)
     refute is_nil(current_scope)
@@ -56,7 +70,7 @@ defmodule EBossWeb.DashboardScopeRoutingTest do
     context =
       register_and_log_in_user(%{conn: conn}, %{
         email: "invalid-route@example.com",
-        username: "invalid_route_user"
+        username: "invalid-route-user"
       })
 
     workspace =
@@ -64,10 +78,10 @@ defmodule EBossWeb.DashboardScopeRoutingTest do
         name: "Fallback Workspace"
       })
 
-    dashboard_path = dashboard_path(:user, context.current_user.username, workspace.slug)
+    dashboard_path = dashboard_path(context.current_user.owner_slug, workspace.slug)
 
     assert_redirect_path(
-      live(context.conn, ~p"/users/invalid-route-user/missing-workspace/dashboard"),
+      live(context.conn, ~p"/invalid-route-user/missing-workspace"),
       dashboard_path
     )
   end
@@ -78,13 +92,18 @@ defmodule EBossWeb.DashboardScopeRoutingTest do
     context =
       register_and_log_in_user(%{conn: conn}, %{
         email: "empty-shell@example.com",
-        username: "empty_shell_user"
+        username: "empty-shell-user"
       })
 
     assert {:ok, view, html} = live(context.conn, ~p"/dashboard")
-    assert html =~ "No accessible workspaces yet."
-    assert html =~ "Create or join a workspace to continue."
-    assert html =~ "No accessible workspace"
+    assert html =~ ~s(data-shell-mode="workspace")
+
+    workspace_shell = get_vue(view, name: "ShellOperatorWorkspaceApp")
+
+    assert workspace_shell.props["currentPage"] == "dashboard"
+    assert workspace_shell.props["currentScope"]["empty"] == true
+    assert workspace_shell.props["currentScope"]["currentWorkspace"] == nil
+    assert workspace_shell.props["currentScope"]["accessibleWorkspaces"] == []
 
     current_scope = current_scope(view)
     refute is_nil(current_scope)
@@ -92,19 +111,86 @@ defmodule EBossWeb.DashboardScopeRoutingTest do
     assert current_scope.dashboard_path == "/dashboard"
   end
 
+  test "public workspaces do not become the default dashboard for unrelated users", %{conn: conn} do
+    owner =
+      register_user(%{
+        email: "public-default-owner@example.com",
+        username: "public-default-owner"
+      })
+
+    _public_workspace =
+      create_user_workspace(owner, %{
+        name: "Public Default Workspace",
+        visibility: :public
+      })
+
+    context =
+      register_and_log_in_user(%{conn: conn}, %{
+        email: "public-default-outsider@example.com",
+        username: "public-default-outsider"
+      })
+
+    assert {:ok, view, html} = live(context.conn, ~p"/dashboard")
+    assert html =~ ~s(data-shell-mode="workspace")
+
+    workspace_shell = get_vue(view, name: "ShellOperatorWorkspaceApp")
+
+    assert workspace_shell.props["currentScope"]["empty"] == true
+    assert workspace_shell.props["currentScope"]["currentWorkspace"] == nil
+    assert workspace_shell.props["currentScope"]["accessibleWorkspaces"] == []
+  end
+
+  test "signed-in users can still open public workspace routes directly", %{conn: conn} do
+    owner =
+      register_user(%{
+        email: "public-route-owner@example.com",
+        username: "public-route-owner"
+      })
+
+    public_workspace =
+      create_user_workspace(owner, %{
+        name: "Public Route Workspace",
+        visibility: :public
+      })
+
+    context =
+      register_and_log_in_user(%{conn: conn}, %{
+        email: "public-route-outsider@example.com",
+        username: "public-route-outsider"
+      })
+
+    path = dashboard_path(owner.owner_slug, public_workspace.slug)
+
+    assert {:ok, view, html} = live(context.conn, path)
+    assert html =~ ~s(data-shell-mode="workspace")
+
+    workspace_shell = get_vue(view, name: "ShellOperatorWorkspaceApp")
+
+    assert workspace_shell.props["currentScope"]["empty"] == false
+
+    assert workspace_shell.props["currentScope"]["currentWorkspace"]["slug"] ==
+             public_workspace.slug
+
+    assert workspace_shell.props["currentScope"]["accessibleWorkspaces"] == []
+  end
+
   test "unknown canonical workspace routes fall back to the authenticated empty shell when none exist",
        %{conn: conn} do
     context =
       register_and_log_in_user(%{conn: conn}, %{
         email: "empty-canonical@example.com",
-        username: "empty_canonical_user"
+        username: "empty-canonical-user"
       })
 
-    assert {:ok, _view, html} =
-             live(context.conn, ~p"/users/empty_canonical_user/missing-workspace/dashboard")
+    assert {:ok, view, html} =
+             live(context.conn, ~p"/empty-canonical-user/missing-workspace")
 
-    assert html =~ "No accessible workspaces yet."
-    assert html =~ "Create or join a workspace to continue."
+    assert html =~ ~s(data-shell-mode="workspace")
+
+    workspace_shell = get_vue(view, name: "ShellOperatorWorkspaceApp")
+
+    assert workspace_shell.props["currentScope"]["empty"] == true
+    assert workspace_shell.props["currentScope"]["currentWorkspace"] == nil
   end
 
   defp current_scope(view) do

@@ -12,7 +12,9 @@ defmodule EBossWeb.DesignTypographyTest do
     "lib/eboss_web/components/ui_components.ex",
     "lib/eboss_web/live/auth/confirm_live.ex",
     "lib/eboss_web/live/auth/forgot_password_live.ex",
+    "lib/eboss_web/live/auth/magic_link_request_component.ex",
     "lib/eboss_web/live/auth/magic_link_live.ex",
+    "lib/eboss_web/live/auth/password_sign_in_component.ex",
     "lib/eboss_web/live/auth/register_live.ex",
     "lib/eboss_web/live/auth/reset_password_live.ex",
     "lib/eboss_web/live/auth/sign_in_live.ex",
@@ -62,7 +64,6 @@ defmodule EBossWeb.DesignTypographyTest do
     assert contents =~ ~s(class="ui-text-body")
     assert contents =~ ~s(class="ui-text-meta")
     assert contents =~ ~s(class="ui-text-link")
-    assert contents =~ ~s(title_size="hero")
     assert contents =~ ~s(title_size="lg")
     assert contents =~ ~s(title_size="md")
     assert contents =~ ~s(title_size="sm")

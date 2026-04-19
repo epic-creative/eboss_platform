@@ -37,8 +37,7 @@ defmodule EBossWeb.ApiSpec do
 
   defp bootstrap_paths do
     %{
-      "/api/v1/users/{owner_handle}/workspaces/{slug}/bootstrap" => bootstrap_path_item(),
-      "/api/v1/orgs/{owner_handle}/workspaces/{slug}/bootstrap" => bootstrap_path_item()
+      "/api/v1/{owner_slug}/workspaces/{slug}/bootstrap" => bootstrap_path_item()
     }
   end
 
@@ -50,7 +49,7 @@ defmodule EBossWeb.ApiSpec do
           "Returns the authenticated shell bootstrap payload for an accessible workspace.",
         "parameters" => [
           %{
-            "name" => "owner_handle",
+            "name" => "owner_slug",
             "in" => "path",
             "required" => true,
             "schema" => %{"type" => "string"}
@@ -92,7 +91,7 @@ defmodule EBossWeb.ApiSpec do
             "visibility" => %{"type" => "string", "nullable" => true},
             "owner_type" => %{"type" => "string"},
             "owner_id" => %{"type" => "string"},
-            "owner_handle" => %{"type" => "string"},
+            "owner_slug" => %{"type" => "string"},
             "owner_display_name" => %{"type" => "string"},
             "dashboard_path" => %{"type" => "string"},
             "current?" => %{"type" => "boolean"}
@@ -103,7 +102,7 @@ defmodule EBossWeb.ApiSpec do
             "slug",
             "owner_type",
             "owner_id",
-            "owner_handle",
+            "owner_slug",
             "owner_display_name",
             "dashboard_path"
           ]
@@ -113,10 +112,10 @@ defmodule EBossWeb.ApiSpec do
           "properties" => %{
             "type" => %{"type" => "string"},
             "id" => %{"type" => "string"},
-            "handle" => %{"type" => "string"},
+            "slug" => %{"type" => "string"},
             "display_name" => %{"type" => "string"}
           },
-          "required" => ["type", "id", "handle", "display_name"]
+          "required" => ["type", "id", "slug", "display_name"]
         },
         "UserSummary" => %{
           "type" => "object",

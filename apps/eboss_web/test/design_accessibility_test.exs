@@ -51,7 +51,8 @@ defmodule EBossWeb.DesignAccessibilityTest do
     assert auth_components =~ "live=\"assertive\""
     assert auth_components =~ "phx-disable-with={@busy_label}"
     assert magic_link_request_component =~ "data-feedback=\"success\""
-    assert forgot_password_live =~ "data-feedback=\"success\""
+    assert forgot_password_live =~ "so-alert-panel so-alert-panel-success"
+    assert forgot_password_live =~ "Check your email"
     assert design_system_live =~ "role=\"alert\""
     assert design_system_live =~ "live=\"assertive\""
 

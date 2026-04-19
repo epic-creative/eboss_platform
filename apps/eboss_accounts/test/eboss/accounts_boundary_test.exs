@@ -14,14 +14,15 @@ defmodule EBoss.AccountsBoundaryTest do
       Accounts.register_with_password!(
         %{
           email: unique_email(),
-          username: "Case_User",
+          username: "Case-User",
           password: password(),
           password_confirmation: password()
         },
         authorize?: false
       )
 
-    assert user.username == "case_user"
+    assert user.username == "case-user"
+    assert user.owner_slug == "case-user"
 
     assert_received {:email, email}
     assert email.subject == "Confirm your email address"
@@ -29,6 +30,7 @@ defmodule EBoss.AccountsBoundaryTest do
     assert Accounts.get_user!(user.id, actor: user).id == user.id
     assert Accounts.get_user_by_email!(user.email, actor: user).id == user.id
     assert Accounts.get_user_by_username!(user.username, actor: user).id == user.id
+    assert Accounts.get_user_by_owner_slug!(user.owner_slug, actor: user).id == user.id
 
     signed_in_user =
       Accounts.sign_in_with_password!(%{
@@ -77,10 +79,11 @@ defmodule EBoss.AccountsBoundaryTest do
     refute restored_user.is_suspended
 
     renamed_user =
-      Accounts.admin_update_user!(restored_user, %{username: "boundary_user"}, actor: admin)
+      Accounts.admin_update_user!(restored_user, %{username: "boundary-user"}, actor: admin)
 
-    assert renamed_user.username == "boundary_user"
-    assert Accounts.get_user_by_username!("boundary_user", actor: admin).id == user.id
+    assert renamed_user.username == "boundary-user"
+    assert renamed_user.owner_slug == user.owner_slug
+    assert Accounts.get_user_by_username!("boundary-user", actor: admin).id == user.id
 
     deleted_user = Accounts.soft_delete_user!(renamed_user, actor: admin)
     assert deleted_user.is_deleted
@@ -96,7 +99,7 @@ defmodule EBoss.AccountsBoundaryTest do
              Accounts.register_with_password(
                %{
                  email: unique_email(),
-                 username: "Boundary_User",
+                 username: "Boundary-User",
                  password: password(),
                  password_confirmation: password()
                },
@@ -178,11 +181,12 @@ defmodule EBoss.AccountsBoundaryTest do
     refute restored_user.is_suspended
 
     assert {:ok, renamed_user} =
-             Accounts.admin_update_user(restored_user, %{username: "boundary_user_2"},
+             Accounts.admin_update_user(restored_user, %{username: "boundary-user-2"},
                actor: admin
              )
 
-    assert renamed_user.username == "boundary_user_2"
+    assert renamed_user.username == "boundary-user-2"
+    assert renamed_user.owner_slug == user.owner_slug
 
     assert {:ok, deleted_user} = Accounts.soft_delete_user(renamed_user, actor: admin)
     assert deleted_user.is_deleted
@@ -250,7 +254,7 @@ defmodule EBoss.AccountsBoundaryTest do
     assert {:ok, user} =
              Accounts.register_with_password(%{
                email: unique_email(),
-               username: "defaults_user",
+               username: "defaults-user",
                password: password(),
                password_confirmation: password()
              })
@@ -274,6 +278,30 @@ defmodule EBoss.AccountsBoundaryTest do
              Accounts.request_magic_link(%{email: user.email},
                context: %{private: %{ash_authentication?: true, custom_flag: true}}
              )
+  end
+
+  test "global owner slug collisions are rejected across users and organizations" do
+    assert {:ok, _reservation} =
+             EBoss.OwnerSlugs.reserve_owner_slug(
+               "shared-owner",
+               :organization,
+               Ecto.UUID.generate(),
+               authorize?: false
+             )
+
+    assert {:error, error} =
+             Accounts.register_with_password(
+               %{
+                 email: unique_email(),
+                 username: "shared-owner",
+                 password: password(),
+                 password_confirmation: password()
+               },
+               authorize?: false
+             )
+
+    assert Exception.message(error) =~ "has already been taken"
+    assert invalid_attribute_fields(error) == [:username]
   end
 
   defp register_user(overrides \\ %{}) do
@@ -300,6 +328,15 @@ defmodule EBoss.AccountsBoundaryTest do
   defp unique_email do
     "user#{System.unique_integer([:positive])}@example.com"
   end
+
+  defp invalid_attribute_fields(%Ash.Error.Invalid{errors: errors}) do
+    errors
+    |> Enum.flat_map(&invalid_attribute_fields/1)
+    |> Enum.uniq()
+  end
+
+  defp invalid_attribute_fields(%Ash.Error.Changes.InvalidAttribute{field: field}), do: [field]
+  defp invalid_attribute_fields(_error), do: []
 
   defp password, do: "supersecret123"
 

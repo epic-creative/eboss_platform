@@ -166,7 +166,7 @@ defmodule EBoss.Seeds do
   defp ensure_organization!(owner, attrs) do
     slug = Slug.slugify(attrs.name)
 
-    case lookup_one(Organization, [slug: slug], EBoss.Organizations) do
+    case lookup_one(Organization, [owner_slug: slug], EBoss.Organizations) do
       nil ->
         Organizations.create_organization!(attrs, actor: owner)
 
@@ -689,13 +689,7 @@ defmodule EBoss.Seeds do
     ]
   end
 
-  defp workspace_path(%{owner_type: :user, owner_handle: owner_handle, slug: slug}) do
-    "@#{owner_handle}/#{slug}"
-  end
-
-  defp workspace_path(%{owner_type: :organization, owner_handle: owner_handle, slug: slug}) do
-    "#{owner_handle}/#{slug}"
-  end
+  defp workspace_path(%{owner_slug: owner_slug, slug: slug}), do: "#{owner_slug}/#{slug}"
 
   defp maybe_update_workspace!(workspace, attrs, actor) do
     maybe_update_record!(workspace, attrs, fn changes ->

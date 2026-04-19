@@ -21,30 +21,16 @@ defmodule EBossWeb.HomeLiveRenderTest do
     :ok
   end
 
-  test "home live renders the reframed landing structure" do
+  test "home live mounts the landing shell inside the workspace frame" do
     html =
       %{flash: %{}, current_scope: nil, current_user: nil}
       |> EBossWeb.HomeLive.render()
       |> Phoenix.LiveViewTest.rendered_to_string()
 
-    assert html =~ ~s(class="ui-public-page ui-home-page")
-    assert html =~ ~s(data-home-hero)
-    assert html =~ ~s(data-home-proof-strip)
-    assert html =~ ~s(data-home-story="continuity")
-    assert html =~ ~s(data-home-story="tempo")
-    assert html =~ ~s(data-home-closing)
-    assert html =~ ~s(ui-public-hero)
-    assert html =~ ~s(ui-public-proof-band)
-    assert html =~ ~s(ui-public-feature-row)
-    assert html =~ ~s(ui-public-closing-section)
-    assert html =~ ~s(data-public-section-pattern="hero")
-    assert html =~ ~s(data-public-section-pattern="proof-band")
-    assert html =~ ~s(data-public-section-pattern="cta-band")
-    assert html =~ ~s(data-public-section-pattern="closing-section")
-    assert html =~ "A calmer launch page for teams that need the shell to stay precise."
-    assert html =~ "The landing page leads with product posture, then proves it."
-    assert html =~ "Enter the product from a page that already speaks the same language."
-
-    assert Regex.scan(~r/data-public-section-pattern="feature-row"/, html) |> length() == 2
+    assert html =~ ~s(data-shell-mode="workspace")
+    assert html =~ ~s(class="ui-shell__workspace")
+    assert html =~ ~s(data-name="ShellOperatorLanding")
+    assert html =~ ~s(data-props="{}")
+    assert html =~ ~s(data-ssr="false")
   end
 end

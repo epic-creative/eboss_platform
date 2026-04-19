@@ -8,7 +8,7 @@ defmodule EBoss.Workspaces.Workspace.Calculations.Owner do
 
   @impl true
   def load(_query, _opts, _context),
-    do: [:owner_type, :owner_id, :owner_handle, :owner_display_name]
+    do: [:owner_type, :owner_id, :owner_slug, :owner_display_name]
 
   @impl true
   def calculate(records, _opts, _context) do

@@ -23,7 +23,7 @@ defmodule EBossWeb.AuthLiveTest do
   end
 
   test "auth routes share the same shell hierarchy", %{conn: conn} do
-    user = register_user(%{email: "shared-shell@example.com", username: "shared_shell_user"})
+    user = register_user(%{email: "shared-shell@example.com", username: "shared-shell-user"})
     confirm_token = extract_token_from_latest_email("confirm")
 
     EBoss.Accounts.request_password_reset_token!(%{email: user.email}, authorize?: false)
@@ -43,16 +43,7 @@ defmodule EBossWeb.AuthLiveTest do
 
     for route <- routes do
       assert {:ok, view, _html} = live(conn, route)
-      assert has_element?(view, "[data-auth-shell]")
-      assert has_element?(view, ".ui-auth-page")
-      assert has_element?(view, ".ui-auth-page__header")
-      assert has_element?(view, ".ui-auth-page__body")
-      assert has_element?(view, ".ui-auth-page__footer")
-
-      assert has_element?(
-               view,
-               ~s(nav[aria-label="#{BrowserTestContracts.authentication_routes_nav_label()}"])
-             )
+      assert_auth_shell(view)
     end
   end
 
@@ -77,8 +68,8 @@ defmodule EBossWeb.AuthLiveTest do
     end
   end
 
-  test "public routes share the public shell chrome and CTA framing", %{conn: conn} do
-    user = register_user(%{email: "public-shell@example.com", username: "public_shell_user"})
+  test "auth routes use the compact auth shell while home keeps the landing shell", %{conn: conn} do
+    user = register_user(%{email: "public-shell@example.com", username: "public-shell-user"})
     confirm_token = extract_token_from_latest_email("confirm")
 
     EBoss.Accounts.request_password_reset_token!(%{email: user.email}, authorize?: false)
@@ -88,30 +79,27 @@ defmodule EBossWeb.AuthLiveTest do
     magic_token = extract_token_from_latest_email("magic_link")
 
     routes = [
-      %{path: ~p"/", cta?: true},
-      %{path: ~p"/sign-in", cta?: false},
-      %{path: ~p"/register", cta?: false},
-      %{path: ~p"/forgot-password", cta?: false},
-      %{path: "/reset/#{reset_token}", cta?: false},
-      %{path: "/confirm/#{confirm_token}", cta?: false},
-      %{path: "/magic_link/#{magic_token}", cta?: false}
+      ~p"/sign-in",
+      ~p"/register",
+      ~p"/forgot-password",
+      "/reset/#{reset_token}",
+      "/confirm/#{confirm_token}",
+      "/magic_link/#{magic_token}"
     ]
 
-    for %{path: route, cta?: cta?} <- routes do
+    for route <- routes do
       assert {:ok, view, _html} = live(conn, route)
-      assert has_element?(view, ".ui-shell[data-shell-mode='public']")
-      assert has_element?(view, ".ui-shell-header[data-public-shell-header]")
-      assert has_element?(view, "[data-public-shell-nav]")
-      assert has_element?(view, "[data-public-shell-nav] .ui-nav-pill[data-active='true']")
-      assert has_element?(view, "[data-public-shell-footer]")
-      assert has_element?(view, ".ui-theme-toggle")
-
-      if cta? do
-        assert has_element?(view, "[data-public-cta-frame]")
-      else
-        refute has_element?(view, "[data-public-cta-frame]")
-      end
+      assert_auth_shell(view)
+      refute has_element?(view, ".ui-shell-header[data-public-shell-header]")
     end
+
+    assert {:ok, home, _html} = live(conn, ~p"/")
+    assert has_element?(home, ".ui-shell[data-shell-mode='workspace']")
+    refute has_element?(home, ~s([data-testid="#{BrowserTestContracts.auth_shell()}"]))
+
+    landing = get_vue(home, name: "ShellOperatorLanding")
+    assert landing.component == "ShellOperatorLanding"
+    assert landing.ssr == false
   end
 
   test "signed-in visitors are redirected away from home and anonymous-only auth pages",
@@ -129,7 +117,7 @@ defmodule EBossWeb.AuthLiveTest do
     context =
       register_and_log_in_user(%{conn: conn}, %{
         email: "canonical-auth@example.com",
-        username: "canonical_auth_user"
+        username: "canonical-auth-user"
       })
 
     workspace =
@@ -137,7 +125,7 @@ defmodule EBossWeb.AuthLiveTest do
         name: "Canonical Auth Workspace"
       })
 
-    dashboard_path = dashboard_path(:user, context.current_user.username, workspace.slug)
+    dashboard_path = dashboard_path(context.current_user.owner_slug, workspace.slug)
 
     assert {:error, {:redirect, %{to: ^dashboard_path}}} = live(context.conn, ~p"/")
     assert {:error, {:redirect, %{to: ^dashboard_path}}} = live(context.conn, ~p"/sign-in")
@@ -147,31 +135,59 @@ defmodule EBossWeb.AuthLiveTest do
              live(context.conn, ~p"/forgot-password")
   end
 
+  test "signed-in visitors without owned or member workspaces stay on /dashboard even when public workspaces exist",
+       %{conn: conn} do
+    owner =
+      register_user(%{
+        email: "public-home-owner@example.com",
+        username: "public-home-owner"
+      })
+
+    _public_workspace =
+      create_user_workspace(owner, %{
+        name: "Public Home Workspace",
+        visibility: :public
+      })
+
+    context =
+      register_and_log_in_user(%{conn: conn}, %{
+        email: "public-home-outsider@example.com",
+        username: "public-home-outsider"
+      })
+
+    assert {:error, {:redirect, %{to: "/dashboard"}}} = live(context.conn, ~p"/")
+    assert {:error, {:redirect, %{to: "/dashboard"}}} = live(context.conn, ~p"/sign-in")
+  end
+
   test "anonymous visitors are redirected to sign-in for the dashboard", %{conn: conn} do
     assert {:error, {:redirect, %{to: "/sign-in"}}} = live(conn, ~p"/dashboard")
   end
 
-  test "dashboard keeps the product shell without public footer chrome", context do
+  test "dashboard mounts the workspace shell without public footer chrome", context do
     %{conn: conn} = register_and_log_in_user(context)
 
     assert {:ok, dashboard, _html} = live(conn, ~p"/dashboard")
-    assert has_element?(dashboard, ".ui-shell[data-shell-mode='product']")
+    assert has_element?(dashboard, ".ui-shell[data-shell-mode='workspace']")
     refute has_element?(dashboard, "[data-public-shell-nav]")
     refute has_element?(dashboard, "[data-public-shell-footer]")
     refute has_element?(dashboard, "[data-public-cta-frame]")
+
+    workspace_shell = get_vue(dashboard, name: "ShellOperatorWorkspaceApp")
+
+    assert workspace_shell.component == "ShellOperatorWorkspaceApp"
+    assert workspace_shell.props["currentScope"]["empty"] == true
   end
 
   test "custom pages render the shared LiveVue shell", %{conn: conn} do
     {:ok, sign_in, _html} = live(conn, ~p"/sign-in")
-    sign_in_shell = get_vue(sign_in, name: "AuthScene")
-
-    assert sign_in_shell.component == "AuthScene"
-    assert sign_in_shell.props["title"] == "Sign in without leaving the product"
+    assert_auth_shell(sign_in)
+    assert render(sign_in) =~ "Sign in to EBoss"
+    refute render(sign_in) =~ ~s(data-name="AuthScene")
 
     context =
       register_and_log_in_user(%{conn: conn}, %{
         email: "dashboard-vue@example.com",
-        username: "dashboard_vue_user"
+        username: "dashboard-vue-user"
       })
 
     workspace =
@@ -180,12 +196,14 @@ defmodule EBossWeb.AuthLiveTest do
       })
 
     {:ok, dashboard, _html} =
-      live(context.conn, dashboard_path(:user, context.current_user.username, workspace.slug))
+      live(context.conn, dashboard_path(context.current_user.owner_slug, workspace.slug))
 
-    dashboard_shell = get_vue(dashboard, name: "DashboardLaunchpad")
+    dashboard_shell = get_vue(dashboard, name: "ShellOperatorWorkspaceApp")
 
-    assert dashboard_shell.component == "DashboardLaunchpad"
-    assert dashboard_shell.props["username"] == context.current_user.username
+    assert dashboard_shell.component == "ShellOperatorWorkspaceApp"
+    assert dashboard_shell.props["currentPage"] == "dashboard"
+    assert dashboard_shell.props["currentUser"]["username"] == context.current_user.username
+    assert dashboard_shell.props["currentScope"]["currentWorkspace"]["slug"] == workspace.slug
   end
 
   test "sign-in page isolates password and magic-link field names for browser autofill", %{
@@ -222,19 +240,18 @@ defmodule EBossWeb.AuthLiveTest do
     sign_in_html = render(sign_in)
 
     assert has_element?(sign_in, ".ui-auth-form")
-    assert sign_in_html =~ "Use the email address tied to your account."
-    assert sign_in_html =~ "Passwords are case sensitive."
-    assert sign_in_html =~ "We only send sign-in links when it exists."
+    assert sign_in_html =~ "Forgot password?"
+    assert sign_in_html =~ "Send magic link"
+    assert sign_in_html =~ "Password"
+    assert sign_in_html =~ "Magic link"
     assert sign_in_html =~ ~s(phx-disable-with="Signing in...")
     assert sign_in_html =~ ~s(phx-disable-with="Sending link...")
 
     {:ok, register, _html} = live(conn, ~p"/register")
     register_html = render(register)
 
-    assert register_html =~
-             "4-30 characters. Use lowercase letters, numbers, hyphens, or underscores."
-
-    assert register_html =~ "Use at least 8 characters."
+    assert register_html =~ "This becomes your workspace identifier."
+    assert register_html =~ "At least 15 characters, or 8 with a number and letter."
     assert register_html =~ "Repeat the same password exactly."
     assert register_html =~ ~s(phx-disable-with="Creating account...")
   end
@@ -242,7 +259,7 @@ defmodule EBossWeb.AuthLiveTest do
   test "registration succeeds, signs the user in, and sends confirmation email", %{conn: conn} do
     params = %{
       "email" => "register-live@example.com",
-      "username" => "register_live_user",
+      "username" => "register-live-user",
       "password" => "supersecret123",
       "password_confirmation" => "supersecret123"
     }
@@ -258,7 +275,7 @@ defmodule EBossWeb.AuthLiveTest do
     assert redirected_to(token_conn) == "/dashboard"
 
     dashboard_conn = get(recycle(token_conn), ~p"/dashboard")
-    assert html_response(dashboard_conn, 200) =~ "@register_live_user"
+    assert_workspace_shell_html(html_response(dashboard_conn, 200), "register-live-user")
 
     assert_received {:email, email}
     assert email.html_body =~ "/confirm/"
@@ -289,7 +306,7 @@ defmodule EBossWeb.AuthLiveTest do
   end
 
   test "password sign-in succeeds from the custom page", %{conn: conn} do
-    user = register_user(%{email: "signin-live@example.com", username: "signin_live_user"})
+    user = register_user(%{email: "signin-live@example.com", username: "signin-live-user"})
     flush_emails()
 
     {:ok, view, _html} = live(conn, ~p"/sign-in")
@@ -305,11 +322,11 @@ defmodule EBossWeb.AuthLiveTest do
     assert redirected_to(token_conn) == "/dashboard"
 
     dashboard_conn = get(recycle(token_conn), ~p"/dashboard")
-    assert html_response(dashboard_conn, 200) =~ "@signin_live_user"
+    assert_workspace_shell_html(html_response(dashboard_conn, 200), "signin-live-user")
   end
 
   test "invalid password sign-in stays on the page", %{conn: conn} do
-    user = register_user(%{email: "bad-signin@example.com", username: "bad_signin"})
+    user = register_user(%{email: "bad-signin@example.com", username: "bad-signin"})
     flush_emails()
 
     {:ok, view, _html} = live(conn, ~p"/sign-in")
@@ -380,7 +397,7 @@ defmodule EBossWeb.AuthLiveTest do
   end
 
   test "forgot password sends a reset email", %{conn: conn} do
-    user = register_user(%{email: "reset-request@example.com", username: "reset_request"})
+    user = register_user(%{email: "reset-request@example.com", username: "reset-request"})
     flush_emails()
 
     {:ok, view, _html} = live(conn, ~p"/forgot-password")
@@ -390,11 +407,11 @@ defmodule EBossWeb.AuthLiveTest do
       |> form("#forgot-password-form", user: %{"email" => to_string(user.email)})
       |> render_submit()
 
-    assert html =~ "Request received."
-    assert html =~ "If the account exists, reset instructions are on the way."
-    assert html =~ ~s(data-feedback="success")
-    assert html =~ ~s(role="status")
-    assert html =~ ~s(aria-live="polite")
+    assert html =~ "Check your email"
+    assert html =~ "We sent a link to reset your password."
+    assert html =~ "Check spam if you don&#39;t see it."
+    assert html =~ "so-alert-panel-success"
+    assert html =~ "Return to sign in"
     refute html =~ ~s(id="flash-info")
 
     assert_received {:email, email}
@@ -402,7 +419,7 @@ defmodule EBossWeb.AuthLiveTest do
   end
 
   test "magic-link request sends an email for an existing user", %{conn: conn} do
-    user = register_user(%{email: "magic-link@example.com", username: "magic_link_user"})
+    user = register_user(%{email: "magic-link@example.com", username: "magic-link-user"})
     flush_emails()
 
     {:ok, view, _html} = live(conn, ~p"/sign-in")
@@ -422,7 +439,7 @@ defmodule EBossWeb.AuthLiveTest do
   end
 
   test "reset token flow updates the password and lands on the dashboard", %{conn: conn} do
-    user = register_user(%{email: "reset-token@example.com", username: "reset_token_user"})
+    user = register_user(%{email: "reset-token@example.com", username: "reset-token-user"})
     flush_emails()
 
     EBoss.Accounts.request_password_reset_token!(%{email: user.email}, authorize?: false)
@@ -445,11 +462,11 @@ defmodule EBossWeb.AuthLiveTest do
     assert redirected_to(token_conn) == "/dashboard"
 
     dashboard_conn = get(recycle(token_conn), ~p"/dashboard")
-    assert html_response(dashboard_conn, 200) =~ "@reset_token_user"
+    assert_workspace_shell_html(html_response(dashboard_conn, 200), "reset-token-user")
   end
 
   test "confirmation token flow redirects to the dashboard", %{conn: conn} do
-    _user = register_user(%{email: "confirm-token@example.com", username: "confirm_token_user"})
+    _user = register_user(%{email: "confirm-token@example.com", username: "confirm-token-user"})
     confirm_token = extract_token_from_latest_email("confirm")
 
     {:ok, view, _html} = live(conn, "/confirm/#{confirm_token}")
@@ -462,11 +479,11 @@ defmodule EBossWeb.AuthLiveTest do
     assert redirected_to(token_conn) == "/dashboard"
 
     dashboard_conn = get(recycle(token_conn), ~p"/dashboard")
-    assert html_response(dashboard_conn, 200) =~ "@confirm_token_user"
+    assert_workspace_shell_html(html_response(dashboard_conn, 200), "confirm-token-user")
   end
 
   test "magic-link token flow redirects to the dashboard", %{conn: conn} do
-    user = register_user(%{email: "magic-token@example.com", username: "magic_token_user"})
+    user = register_user(%{email: "magic-token@example.com", username: "magic-token-user"})
     flush_emails()
 
     EBoss.Accounts.request_magic_link!(%{email: user.email}, authorize?: false)
@@ -482,14 +499,15 @@ defmodule EBossWeb.AuthLiveTest do
     assert redirected_to(token_conn) == "/dashboard"
 
     dashboard_conn = get(recycle(token_conn), ~p"/dashboard")
-    assert html_response(dashboard_conn, 200) =~ "@magic_token_user"
+    assert_workspace_shell_html(html_response(dashboard_conn, 200), "magic-token-user")
   end
 
   test "logout clears the session and returns to the public flow", context do
-    %{conn: conn} = register_and_log_in_user(context)
+    context = register_and_log_in_user(context)
+    %{conn: conn} = context
 
     dashboard_conn = get(conn, ~p"/dashboard")
-    assert html_response(dashboard_conn, 200) =~ "Welcome back"
+    assert_workspace_shell_html(html_response(dashboard_conn, 200), context.current_user.username)
 
     sign_out_conn = delete(recycle(dashboard_conn), ~p"/logout")
     assert redirected_to(sign_out_conn) == "/"
@@ -510,6 +528,23 @@ defmodule EBossWeb.AuthLiveTest do
     after
       0 -> :ok
     end
+  end
+
+  defp assert_workspace_shell_html(html, username) do
+    assert html =~ ~s(data-shell-mode="workspace")
+    assert html =~ ~s(data-name="ShellOperatorWorkspaceApp")
+    assert html =~ username
+    assert html =~ "currentScope"
+  end
+
+  defp assert_auth_shell(view) do
+    assert has_element?(view, ".ui-shell[data-shell-mode='workspace']")
+    assert has_element?(view, ~s([data-testid="#{BrowserTestContracts.auth_shell()}"]))
+    assert has_element?(view, ".so-header-bar")
+    assert has_element?(view, ".so-auth-page")
+    assert has_element?(view, ~s(footer a[href="mailto:support@eboss.dev"]))
+    refute has_element?(view, "[data-public-shell-nav]")
+    refute has_element?(view, "[data-public-shell-footer]")
   end
 
   defp form_target(html, form_id) do

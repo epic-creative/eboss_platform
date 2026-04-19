@@ -53,8 +53,6 @@ defmodule EBossWeb.Router do
       otp_app: :eboss_accounts,
       on_mount: {EBossWeb.LiveUserAuth, :live_user_required} do
       live "/dashboard", DashboardRedirectLive
-      live "/users/:owner_handle/:workspace_slug/dashboard", DashboardLive, :user_workspace
-      live "/orgs/:owner_handle/:workspace_slug/dashboard", DashboardLive, :org_workspace
     end
   end
 
@@ -72,11 +70,7 @@ defmodule EBossWeb.Router do
 
     get "/open_api", OpenApiController, :show
 
-    get "/users/:owner_handle/workspaces/:slug/bootstrap",
-        WorkspaceBootstrapController,
-        :show_user
-
-    get "/orgs/:owner_handle/workspaces/:slug/bootstrap", WorkspaceBootstrapController, :show_org
+    get "/:owner_slug/workspaces/:slug/bootstrap", WorkspaceBootstrapController, :show
     forward "/", JsonApiRouter
   end
 
@@ -96,6 +90,21 @@ defmodule EBossWeb.Router do
       live "/design-system", EBossWeb.Dev.DesignSystemLive
       live "/live_vue", EBossWeb.LiveVueDemoLive
       forward "/mailbox", Plug.Swoosh.MailboxPreview
+    end
+  end
+
+  scope "/", EBossWeb do
+    pipe_through :browser
+
+    ash_authentication_live_session :canonical_workspace_routes,
+      otp_app: :eboss_accounts,
+      on_mount: {EBossWeb.LiveUserAuth, :live_user_required} do
+      live "/:owner_slug/:workspace_slug", DashboardLive, :workspace_dashboard
+      live "/:owner_slug/:workspace_slug/projects", DashboardLive, :workspace_projects
+      live "/:owner_slug/:workspace_slug/members", DashboardLive, :workspace_members
+      live "/:owner_slug/:workspace_slug/access", DashboardLive, :workspace_access
+      live "/:owner_slug/:workspace_slug/activity", DashboardLive, :workspace_activity
+      live "/:owner_slug/:workspace_slug/settings", DashboardLive, :workspace_settings
     end
   end
 end

@@ -53,8 +53,8 @@ defmodule EBossWeb.Auth.MagicLinkRequestComponent do
   @impl true
   def render(assigns) do
     ~H"""
-    <section class="ui-auth-flow-section" aria-labelledby="sign-in-magic-link-heading">
-      <div class="space-y-1">
+    <section aria-labelledby="sign-in-magic-link-heading">
+      <div :if={!Map.get(assigns, :compact, false)} class="space-y-1">
         <h2 id="sign-in-magic-link-heading" class="ui-text-title" data-size="md">
           Magic link
         </h2>
@@ -85,12 +85,24 @@ defmodule EBossWeb.Auth.MagicLinkRequestComponent do
         <.auth_email_input
           field={form[:email]}
           autocomplete="section-magic-link email"
-          hint="Use the email address tied to your account. We only send sign-in links when it exists."
+          hint={
+            if(
+              Map.get(assigns, :compact, false),
+              do: nil,
+              else:
+                "Use the email address tied to your account. We only send sign-in links when it exists."
+            )
+          }
         />
 
         <:actions>
           <.auth_submit
-            label="Email me a magic link"
+            label={
+              if(Map.get(assigns, :compact, false),
+                do: "Send magic link",
+                else: "Email me a magic link"
+              )
+            }
             busy_label="Sending link..."
             variant="outline"
             tone="neutral"

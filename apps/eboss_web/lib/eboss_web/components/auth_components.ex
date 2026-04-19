@@ -5,72 +5,110 @@ defmodule EBossWeb.AuthComponents do
   alias AshPhoenix.Form
   alias EBossWeb.BrowserTestContracts
 
-  attr :eyebrow, :string, required: true
-  attr :title, :string, required: true
-  attr :subtitle, :string, required: true
-  attr :detail_one, :string, required: true
-  attr :detail_two, :string, required: true
-  attr :detail_three, :string, required: true
-  attr :current_user, :map, default: nil
+  attr :current_path, :string, required: true
+  attr :class, :any, default: nil
   slot :inner_block, required: true
 
   def auth_shell(assigns) do
     ~H"""
-    <section class="ui-auth-grid" data-auth-shell data-testid={BrowserTestContracts.auth_shell()}>
-      <.panel surface="floating" padding="sm">
-        <.AuthScene
-          eyebrow={@eyebrow}
-          title={@title}
-          subtitle={@subtitle}
-          detailOne={@detail_one}
-          detailTwo={@detail_two}
-          detailThree={@detail_three}
-        />
-      </.panel>
+    <div
+      class={[
+        "so-theme so-auth-shell flex min-h-screen flex-col bg-[hsl(var(--so-background))] text-[hsl(var(--so-foreground))]",
+        @class
+      ]}
+      data-auth-shell
+      data-testid={BrowserTestContracts.auth_shell()}
+    >
+      <header class="so-header-bar border-b border-[hsl(var(--so-header-border))]">
+        <div class="mx-auto flex h-12 w-full max-w-7xl items-center px-4 sm:px-6 lg:px-8">
+          <a href={~p"/"} class="flex shrink-0 items-center gap-2">
+            <div class="flex h-6 w-6 items-center justify-center rounded bg-[hsl(var(--so-header-foreground))]">
+              <span class="so-font-mono text-[10px] font-bold text-[hsl(var(--so-header-bg))]">
+                E
+              </span>
+            </div>
+            <span class="text-sm font-semibold text-[hsl(var(--so-header-foreground))]">EBoss</span>
+          </a>
 
-      <.panel surface="floating" padding="lg">
-        {render_slot(@inner_block)}
-      </.panel>
-    </section>
+          <div class="ml-4 hidden items-center gap-1.5 text-xs sm:flex">
+            <span class="text-[hsl(var(--so-header-muted))]">/</span>
+            <span class="so-font-mono text-[hsl(var(--so-header-muted))]">
+              {auth_route_label(@current_path)}
+            </span>
+          </div>
+
+          <div class="ml-auto flex items-center gap-2">
+            <.ThemeToggleButton />
+          </div>
+        </div>
+      </header>
+
+      <main class="flex flex-1 items-start justify-center px-4 pb-16 pt-16">
+        <div class="w-full max-w-[360px]">
+          {render_slot(@inner_block)}
+        </div>
+      </main>
+
+      <footer class="border-t border-[hsl(var(--so-border))] py-4">
+        <div class="mx-auto flex max-w-7xl items-center justify-center gap-6 px-4 sm:px-6 lg:px-8">
+          <a
+            href="#"
+            class="text-xs text-[hsl(var(--so-muted-foreground))] transition-colors hover:text-[hsl(var(--so-foreground))]"
+          >
+            Terms
+          </a>
+          <a
+            href="#"
+            class="text-xs text-[hsl(var(--so-muted-foreground))] transition-colors hover:text-[hsl(var(--so-foreground))]"
+          >
+            Privacy
+          </a>
+          <a
+            href="mailto:support@eboss.dev"
+            class="text-xs text-[hsl(var(--so-muted-foreground))] transition-colors hover:text-[hsl(var(--so-foreground))]"
+          >
+            Contact
+          </a>
+        </div>
+      </footer>
+    </div>
     """
   end
 
-  attr :eyebrow, :string, required: true
+  attr :eyebrow, :string, default: nil
   attr :title, :string, required: true
-  attr :subtitle, :string, required: true
-  attr :current_path, :string, default: nil
-  attr :family_label, :string, default: "Secure access"
-  attr :family_badge, :string, default: "First-party auth"
-  attr :show_nav, :boolean, default: true
+  attr :subtitle, :string, default: nil
+  attr :class, :any, default: nil
   slot :inner_block, required: true
   slot :footer
 
   def auth_page(assigns) do
     ~H"""
-    <div class="ui-auth-page">
-      <header class="ui-auth-page__header">
-        <div class="ui-auth-page__meta">
-          <p class="ui-text-meta" data-tone="soft">{@family_label}</p>
-          <.badge tone="neutral">{@family_badge}</.badge>
+    <div class={["so-auth-page", @class]}>
+      <header class="mb-6 text-center">
+        <div class="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-[hsl(var(--so-foreground))]">
+          <span class="so-font-mono text-sm font-bold text-[hsl(var(--so-background))]">E</span>
         </div>
-
-        <.section_heading
-          eyebrow={@eyebrow}
-          title={@title}
-          subtitle={@subtitle}
-          title_size="md"
-        />
-
-        <div :if={@show_nav} class="ui-auth-page__nav">
-          <.auth_nav current_path={@current_path || ""} />
-        </div>
+        <p
+          :if={@eyebrow}
+          class="so-font-mono mb-2 text-[11px] uppercase tracking-[0.18em] text-[hsl(var(--so-muted-foreground))]"
+        >
+          {@eyebrow}
+        </p>
+        <h1 class="text-lg font-semibold tracking-tight">{@title}</h1>
+        <p
+          :if={@subtitle}
+          class="mt-1 text-xs leading-relaxed text-[hsl(var(--so-muted-foreground))]"
+        >
+          {@subtitle}
+        </p>
       </header>
 
-      <div class="ui-auth-page__body">
+      <div>
         {render_slot(@inner_block)}
       </div>
 
-      <footer :if={@footer != []} class="ui-auth-page__footer">
+      <footer :if={@footer != []} class="mt-3">
         {render_slot(@footer)}
       </footer>
     </div>
@@ -84,11 +122,18 @@ defmodule EBossWeb.AuthComponents do
 
   def auth_page_footer(assigns) do
     ~H"""
-    <div class="ui-auth-page__footer-copy">
-      <p class="ui-text-body" data-size="sm" data-tone="soft">
-        {@prompt} <a href={@link_href} class="ui-text-link">{@link_text}</a>.
+    <div class="so-auth-card-muted text-center">
+      <p class="text-xs text-[hsl(var(--so-muted-foreground))]">
+        {@prompt}
+        <a href={@link_href} class="font-medium text-[hsl(var(--so-primary))] hover:underline">
+          {@link_text}
+        </a>
+        .
       </p>
-      <p :if={@note} class="ui-text-body" data-size="sm" data-tone="muted">
+      <p
+        :if={@note}
+        class="mt-2 text-[11px] leading-relaxed text-[hsl(var(--so-muted-foreground))]"
+      >
         {@note}
       </p>
     </div>
@@ -193,17 +238,17 @@ defmodule EBossWeb.AuthComponents do
   attr :class, :any, default: nil
 
   def auth_submit(assigns) do
+    assigns =
+      assign(assigns, :submit_class, submit_class(assigns.variant, assigns.tone, assigns.class))
+
     ~H"""
-    <.button
+    <button
       type="submit"
-      variant={@variant}
-      tone={@tone}
-      size={@size}
-      class={["ui-auth-submit", @class]}
+      class={@submit_class}
       phx-disable-with={@busy_label}
     >
       {@label}
-    </.button>
+    </button>
     """
   end
 
@@ -278,4 +323,21 @@ defmodule EBossWeb.AuthComponents do
     [message | List.wrap(messages)]
     |> Enum.reject(&(is_nil(&1) || &1 == ""))
   end
+
+  defp auth_route_label("/sign-in"), do: "Sign in"
+  defp auth_route_label("/register"), do: "Register"
+  defp auth_route_label("/forgot-password"), do: "Reset password"
+  defp auth_route_label("/reset"), do: "Reset password"
+  defp auth_route_label("/confirm"), do: "Confirm email"
+  defp auth_route_label("/magic-link"), do: "Magic link"
+  defp auth_route_label(_), do: "Auth"
+
+  defp submit_class("outline", _tone, class),
+    do: ["so-button-secondary h-8 w-full justify-center text-xs", class]
+
+  defp submit_class(_variant, "neutral", class),
+    do: ["so-button-secondary h-8 w-full justify-center text-xs", class]
+
+  defp submit_class(_variant, _tone, class),
+    do: ["so-button-primary h-8 w-full justify-center text-xs", class]
 end

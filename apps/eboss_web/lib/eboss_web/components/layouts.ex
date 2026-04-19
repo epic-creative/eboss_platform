@@ -21,7 +21,7 @@ defmodule EBossWeb.Layouts do
     doc: "the authenticated user when present"
   )
 
-  attr(:shell_mode, :string, values: ~w(product public), default: "product")
+  attr(:shell_mode, :string, values: ~w(product public workspace), default: "product")
   attr(:current_path, :string, default: nil)
 
   slot(:inner_block, required: true)
@@ -31,150 +31,166 @@ defmodule EBossWeb.Layouts do
     assigns =
       assigns
       |> assign(:public_shell?, assigns.shell_mode == "public" && is_nil(assigns.current_user))
+      |> assign(:workspace_shell?, assigns.shell_mode == "workspace")
       |> assign(
         :shell_mode_attr,
-        if(assigns.shell_mode == "public", do: "public", else: "product")
+        case assigns.shell_mode do
+          "public" -> "public"
+          "workspace" -> "workspace"
+          _ -> "product"
+        end
       )
 
     ~H"""
     <div class="ui-shell" data-shell-mode={@shell_mode_attr}>
-      <div class="ui-shell__topline" />
-      <div class="ui-shell__inner">
-        <header class="ui-shell-header" data-public-shell-header={@public_shell?}>
-          <div class="ui-shell-header__inner">
-            <%= if @public_shell? do %>
-              <div class="ui-public-shell__masthead">
+      <%= if @workspace_shell? do %>
+        <div class="ui-shell__workspace">
+          {render_slot(@inner_block)}
+        </div>
+
+        <.flash_group flash={@flash} />
+      <% else %>
+        <div class="ui-shell__topline" />
+        <div class="ui-shell__inner">
+          <header class="ui-shell-header" data-public-shell-header={@public_shell?}>
+            <div class="ui-shell-header__inner">
+              <%= if @public_shell? do %>
+                <div class="ui-public-shell__masthead">
+                  <a href={~p"/"} class="ui-shell-brand">
+                    <div class="ui-brand-mark">EB</div>
+                    <div class="ui-shell-brand__lockup">
+                      <p class="ui-kicker">EBoss Platform</p>
+                      <p class="ui-text-body" data-size="sm" data-tone="soft">
+                        Product-native access, recovery, and launch surfaces.
+                      </p>
+                    </div>
+                  </a>
+
+                  <.panel
+                    as="div"
+                    surface="solid"
+                    padding="sm"
+                    class="ui-public-shell__route-frame"
+                  >
+                    <div class="ui-public-shell__route-meta">
+                      <p class="ui-text-meta" data-tone="soft">Public routes</p>
+                      <.badge tone="neutral">Shared shell</.badge>
+                    </div>
+
+                    <nav
+                      class="ui-public-shell__nav"
+                      aria-label={BrowserTestContracts.public_routes_nav_label()}
+                      data-public-shell-nav
+                    >
+                      <.nav_pill to={~p"/"} active={public_nav_active?(:home, @current_path)}>
+                        Home
+                      </.nav_pill>
+                      <.nav_pill
+                        to={~p"/sign-in"}
+                        active={public_nav_active?(:sign_in, @current_path)}
+                      >
+                        Sign in
+                      </.nav_pill>
+                      <.nav_pill
+                        to={~p"/register"}
+                        active={public_nav_active?(:register, @current_path)}
+                      >
+                        Register
+                      </.nav_pill>
+                      <.nav_pill
+                        to={~p"/forgot-password"}
+                        active={public_nav_active?(:forgot_password, @current_path)}
+                      >
+                        Forgot password
+                      </.nav_pill>
+                    </nav>
+                  </.panel>
+                </div>
+
+                <div class="ui-public-shell__controls">
+                  <.theme_toggle />
+                  <.button
+                    navigate={public_context_action(@current_path).to}
+                    size="sm"
+                    variant={public_context_action(@current_path).variant}
+                    tone={public_context_action(@current_path).tone}
+                    data-testid={BrowserTestContracts.public_shell_context_action()}
+                  >
+                    {public_context_action(@current_path).label}
+                  </.button>
+                </div>
+              <% else %>
                 <a href={~p"/"} class="ui-shell-brand">
                   <div class="ui-brand-mark">EB</div>
                   <div class="ui-shell-brand__lockup">
                     <p class="ui-kicker">EBoss Platform</p>
                     <p class="ui-text-body" data-size="sm" data-tone="soft">
-                      Product-native access, recovery, and launch surfaces.
+                      Precision control for agent orchestration.
                     </p>
                   </div>
                 </a>
 
-                <.panel
-                  as="div"
-                  surface="solid"
-                  padding="sm"
-                  class="ui-public-shell__route-frame"
-                >
-                  <div class="ui-public-shell__route-meta">
-                    <p class="ui-text-meta" data-tone="soft">Public routes</p>
-                    <.badge tone="neutral">Shared shell</.badge>
-                  </div>
+                <nav class="ui-control-cluster">
+                  <.theme_toggle />
 
-                  <nav
-                    class="ui-public-shell__nav"
-                    aria-label={BrowserTestContracts.public_routes_nav_label()}
-                    data-public-shell-nav
-                  >
-                    <.nav_pill to={~p"/"} active={public_nav_active?(:home, @current_path)}>
-                      Home
-                    </.nav_pill>
-                    <.nav_pill to={~p"/sign-in"} active={public_nav_active?(:sign_in, @current_path)}>
-                      Sign in
-                    </.nav_pill>
-                    <.nav_pill
-                      to={~p"/register"}
-                      active={public_nav_active?(:register, @current_path)}
-                    >
-                      Register
-                    </.nav_pill>
-                    <.nav_pill
-                      to={~p"/forgot-password"}
-                      active={public_nav_active?(:forgot_password, @current_path)}
-                    >
-                      Forgot password
-                    </.nav_pill>
-                  </nav>
-                </.panel>
-              </div>
-
-              <div class="ui-public-shell__controls">
-                <.theme_toggle />
-                <.button
-                  navigate={public_context_action(@current_path).to}
-                  size="sm"
-                  variant={public_context_action(@current_path).variant}
-                  tone={public_context_action(@current_path).tone}
-                  data-testid={BrowserTestContracts.public_shell_context_action()}
-                >
-                  {public_context_action(@current_path).label}
-                </.button>
-              </div>
-            <% else %>
-              <a href={~p"/"} class="ui-shell-brand">
-                <div class="ui-brand-mark">EB</div>
-                <div class="ui-shell-brand__lockup">
-                  <p class="ui-kicker">EBoss Platform</p>
-                  <p class="ui-text-body" data-size="sm" data-tone="soft">
-                    Precision control for agent orchestration.
-                  </p>
-                </div>
-              </a>
-
-              <nav class="ui-control-cluster">
-                <.theme_toggle />
-
-                <%= if @current_user do %>
-                  <.button
-                    navigate={current_dashboard_path(@current_scope)}
-                    variant="outline"
-                    tone="neutral"
-                    size="sm"
-                  >
-                    Dashboard
-                  </.button>
-                  <.badge tone="neutral" class="hidden sm:inline-flex">
-                    @{Map.get(@current_user, :username)}
-                  </.badge>
-                  <form action={~p"/logout"} method="post">
-                    <input type="hidden" name="_method" value="delete" />
-                    <input
-                      type="hidden"
-                      name="_csrf_token"
-                      value={Plug.CSRFProtection.get_csrf_token()}
-                    />
+                  <%= if @current_user do %>
                     <.button
-                      type="submit"
+                      navigate={current_dashboard_path(@current_scope)}
+                      variant="outline"
                       tone="neutral"
                       size="sm"
-                      icon="hero-arrow-left-on-rectangle"
                     >
-                      Sign out
+                      Dashboard
                     </.button>
-                  </form>
-                <% else %>
-                  <.button navigate={~p"/sign-in"} variant="outline" tone="neutral" size="sm">
-                    Sign in
-                  </.button>
-                  <.button navigate={~p"/register"} size="sm">
-                    Create account
-                  </.button>
-                <% end %>
-              </nav>
-            <% end %>
-          </div>
-        </header>
+                    <.badge tone="neutral" class="hidden sm:inline-flex">
+                      @{Map.get(@current_user, :username)}
+                    </.badge>
+                    <form action={~p"/logout"} method="post">
+                      <input type="hidden" name="_method" value="delete" />
+                      <input
+                        type="hidden"
+                        name="_csrf_token"
+                        value={Plug.CSRFProtection.get_csrf_token()}
+                      />
+                      <.button
+                        type="submit"
+                        tone="neutral"
+                        size="sm"
+                        icon="hero-arrow-left-on-rectangle"
+                      >
+                        Sign out
+                      </.button>
+                    </form>
+                  <% else %>
+                    <.button navigate={~p"/sign-in"} variant="outline" tone="neutral" size="sm">
+                      Sign in
+                    </.button>
+                    <.button navigate={~p"/register"} size="sm">
+                      Create account
+                    </.button>
+                  <% end %>
+                </nav>
+              <% end %>
+            </div>
+          </header>
 
-        <main class="ui-shell-main">
-          <div class="ui-shell-main__inner">
-            {render_slot(@inner_block)}
-          </div>
-        </main>
+          <main class="ui-shell-main">
+            <div class="ui-shell-main__inner">
+              {render_slot(@inner_block)}
+            </div>
+          </main>
 
-        <section :if={@shell_footer != []} class="ui-shell-support">
-          <div class="ui-shell-support__inner">
-            {render_slot(@shell_footer)}
-          </div>
-        </section>
+          <section :if={@shell_footer != []} class="ui-shell-support">
+            <div class="ui-shell-support__inner">
+              {render_slot(@shell_footer)}
+            </div>
+          </section>
 
-        <.public_footer :if={@public_shell?} current_path={@current_path} />
+          <.public_footer :if={@public_shell?} current_path={@current_path} />
 
-        <.flash_group flash={@flash} />
-      </div>
+          <.flash_group flash={@flash} />
+        </div>
+      <% end %>
     </div>
     """
   end

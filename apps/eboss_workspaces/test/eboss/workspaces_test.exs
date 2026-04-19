@@ -23,14 +23,14 @@ defmodule EBoss.WorkspacesTest do
 
     loaded_workspace = read_workspace!(first_workspace.id, owner, [:full_path, :owner])
 
-    assert first_workspace.owner_handle == owner.username
+    assert first_workspace.owner_slug == owner.owner_slug
     assert first_workspace.owner_display_name == owner.username
-    assert loaded_workspace.full_path == "@#{owner.username}/studio-space"
+    assert loaded_workspace.full_path == "#{owner.owner_slug}/studio-space"
 
     assert loaded_workspace.owner == %{
              type: :user,
              id: owner.id,
-             handle: owner.username,
+             slug: owner.owner_slug,
              display_name: owner.username
            }
 
@@ -78,14 +78,14 @@ defmodule EBoss.WorkspacesTest do
 
     loaded_workspace = read_workspace!(workspace.id, owner, [:full_path, :owner])
 
-    assert workspace.owner_handle == organization.slug
+    assert workspace.owner_slug == organization.owner_slug
     assert workspace.owner_display_name == organization.name
-    assert loaded_workspace.full_path == "#{organization.slug}/ops"
+    assert loaded_workspace.full_path == "#{organization.owner_slug}/ops"
 
     assert loaded_workspace.owner == %{
              type: :organization,
              id: organization.id,
-             handle: organization.slug,
+             slug: organization.owner_slug,
              display_name: organization.name
            }
 
@@ -144,7 +144,7 @@ defmodule EBoss.WorkspacesTest do
     message = Exception.message(error)
 
     assert message =~ "Organization not found"
-    refute message =~ "owner_handle"
+    refute message =~ "owner_slug"
     refute message =~ "owner_display_name"
   end
 
@@ -198,7 +198,7 @@ defmodule EBoss.WorkspacesTest do
     assert visible_workspaces == []
   end
 
-  test "username changes sync active user-owned workspace owner snapshots" do
+  test "username changes sync display labels without changing user workspace owner slugs" do
     admin = register_user() |> promote_to_admin()
     owner = register_user()
 
@@ -220,19 +220,19 @@ defmodule EBoss.WorkspacesTest do
 
     loaded_workspace = read_workspace!(workspace.id, renamed_owner, [:full_path, :owner])
 
-    assert loaded_workspace.owner_handle == "renamed-owner"
+    assert loaded_workspace.owner_slug == owner.owner_slug
     assert loaded_workspace.owner_display_name == "renamed-owner"
-    assert loaded_workspace.full_path == "@renamed-owner/studio-space"
+    assert loaded_workspace.full_path == "#{owner.owner_slug}/studio-space"
 
     assert loaded_workspace.owner == %{
              type: :user,
              id: owner.id,
-             handle: "renamed-owner",
+             slug: owner.owner_slug,
              display_name: "renamed-owner"
            }
   end
 
-  test "organization name changes sync active organization-owned workspace owner snapshots" do
+  test "organization name changes sync display labels without changing org workspace owner slugs" do
     owner = register_user()
     organization = create_organization(owner, %{name: "Workspace Org"})
 
@@ -250,14 +250,14 @@ defmodule EBoss.WorkspacesTest do
 
     loaded_workspace = read_workspace!(workspace.id, owner, [:full_path, :owner])
 
-    assert loaded_workspace.owner_handle == renamed_organization.slug
+    assert loaded_workspace.owner_slug == renamed_organization.owner_slug
     assert loaded_workspace.owner_display_name == "Platform Ops"
-    assert loaded_workspace.full_path == "#{renamed_organization.slug}/ops"
+    assert loaded_workspace.full_path == "#{renamed_organization.owner_slug}/ops"
 
     assert loaded_workspace.owner == %{
              type: :organization,
              id: organization.id,
-             handle: renamed_organization.slug,
+             slug: renamed_organization.owner_slug,
              display_name: "Platform Ops"
            }
   end
@@ -277,19 +277,19 @@ defmodule EBoss.WorkspacesTest do
     from(workspace_row in "workspaces", where: workspace_row.id == ^workspace_id)
     |> Repo.update_all(
       set: [
-        owner_handle: "cached-owner",
+        owner_slug: "cached-owner",
         owner_display_name: "Cached Owner"
       ]
     )
 
     loaded_workspace = read_workspace!(workspace.id, owner, [:full_path, :owner])
 
-    assert loaded_workspace.full_path == "@cached-owner/studio-space"
+    assert loaded_workspace.full_path == "cached-owner/studio-space"
 
     assert loaded_workspace.owner == %{
              type: :user,
              id: owner.id,
-             handle: "cached-owner",
+             slug: "cached-owner",
              display_name: "Cached Owner"
            }
   end

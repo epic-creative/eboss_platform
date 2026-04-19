@@ -39,7 +39,7 @@ config :eboss_data,
 config :eboss_accounts,
   namespace: EBoss,
   ecto_repos: [EBoss.Repo],
-  ash_domains: [EBoss.Accounts]
+  ash_domains: [EBoss.Accounts, EBoss.OwnerSlugs]
 
 config :eboss_tenancy,
   namespace: EBoss,

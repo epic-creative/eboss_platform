@@ -19,7 +19,7 @@ export type PreparedState = {
   workspace: {
     name: string;
     slug: string;
-    owner_handle: string;
+    owner_slug: string;
   };
 };
 

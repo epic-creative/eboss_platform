@@ -57,7 +57,7 @@ describe("UiTabs", () => {
     expect(activePanel(wrapper)?.text()).toContain("Agents custom panel")
 
     const agentsTrigger = wrapper.findAll('[role="tab"]')[1]
-    agentsTrigger.element.focus()
+    ;(agentsTrigger.element as HTMLElement).focus()
     await agentsTrigger.trigger("keydown", { key: "ArrowRight", code: "ArrowRight" })
     await nextTick()
 

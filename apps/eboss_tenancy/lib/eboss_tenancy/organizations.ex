@@ -31,4 +31,6 @@ defmodule EBoss.Organizations do
   defdelegate destroy_organization!(organization, opts \\ []), to: Organization
   defdelegate get_organization(id, opts \\ []), to: Organization
   defdelegate get_organization!(id, opts \\ []), to: Organization
+  defdelegate get_organization_by_owner_slug(owner_slug, opts \\ []), to: Organization
+  defdelegate get_organization_by_owner_slug!(owner_slug, opts \\ []), to: Organization
 end

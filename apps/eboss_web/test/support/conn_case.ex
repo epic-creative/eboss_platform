@@ -142,7 +142,7 @@ defmodule EBossWeb.ConnCase do
     |> Ash.create!(actor: owner)
   end
 
-  def dashboard_path(owner_type, owner_handle, workspace_slug) do
-    AppScope.dashboard_path(owner_type, owner_handle, workspace_slug)
+  def dashboard_path(owner_slug, workspace_slug) do
+    AppScope.dashboard_path(owner_slug, workspace_slug)
   end
 end

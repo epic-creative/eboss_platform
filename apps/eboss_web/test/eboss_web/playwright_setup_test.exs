@@ -16,13 +16,13 @@ defmodule EBossWeb.PlaywrightSetupTest do
     summary = PlaywrightSetup.prepare!(state_dir: state_dir, base_url: base_url)
 
     assert summary.credentials.email == "playwright-auth@localhost"
-    assert summary.credentials.username == "playwright_auth_user"
+    assert summary.credentials.username == "playwright-auth-user"
     assert summary.credentials.password == "playwright-pass-123"
 
     assert summary.user.email |> to_string() == summary.credentials.email
     assert summary.user.username == summary.credentials.username
     assert summary.workspace.slug == "playwright-workspace"
-    assert summary.dashboard_path == "/users/playwright_auth_user/playwright-workspace/dashboard"
+    assert summary.dashboard_path == "/playwright-auth-user/playwright-workspace"
 
     public_state = read_json!(summary.public_storage_state_path)
     authenticated_state = read_json!(summary.authenticated_storage_state_path)
@@ -63,7 +63,12 @@ defmodule EBossWeb.PlaywrightSetupTest do
 
     assert dashboard_conn.status == 200
     assert to_string(dashboard_conn.assigns.current_user.email) == summary.credentials.email
-    assert html_response(dashboard_conn, 200) =~ "@playwright_auth_user/playwright-workspace"
+
+    dashboard_html = html_response(dashboard_conn, 200)
+
+    assert dashboard_html =~ ~s(data-name="ShellOperatorWorkspaceApp")
+    assert dashboard_html =~ "playwright-auth-user"
+    assert dashboard_html =~ "playwright-workspace"
 
     assert metadata == %{
              "base_url" => base_url,
@@ -78,7 +83,7 @@ defmodule EBossWeb.PlaywrightSetupTest do
              },
              "workspace" => %{
                "name" => "Playwright Workspace",
-               "owner_handle" => summary.credentials.username,
+               "owner_slug" => summary.credentials.username,
                "slug" => "playwright-workspace"
              }
            }

@@ -46,13 +46,6 @@ defmodule EBoss.Workspaces.Workspace do
       not_found_error?: false
     )
 
-    define(:get_workspace_by_owner_handle_and_slug,
-      action: :by_owner_handle_and_slug,
-      args: [:owner_type, :owner_handle, :slug],
-      get?: true,
-      not_found_error?: false
-    )
-
     define(:list_workspaces_for_owner, action: :for_owner, args: [:owner_type, :owner_id])
   end
 
@@ -140,66 +133,6 @@ defmodule EBoss.Workspaces.Workspace do
       )
     end
 
-    read :by_owner_handle_and_slug do
-      description("Get a workspace by owner handle and workspace slug")
-
-      argument :owner_type, :atom do
-        allow_nil?(false)
-        constraints(one_of: [:user, :organization])
-      end
-
-      argument :owner_handle, :string do
-        allow_nil?(false)
-      end
-
-      argument :slug, :string do
-        allow_nil?(false)
-      end
-
-      filter(
-        expr(
-          owner_type == ^arg(:owner_type) and
-            owner_handle == ^arg(:owner_handle) and
-            slug == ^arg(:slug)
-        )
-      )
-    end
-
-    read :by_user_handle_and_slug do
-      description("Get a user-owned workspace by owner handle and workspace slug")
-
-      argument :owner_handle, :string do
-        allow_nil?(false)
-      end
-
-      argument :slug, :string do
-        allow_nil?(false)
-      end
-
-      filter(
-        expr(owner_type == :user and owner_handle == ^arg(:owner_handle) and slug == ^arg(:slug))
-      )
-    end
-
-    read :by_org_handle_and_slug do
-      description("Get an organization-owned workspace by owner handle and workspace slug")
-
-      argument :owner_handle, :string do
-        allow_nil?(false)
-      end
-
-      argument :slug, :string do
-        allow_nil?(false)
-      end
-
-      filter(
-        expr(
-          owner_type == :organization and owner_handle == ^arg(:owner_handle) and
-            slug == ^arg(:slug)
-        )
-      )
-    end
-
     read :for_owner do
       description("List all workspaces for a specific owner")
 
@@ -261,10 +194,9 @@ defmodule EBoss.Workspaces.Workspace do
 
     attribute :owner_id, :uuid do
       allow_nil?(false)
-      public?(true)
     end
 
-    attribute :owner_handle, :string do
+    attribute :owner_slug, :string do
       allow_nil?(false)
     end
 
@@ -273,7 +205,6 @@ defmodule EBoss.Workspaces.Workspace do
     end
 
     attribute :settings, :map do
-      public?(true)
       default(%{})
     end
 

@@ -53,6 +53,12 @@ defmodule EBossWeb.DesignSurfaceTest do
     ui_tabs_vue = read_file("assets/vue/components/ui/UiTabs.vue")
     auth_scene_vue = read_file("assets/vue/auth/AuthScene.vue")
     dashboard_launchpad_vue = read_file("assets/vue/dashboard/DashboardLaunchpad.vue")
+    shell_operator_landing_vue = read_file("assets/vue/shell/public/ShellOperatorLanding.vue")
+
+    shell_operator_workspace_vue =
+      read_file("assets/vue/shell/workspace/ShellOperatorWorkspaceApp.vue")
+
+    workspace_sidebar_vue = read_file("assets/vue/shell/workspace/WorkspaceSidebar.vue")
 
     assert design_system_live =~ "Default surface"
     assert design_system_live =~ "Floating surface"
@@ -62,12 +68,9 @@ defmodule EBossWeb.DesignSurfaceTest do
     assert ui_panel_story =~ "Floating surface"
     assert ui_panel_story =~ "Solid surface"
 
-    assert home_live =~ ~s(<div class="ui-public-page ui-home-page">)
-    assert home_live =~ ~s(<.public_hero_section)
-    assert home_live =~ ~s(<.public_proof_band)
-    assert home_live =~ ~s(<.public_feature_row)
-    assert home_live =~ ~s|:for={step <- route_sequence()}|
-    assert home_live =~ ~s|class="ui-public-route-sequence__step"|
+    assert home_live =~ ~s(shell_mode="workspace")
+    assert home_live =~ ~s(current_path="/")
+    assert home_live =~ ~s(<.ShellOperatorLanding />)
 
     assert ui_components =~ "def public_hero_section(assigns)"
     assert ui_components =~ "def public_proof_band(assigns)"
@@ -83,6 +86,17 @@ defmodule EBossWeb.DesignSurfaceTest do
 
     assert dashboard_launchpad_vue =~
              ~s(<UiPanel class="ui-dashboard-launchpad__tile" surface="solid" padding="sm">)
+
+    assert shell_operator_landing_vue =~ ~s(data-testid="home-hero")
+    assert shell_operator_landing_vue =~ ~s(aria-label="Public routes")
+    assert shell_operator_landing_vue =~ ~s(aria-label="Public shell footer")
+    assert shell_operator_landing_vue =~ "Workspace infrastructure"
+
+    assert shell_operator_workspace_vue =~ "WorkspaceSidebar"
+    assert shell_operator_workspace_vue =~ "InspectorPane"
+    assert shell_operator_workspace_vue =~ "No accessible workspaces yet"
+    assert workspace_sidebar_vue =~ "Projects"
+    assert workspace_sidebar_vue =~ "Members"
 
     assert ui_dialog_vue =~ ~s(<UiPanel as="div" surface="floating" class="sm:p-8">)
     assert ui_tabs_vue =~ ~s(<UiPanel as="div" surface="solid">)
@@ -146,6 +160,7 @@ defmodule EBossWeb.DesignSurfaceTest do
     sign_in_live = read_file("lib/eboss_web/live/auth/sign_in_live.ex")
     register_live = read_file("lib/eboss_web/live/auth/register_live.ex")
     forgot_password_live = read_file("lib/eboss_web/live/auth/forgot_password_live.ex")
+    shell_operator_landing_vue = read_file("assets/vue/shell/public/ShellOperatorLanding.vue")
 
     assert patterns_css =~ ".ui-public-shell__nav"
     assert patterns_css =~ ".ui-public-shell__controls"
@@ -170,9 +185,11 @@ defmodule EBossWeb.DesignSurfaceTest do
     assert patterns_css =~ ".ui-public-pattern-map"
 
     assert layouts =~
-             ~s|attr(:shell_mode, :string, values: ~w(product public), default: "product")|
+             ~s|attr(:shell_mode, :string, values: ~w(product public workspace), default: "product")|
 
     assert layouts =~ ~s(data-shell-mode={@shell_mode_attr})
+    assert layouts =~ "workspace_shell?"
+    assert layouts =~ ~s(class="ui-shell__workspace")
     assert layouts =~ ~s(data-public-shell-nav)
     assert layouts =~ ~s(data-public-shell-footer)
     assert layouts =~ "public_routes_nav_label()"
@@ -181,31 +198,14 @@ defmodule EBossWeb.DesignSurfaceTest do
     assert layouts =~ "def public_cta_frame(assigns)"
     assert layouts =~ ~s(data-public-section-pattern={@section_pattern})
 
-    assert home_live =~ ~s(shell_mode="public")
+    assert home_live =~ ~s(shell_mode="workspace")
     assert home_live =~ ~s(current_path="/")
-    assert home_live =~ ~s(data-home-hero)
-    assert home_live =~ ~s(data-home-proof-strip)
-    assert home_live =~ ~s(data-home-story="continuity")
-    assert home_live =~ ~s(data-home-story="tempo")
-    assert home_live =~ ~s(data-home-closing)
-    assert home_live =~ "home_hero()"
-    assert home_live =~ "home_proof_band()"
-    assert home_live =~ "home_feature_row_continuity()"
-    assert home_live =~ "home_feature_row_tempo()"
-    assert home_live =~ "home_closing()"
-    assert home_live =~ ~s(<.public_hero_section)
-    assert home_live =~ ~s(<.public_proof_band)
-    assert home_live =~ ~s(<.public_feature_row)
-    assert home_live =~ ~s(<.public_closing_section)
-    assert home_live =~ ~s|section_pattern={public_section_pattern_slug(:hero)}|
-    assert home_live =~ ~s|section_pattern={public_section_pattern_slug(:proof_band)}|
-    assert home_live =~ ~s|section_pattern={public_section_pattern_slug(:feature_row)}|
-    assert home_live =~ ~s|section_pattern={public_section_pattern_slug(:closing_section)}|
+    assert home_live =~ ~s(<.ShellOperatorLanding />)
 
-    assert home_live =~ ~s|section_pattern={public_section_pattern_slug(:cta_band)}|
-    assert home_live =~ "<:shell_footer>"
-    assert home_live =~ "<Layouts.public_cta_frame"
-    assert home_live =~ "defp public_section_pattern_slug(id)"
+    assert shell_operator_landing_vue =~ ~s(data-testid="home-hero")
+    assert shell_operator_landing_vue =~ ~s(aria-label="Public routes")
+    assert shell_operator_landing_vue =~ ~s(aria-label="Public shell footer")
+    assert shell_operator_landing_vue =~ "Workspace infrastructure"
 
     assert public_page_patterns =~ "defmodule EBossWeb.PublicPagePatterns"
     assert public_page_patterns =~ ~s(id: :hero)
@@ -234,9 +234,9 @@ defmodule EBossWeb.DesignSurfaceTest do
     assert browser_test_contracts =~ ~s(def public_footer_label)
     assert browser_test_contracts =~ ~s(def home_feature_row_tempo)
 
-    assert sign_in_live =~ ~s(shell_mode="public")
-    assert register_live =~ ~s(shell_mode="public")
-    assert forgot_password_live =~ ~s(shell_mode="public")
+    assert sign_in_live =~ ~s(shell_mode="workspace")
+    assert register_live =~ ~s(shell_mode="workspace")
+    assert forgot_password_live =~ ~s(shell_mode="workspace")
   end
 
   test "dashboard shell pattern defines a reusable authenticated scaffold" do
@@ -287,20 +287,14 @@ defmodule EBossWeb.DesignSurfaceTest do
     assert dashboard_components =~ ~s(data-dashboard-secondary-nav)
     assert dashboard_components =~ ~s(data-dashboard-nav-item={@item.id})
 
-    assert dashboard_live =~ "<.dashboard_shell"
-    assert dashboard_live =~ "<.dashboard_header"
-    assert dashboard_live =~ "<.dashboard_section"
-    assert dashboard_live =~ "<.dashboard_action_bar"
-    assert dashboard_live =~ "<.dashboard_utility_strip"
-    assert dashboard_live =~ "<.dashboard_quick_actions"
-    assert dashboard_live =~ "<.dashboard_panel_group"
-    assert dashboard_live =~ ~s(current_path={@dashboard_path})
-    assert dashboard_live =~ ~s(data-dashboard-contract="page-header")
-    assert dashboard_live =~ ~s(data-dashboard-contract="page-content")
-    assert dashboard_live =~ ~s(section="launchpad")
-    assert dashboard_live =~ ~s(section="structure")
-    assert dashboard_live =~ ~s(id="dashboard-utilities")
-    assert dashboard_live =~ ~s(id="dashboard-quick-actions")
+    assert dashboard_live =~ "<.ShellOperatorWorkspaceApp"
+    assert dashboard_live =~ ~s(shell_mode="workspace")
+    assert dashboard_live =~ "AppScope.resolve_workspace"
+    assert dashboard_live =~ "current_scope_props"
+    assert dashboard_live =~ "current_user_props"
+    assert dashboard_live =~ "defp route_config"
+    assert dashboard_live =~ "workspace_dashboard"
+    assert dashboard_live =~ "workspace_projects"
 
     assert design_system_live =~ ~s(id="dashboard-commands")
     assert design_system_live =~ "Quick actions and utility cues stay light but task-oriented."
@@ -361,14 +355,16 @@ defmodule EBossWeb.DesignSurfaceTest do
     assert auth_components =~ "def auth_username_input(assigns)"
     assert auth_components =~ "def auth_password_input(assigns)"
 
-    assert forgot_password_live =~ ~s|<.auth_feedback|
-    assert forgot_password_live =~ ~s|title="Request received."|
+    assert forgot_password_live =~ ~s|so-alert-panel so-alert-panel-success|
+    assert forgot_password_live =~ "Check your email"
 
     assert forgot_password_live =~
-             ~s|message="If the account exists, reset instructions are on the way."|
+             "We sent a link to reset your password. Check spam if you don't see it."
 
     refute forgot_password_live =~
              ~s|put_flash(:info, "If that account exists, we just emailed reset instructions.")|
+
+    refute forgot_password_live =~ ~s|<.auth_feedback|
 
     assert magic_link_request_component =~ ~s|<.auth_feedback|
 
@@ -444,8 +440,9 @@ defmodule EBossWeb.DesignSurfaceTest do
     assert auth_components =~ "def auth_page_footer(assigns)"
     assert auth_components =~ "authentication_routes_nav_label()"
     assert auth_components =~ "data-testid={BrowserTestContracts.auth_shell()}"
-    assert auth_components =~ ~s(<.panel surface="floating" padding="sm">)
-    assert auth_components =~ ~s(<.panel surface="floating" padding="lg">)
+    assert auth_components =~ "so-theme so-auth-shell flex min-h-screen flex-col"
+    assert auth_components =~ ~s(class={["so-auth-page", @class]})
+    assert auth_components =~ ~s(class="so-auth-card-muted text-center")
     assert auth_components =~ "def auth_form(assigns)"
     assert auth_components =~ "def auth_submit(assigns)"
 

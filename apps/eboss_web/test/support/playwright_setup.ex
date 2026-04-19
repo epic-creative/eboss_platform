@@ -14,7 +14,7 @@ defmodule EBossWeb.PlaywrightSetup do
 
   @default_base_url "http://localhost:4002"
   @default_email "playwright-auth@localhost"
-  @default_username "playwright_auth_user"
+  @default_username "playwright-auth-user"
   @default_password "playwright-pass-123"
   @default_workspace_name "Playwright Workspace"
   @default_workspace_slug "playwright-workspace"
@@ -30,7 +30,7 @@ defmodule EBossWeb.PlaywrightSetup do
 
     user = ensure_browser_test_user!(credentials)
     workspace = ensure_browser_test_workspace!(user)
-    dashboard_path = AppScope.dashboard_path(:user, user.username, workspace.slug)
+    dashboard_path = AppScope.dashboard_path(user.owner_slug, workspace.slug)
 
     public_storage_state_path = Path.join(state_dir, "public.json")
     authenticated_storage_state_path = Path.join(state_dir, "authenticated.json")
@@ -53,7 +53,7 @@ defmodule EBossWeb.PlaywrightSetup do
       workspace: %{
         name: workspace.name,
         slug: workspace.slug,
-        owner_handle: user.username
+        owner_slug: user.owner_slug
       }
     }
 
@@ -93,6 +93,7 @@ defmodule EBossWeb.PlaywrightSetup do
         %{
           email: credentials.email,
           username: credentials.username,
+          owner_slug: credentials.username,
           hashed_password: hashed_password,
           confirmed_at: now,
           role: "user",
@@ -106,6 +107,7 @@ defmodule EBossWeb.PlaywrightSetup do
       on_conflict: [
         set: [
           username: credentials.username,
+          owner_slug: credentials.username,
           hashed_password: hashed_password,
           confirmed_at: now,
           role: "user",
@@ -116,7 +118,24 @@ defmodule EBossWeb.PlaywrightSetup do
       ]
     )
 
-    Accounts.get_user_by_email!(credentials.email, authorize?: false)
+    user = Accounts.get_user_by_email!(credentials.email, authorize?: false)
+
+    Repo.insert_all(
+      "owner_slugs",
+      [
+        %{
+          slug: user.owner_slug,
+          owner_type: "user",
+          owner_id: Ecto.UUID.dump!(user.id),
+          inserted_at: now,
+          updated_at: now
+        }
+      ],
+      conflict_target: [:owner_type, :owner_id],
+      on_conflict: [set: [slug: user.owner_slug, updated_at: now]]
+    )
+
+    user
   end
 
   defp ensure_browser_test_workspace!(user) do

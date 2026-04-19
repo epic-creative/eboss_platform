@@ -48,62 +48,66 @@ defmodule EBossWeb.Auth.ForgotPasswordLive do
       flash={@flash}
       current_scope={assigns[:current_scope]}
       current_user={assigns[:current_user]}
-      shell_mode="public"
+      shell_mode="workspace"
       current_path="/forgot-password"
     >
-      <.auth_shell
-        eyebrow="Password recovery"
-        title="Send a reset link"
-        subtitle="The request flow uses AshAuthentication’s reset action while keeping the page itself custom."
-        detail_one="Email delivery still goes through the configured sender"
-        detail_two="Reset links land on the same public route contract"
-        detail_three="Successful resets create an authenticated session and go to the dashboard"
-      >
+      <.auth_shell current_path="/forgot-password">
         <.auth_page
-          eyebrow="Password reset"
-          title="Forgot your password?"
-          subtitle="Enter the email for your account and we will send a reset link if it exists."
-          current_path="/forgot-password"
+          title="Reset your password"
+          subtitle="Enter your email and we'll send a reset link."
         >
-          <.auth_feedback
-            :if={@request_sent}
-            tone="success"
-            data-feedback="success"
-            title="Request received."
-            message="If the account exists, reset instructions are on the way."
-          />
+          <div class="so-auth-card p-4">
+            <div
+              :if={@request_sent}
+              class="so-alert-panel so-alert-panel-success space-y-3 text-center"
+            >
+              <p class="text-sm font-medium text-[hsl(var(--so-foreground))]">Check your email</p>
+              <p class="text-xs text-[hsl(var(--so-muted-foreground))]">
+                We sent a link to reset your password. Check spam if you don't see it.
+              </p>
+              <a href={~p"/sign-in"} class="so-button-secondary h-8 px-3 text-xs">
+                Return to sign in
+              </a>
+            </div>
 
-          <.form_errors form={@form} />
+            <div :if={!@request_sent}>
+              <.form_errors form={@form} />
 
-          <.auth_form
-            :let={form}
-            for={@form}
-            id="forgot-password-form"
-            aria-label={BrowserTestContracts.forgot_password_form_label()}
-            phx-change="validate"
-            phx-submit="submit"
-          >
-            <.auth_email_input
-              field={form[:email]}
-              autocomplete="email"
-              hint="Use the email address tied to your account. We only send reset links when it exists."
-            />
+              <.auth_form
+                :let={form}
+                for={@form}
+                id="forgot-password-form"
+                aria-label={BrowserTestContracts.forgot_password_form_label()}
+                phx-change="validate"
+                phx-submit="submit"
+              >
+                <.auth_email_input
+                  field={form[:email]}
+                  autocomplete="email"
+                  hint="Use the email address tied to your account. We only send reset links when it exists."
+                />
 
-            <:actions>
-              <.auth_submit
-                label="Email reset link"
-                busy_label="Sending reset link..."
-              />
-            </:actions>
-          </.auth_form>
+                <:actions>
+                  <.auth_submit
+                    label="Send password reset email"
+                    busy_label="Sending reset link..."
+                  />
+                </:actions>
+              </.auth_form>
+            </div>
+          </div>
 
           <:footer>
-            <.auth_page_footer
-              prompt="Remembered your password?"
-              link_text="Back to sign in"
-              link_href={~p"/sign-in"}
-              note="Reset emails return to the same public auth shell before the session resumes."
-            />
+            <div class="so-auth-card-muted text-center">
+              <p class="text-xs text-[hsl(var(--so-muted-foreground))]">
+                <a
+                  href={~p"/sign-in"}
+                  class="font-medium text-[hsl(var(--so-primary))] hover:underline"
+                >
+                  Back to sign in
+                </a>
+              </p>
+            </div>
           </:footer>
         </.auth_page>
       </.auth_shell>

@@ -11,20 +11,6 @@ defmodule EBoss.Workspaces do
         index :read
         get(:read)
       end
-
-      base_route "/users/:owner_handle/workspaces", EBoss.Workspaces.Workspace do
-        get :by_user_handle_and_slug do
-          route("/:slug")
-          name "get_user_workspace_by_slug"
-        end
-      end
-
-      base_route "/orgs/:owner_handle/workspaces", EBoss.Workspaces.Workspace do
-        get :by_org_handle_and_slug do
-          route("/:slug")
-          name "get_org_workspace_by_slug"
-        end
-      end
     end
   end
 
@@ -51,29 +37,12 @@ defmodule EBoss.Workspaces do
   defdelegate get_workspace_by_owner_and_slug!(owner_type, owner_id, slug, opts \\ []),
     to: Workspace
 
-  defdelegate get_workspace_by_owner_handle_and_slug(owner_type, owner_handle, slug, opts \\ []),
-    to: Workspace
-
-  defdelegate get_workspace_by_owner_handle_and_slug!(
-                owner_type,
-                owner_handle,
-                slug,
-                opts \\ []
-              ),
-              to: Workspace
-
   defdelegate list_workspaces_for_owner(owner_type, owner_id, opts \\ []), to: Workspace
   defdelegate list_workspaces_for_owner!(owner_type, owner_id, opts \\ []), to: Workspace
   defdelegate create_workspace_membership(attrs, opts \\ []), to: WorkspaceMembership
   defdelegate create_workspace_membership!(attrs, opts \\ []), to: WorkspaceMembership
 
-  defdelegate resolve_workspace_route(
-                actor,
-                owner_type,
-                owner_handle,
-                slug,
-                accessible_workspaces \\ []
-              ),
-              to: RouteAccess,
-              as: :resolve
+  defdelegate resolve_workspace_route(actor, owner_slug, slug, accessible_workspaces \\ []),
+    to: RouteAccess,
+    as: :resolve
 end

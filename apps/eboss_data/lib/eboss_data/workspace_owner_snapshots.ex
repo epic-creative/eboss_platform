@@ -5,8 +5,8 @@ defmodule EBoss.Data.WorkspaceOwnerSnapshots do
 
   alias EBoss.Repo
 
-  def sync_active(owner_type, owner_id, owner_handle, owner_display_name)
-      when is_binary(owner_id) and is_binary(owner_handle) and is_binary(owner_display_name) do
+  def sync_active(owner_type, owner_id, owner_slug, owner_display_name)
+      when is_binary(owner_id) and is_binary(owner_slug) and is_binary(owner_display_name) do
     owner_type = normalize_owner_type(owner_type)
     owner_id = Ecto.UUID.dump!(owner_id)
 
@@ -18,7 +18,7 @@ defmodule EBoss.Data.WorkspaceOwnerSnapshots do
     )
     |> Repo.update_all(
       set: [
-        owner_handle: owner_handle,
+        owner_slug: owner_slug,
         owner_display_name: owner_display_name,
         updated_at: DateTime.utc_now()
       ]

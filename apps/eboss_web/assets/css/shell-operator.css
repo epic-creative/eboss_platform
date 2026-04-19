@@ -1,0 +1,362 @@
+.so-theme {
+  --so-font-sans: "Inter", system-ui, -apple-system, sans-serif;
+  --so-font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --so-background: 0 0% 100%;
+  --so-foreground: 210 12% 16%;
+  --so-card: 0 0% 100%;
+  --so-card-foreground: 210 12% 16%;
+  --so-primary: 212 92% 45%;
+  --so-primary-foreground: 0 0% 100%;
+  --so-secondary: 210 14% 95%;
+  --so-secondary-foreground: 210 12% 16%;
+  --so-muted: 210 14% 95%;
+  --so-muted-foreground: 210 10% 40%;
+  --so-accent: 210 14% 93%;
+  --so-accent-foreground: 210 12% 16%;
+  --so-destructive: 0 68% 52%;
+  --so-destructive-foreground: 0 0% 100%;
+  --so-success: 137 55% 36%;
+  --so-success-foreground: 0 0% 100%;
+  --so-warning: 40 90% 50%;
+  --so-warning-foreground: 0 0% 100%;
+  --so-border: 210 18% 87%;
+  --so-ring: 212 92% 45%;
+  --so-surface-0: 0 0% 100%;
+  --so-surface-1: 210 20% 98%;
+  --so-surface-2: 210 14% 95%;
+  --so-surface-3: 210 12% 90%;
+  --so-header-bg: 215 28% 17%;
+  --so-header-foreground: 210 20% 92%;
+  --so-header-muted: 210 15% 60%;
+  --so-header-border: 215 20% 25%;
+  --so-header-input-bg: 215 25% 22%;
+  --so-auth-bg: 210 20% 97%;
+  font-family: var(--so-font-sans);
+}
+
+[data-theme="dark"] .so-theme {
+  --so-background: 220 16% 8%;
+  --so-foreground: 210 20% 88%;
+  --so-card: 220 14% 11%;
+  --so-card-foreground: 210 20% 88%;
+  --so-primary: 212 92% 55%;
+  --so-primary-foreground: 0 0% 100%;
+  --so-secondary: 220 14% 14%;
+  --so-secondary-foreground: 210 20% 88%;
+  --so-muted: 220 14% 14%;
+  --so-muted-foreground: 215 12% 55%;
+  --so-accent: 220 14% 16%;
+  --so-accent-foreground: 210 20% 88%;
+  --so-destructive: 0 68% 48%;
+  --so-destructive-foreground: 0 0% 100%;
+  --so-success: 137 55% 40%;
+  --so-success-foreground: 0 0% 100%;
+  --so-warning: 40 90% 50%;
+  --so-warning-foreground: 0 0% 100%;
+  --so-border: 220 12% 20%;
+  --so-ring: 212 92% 55%;
+  --so-surface-0: 220 16% 8%;
+  --so-surface-1: 220 14% 11%;
+  --so-surface-2: 220 14% 14%;
+  --so-surface-3: 220 12% 18%;
+  --so-header-bg: 220 16% 6%;
+  --so-header-foreground: 210 20% 88%;
+  --so-header-muted: 215 10% 50%;
+  --so-header-border: 220 12% 16%;
+  --so-header-input-bg: 220 14% 12%;
+  --so-auth-bg: 220 16% 7%;
+}
+
+.so-theme,
+.so-theme * {
+  box-sizing: border-box;
+}
+
+.so-font-mono {
+  font-family: var(--so-font-mono);
+}
+
+.so-surface-0 {
+  background-color: hsl(var(--so-surface-0));
+}
+
+.so-surface-1 {
+  background-color: hsl(var(--so-surface-1));
+}
+
+.so-surface-2 {
+  background-color: hsl(var(--so-surface-2));
+}
+
+.so-header-bar {
+  background-color: hsl(var(--so-header-bg));
+  color: hsl(var(--so-header-foreground));
+}
+
+.so-auth-surface {
+  background-color: hsl(var(--so-auth-bg));
+}
+
+.so-auth-card,
+.so-auth-card-muted {
+  border: 1px solid hsl(var(--so-border));
+  border-radius: 0.375rem;
+  background: hsl(var(--so-card));
+}
+
+.so-auth-card {
+  overflow: hidden;
+}
+
+.so-auth-card-muted {
+  padding: 0.75rem;
+}
+
+.so-input-field {
+  width: 100%;
+  height: 2rem;
+  padding: 0 0.75rem;
+  border: 1px solid hsl(var(--so-border));
+  border-radius: 0.375rem;
+  background: hsl(var(--so-surface-1));
+  color: hsl(var(--so-foreground));
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  outline: none;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    background-color 160ms ease;
+}
+
+.so-input-field::placeholder {
+  color: hsl(var(--so-muted-foreground));
+}
+
+.so-input-field:focus {
+  border-color: hsl(var(--so-ring));
+  box-shadow: 0 0 0 1px hsl(var(--so-ring));
+}
+
+.so-underline-tab {
+  position: relative;
+  padding: 0.5rem 0.75rem;
+  color: hsl(var(--so-muted-foreground));
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  transition: color 160ms ease;
+}
+
+.so-underline-tab:hover {
+  color: hsl(var(--so-foreground));
+}
+
+.so-underline-tab[data-active="true"] {
+  color: hsl(var(--so-foreground));
+  font-weight: 500;
+}
+
+.so-underline-tab[data-active="true"]::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  border-radius: 999px;
+  background-color: hsl(var(--so-primary));
+}
+
+.so-alert-panel {
+  border: 1px solid hsl(var(--so-border));
+  border-radius: 0.375rem;
+  padding: 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+.so-alert-panel-success {
+  border-left: 3px solid hsl(var(--so-success));
+}
+
+.so-alert-panel-error {
+  border-left: 3px solid hsl(var(--so-destructive));
+}
+
+.so-auth-shell .ui-auth-form {
+  display: block;
+}
+
+.so-auth-shell .ui-auth-form__fieldset,
+.so-auth-shell .ui-auth-form__fields {
+  display: block;
+}
+
+.so-auth-shell .ui-auth-form__fields {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.so-auth-shell .ui-auth-form__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.so-auth-shell .ui-field {
+  display: grid;
+  gap: 0.375rem;
+}
+
+.so-auth-shell .ui-field-label {
+  color: hsl(var(--so-foreground));
+  font-size: 0.75rem;
+  line-height: 1rem;
+  font-weight: 500;
+}
+
+.so-auth-shell .ui-field-control {
+  display: block;
+}
+
+.so-auth-shell .ui-input {
+  width: 100%;
+  height: 2rem;
+  padding: 0 0.75rem;
+  border: 1px solid hsl(var(--so-border));
+  border-radius: 0.375rem;
+  background: hsl(var(--so-surface-1));
+  color: hsl(var(--so-foreground));
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    background-color 160ms ease;
+}
+
+.so-auth-shell .ui-input::placeholder {
+  color: hsl(var(--so-muted-foreground));
+}
+
+.so-auth-shell .ui-input:focus {
+  border-color: hsl(var(--so-ring));
+  box-shadow: 0 0 0 1px hsl(var(--so-ring));
+  outline: none;
+}
+
+.so-auth-shell .ui-field-hint {
+  color: hsl(var(--so-muted-foreground));
+  font-size: 0.6875rem;
+  line-height: 1rem;
+}
+
+.so-auth-shell .ui-field-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.375rem;
+  color: hsl(var(--so-destructive));
+  font-size: 0.6875rem;
+  line-height: 1rem;
+}
+
+.so-auth-shell .ui-auth-feedback {
+  margin-bottom: 0.75rem;
+}
+
+.so-row-selected {
+  border-left: 2px solid hsl(var(--so-primary));
+  background: color-mix(in srgb, hsl(var(--so-accent)) 60%, transparent);
+}
+
+.so-button-primary,
+.so-button-secondary,
+.so-button-ghost,
+.so-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  border-radius: 0.375rem;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition:
+    background-color 160ms ease,
+    color 160ms ease,
+    border-color 160ms ease,
+    opacity 160ms ease;
+}
+
+.so-button-primary {
+  min-height: 1.75rem;
+  padding: 0 0.75rem;
+  background: hsl(var(--so-success));
+  color: hsl(var(--so-success-foreground));
+  font-size: 0.75rem;
+  line-height: 1rem;
+  font-weight: 500;
+}
+
+.so-button-primary:hover {
+  background: color-mix(in srgb, hsl(var(--so-success)) 90%, black 10%);
+}
+
+.so-button-secondary {
+  min-height: 1.75rem;
+  padding: 0 0.75rem;
+  border-color: hsl(var(--so-border));
+  background: hsl(var(--so-card));
+  color: hsl(var(--so-foreground));
+  font-size: 0.75rem;
+  line-height: 1rem;
+  font-weight: 500;
+}
+
+.so-button-secondary:hover {
+  background: color-mix(in srgb, hsl(var(--so-accent)) 55%, transparent);
+}
+
+.so-button-ghost,
+.so-icon-button {
+  min-height: 1.75rem;
+  padding: 0 0.5rem;
+  color: hsl(var(--so-muted-foreground));
+  font-size: 0.75rem;
+  line-height: 1rem;
+}
+
+.so-button-ghost:hover,
+.so-icon-button:hover {
+  background: color-mix(in srgb, hsl(var(--so-accent)) 50%, transparent);
+  color: hsl(var(--so-foreground));
+}
+
+.so-icon-button {
+  width: 1.75rem;
+  padding: 0;
+}
+
+.so-avatar-menu > summary {
+  list-style: none;
+}
+
+.so-avatar-menu > summary::-webkit-details-marker {
+  display: none;
+}
+
+.so-fade-in {
+  animation: so-fade-in 160ms ease;
+}
+
+@keyframes so-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

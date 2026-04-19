@@ -28,50 +28,43 @@ defmodule EBossWeb.Auth.ConfirmLive do
       flash={@flash}
       current_scope={assigns[:current_scope]}
       current_user={assigns[:current_user]}
-      shell_mode="public"
+      shell_mode="workspace"
       current_path="/confirm"
     >
-      <.auth_shell
-        eyebrow="Account confirmation"
-        title="Confirm your email address"
-        subtitle="The confirmation token stays on the public URL while the final verification is posted to AshAuthentication."
-        detail_one="Confirmation uses the existing add-on action"
-        detail_two="Unconfirmed accounts still stay inside the first-party UX"
-        detail_three="Successful confirmations land on the dashboard shell"
-      >
+      <.auth_shell current_path="/confirm">
         <.auth_page
-          eyebrow="Email confirmation"
-          title="Confirm your account"
-          subtitle="Use the button below to verify the email address attached to this account."
+          title="Confirm account"
+          subtitle="Use the button below to verify your email address."
         >
-          <.form_errors form={@form} />
+          <div class="so-auth-card p-4">
+            <.form_errors form={@form} />
 
-          <.auth_form
-            :let={form}
-            for={@form}
-            id="confirm-form"
-            aria-label={BrowserTestContracts.confirm_email_form_label()}
-            phx-submit="submit"
-            phx-trigger-action={@trigger_action}
-            action={AuthForms.auth_path(@socket, AuthForms.confirmation_strategy!(), :confirm)}
-            method="post"
-          >
-            <input type="hidden" name={form[:confirm].name} value={@token} />
+            <.auth_form
+              :let={form}
+              for={@form}
+              id="confirm-form"
+              aria-label={BrowserTestContracts.confirm_email_form_label()}
+              phx-submit="submit"
+              phx-trigger-action={@trigger_action}
+              action={AuthForms.auth_path(@socket, AuthForms.confirmation_strategy!(), :confirm)}
+              method="post"
+            >
+              <input type="hidden" name={form[:confirm].name} value={@token} />
 
-            <:actions>
-              <.auth_submit
-                label="Confirm email"
-                busy_label="Confirming email..."
-              />
-            </:actions>
-          </.auth_form>
+              <:actions>
+                <.auth_submit
+                  label="Confirm email"
+                  busy_label="Confirming email..."
+                />
+              </:actions>
+            </.auth_form>
+          </div>
 
           <:footer>
             <.auth_page_footer
-              prompt="Need to return to your base auth routes?"
+              prompt="Need to return to sign in?"
               link_text="Sign in"
               link_href={~p"/sign-in"}
-              note="Confirmation stays inside the same public shell until the account is ready for the dashboard."
             />
           </:footer>
         </.auth_page>

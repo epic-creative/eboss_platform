@@ -6,6 +6,8 @@ defmodule EBoss.Organizations.Organization do
     authorizers: [Ash.Policy.Authorizer],
     extensions: [AshArchival.Resource, AshCloak, AshSlug]
 
+  require Ash.Query
+
   resource do
     base_filter(expr(is_nil(archived_at)))
   end
@@ -27,6 +29,7 @@ defmodule EBoss.Organizations.Organization do
     define(:transfer_organization_ownership, action: :transfer_ownership, args: [:new_owner_id])
     define(:destroy_organization, action: :destroy)
     define(:get_organization, action: :read, get_by: [:id])
+    define(:get_organization_by_owner_slug, action: :by_owner_slug, args: [:owner_slug])
   end
 
   cloak do
@@ -42,17 +45,18 @@ defmodule EBoss.Organizations.Organization do
       accept([:name, :description, :settings])
 
       change(relate_actor(:owner))
-      change(slugify(:name, into: :slug))
-      change(EBoss.Organizations.Organization.Changes.EnsureUniqueSlug)
+      change(slugify(:name, into: :owner_slug))
       change(EBoss.Organizations.Organization.Changes.SyncOwnerMembership)
       validate(EBoss.Organizations.Organization.Validations.ValidateSlug)
+
+      change(
+        {EBoss.OwnerSlugs.Changes.ReserveOwnerSlug, owner_type: :organization, field: :owner_slug}
+      )
     end
 
     update :update do
       accept([:name, :description, :settings])
       require_atomic?(false)
-      change(slugify(:name, into: :slug))
-      change(EBoss.Organizations.Organization.Changes.EnsureUniqueSlug)
       validate(EBoss.Organizations.Organization.Validations.ValidateSlug)
       change(EBoss.Organizations.Organization.Changes.SyncWorkspaceOwnerSnapshots)
     end
@@ -82,10 +86,13 @@ defmodule EBoss.Organizations.Organization do
       accept([:name, :description, :settings])
       argument(:owner_id, :uuid, allow_nil?: false)
       change(set_attribute(:owner_id, arg(:owner_id)))
-      change(slugify(:name, into: :slug))
-      change(EBoss.Organizations.Organization.Changes.EnsureUniqueSlug)
+      change(slugify(:name, into: :owner_slug))
       change(EBoss.Organizations.Organization.Changes.SyncOwnerMembership)
       validate(EBoss.Organizations.Organization.Validations.ValidateSlug)
+
+      change(
+        {EBoss.OwnerSlugs.Changes.ReserveOwnerSlug, owner_type: :organization, field: :owner_slug}
+      )
     end
 
     update :admin_update do
@@ -97,11 +104,23 @@ defmodule EBoss.Organizations.Organization do
       )
 
       require_atomic?(false)
-      change(slugify(:name, into: :slug))
-      change(EBoss.Organizations.Organization.Changes.EnsureUniqueSlug)
       change(EBoss.Organizations.Organization.Changes.SyncOwnerMembership)
       validate(EBoss.Organizations.Organization.Validations.ValidateSlug)
       change(EBoss.Organizations.Organization.Changes.SyncWorkspaceOwnerSnapshots)
+    end
+
+    read :by_owner_slug do
+      get?(true)
+
+      argument :owner_slug, :string do
+        allow_nil?(false)
+      end
+
+      prepare(fn query, _context ->
+        owner_slug_arg = Ash.Query.get_argument(query, :owner_slug)
+        normalized = if owner_slug_arg, do: String.downcase(owner_slug_arg), else: ""
+        Ash.Query.filter(query, expr(owner_slug == ^normalized))
+      end)
     end
   end
 
@@ -142,7 +161,7 @@ defmodule EBoss.Organizations.Organization do
       constraints(min_length: 1, max_length: 255)
     end
 
-    attribute :slug, :string do
+    attribute :owner_slug, :string do
       allow_nil?(false)
       public?(true)
       constraints(match: ~r/^[a-z0-9\-]+$/)
@@ -186,6 +205,6 @@ defmodule EBoss.Organizations.Organization do
   end
 
   identities do
-    identity(:unique_slug, [:slug])
+    identity(:unique_owner_slug, [:owner_slug])
   end
 end

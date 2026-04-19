@@ -3,7 +3,6 @@ defmodule EBossWeb.DashboardContractSmokeTest do
 
   import Phoenix.LiveViewTest
 
-  alias EBossWeb.BrowserTestContracts
   alias EBossWeb.DashboardScope
 
   @endpoint EBossWeb.Endpoint
@@ -20,7 +19,7 @@ defmodule EBossWeb.DashboardContractSmokeTest do
     :ok
   end
 
-  test "dashboard live render exposes stable shell and state contracts" do
+  test "dashboard live render exposes the workspace shell props contract" do
     current_user = %{username: "contract_user", email: "contract@example.com"}
     current_scope = DashboardScope.for_user(current_user, %{workspace_slug: "contract-workspace"})
 
@@ -31,25 +30,14 @@ defmodule EBossWeb.DashboardContractSmokeTest do
         current_user: current_user
       })
 
-    assert html =~ ~s(data-testid="#{BrowserTestContracts.dashboard_shell()}")
-    assert html =~ ~s(aria-label="#{BrowserTestContracts.dashboard_shell_label()}")
-    assert html =~ ~s(aria-label="#{BrowserTestContracts.dashboard_sidebar_label()}")
-    assert html =~ ~s(aria-label="#{BrowserTestContracts.dashboard_navigation_label()}")
-    assert html =~ ~s(aria-label="#{BrowserTestContracts.dashboard_workspace_label()}")
-    assert html =~ ~s(aria-label="#{BrowserTestContracts.dashboard_command_surface_label()}")
-    assert html =~ ~s(aria-label="#{BrowserTestContracts.dashboard_quick_actions_label()}")
-
-    for section <- ~w(launchpad structure states) do
-      assert html =~ ~s(aria-label="#{BrowserTestContracts.dashboard_section_label(section)}")
-    end
-
-    for variant <- ~w(empty loading error) do
-      assert html =~ ~s(aria-label="#{BrowserTestContracts.dashboard_state_label(variant)}")
-    end
-
-    assert html =~ ~s(href="#{current_scope.dashboard_path}")
-    assert html =~ ~s(href="#dashboard-launchpad")
-    assert html =~ "Dashboard"
-    assert html =~ "Open launch surface"
+    assert html =~ ~s(data-shell-mode="workspace")
+    assert html =~ ~s(data-name="ShellOperatorWorkspaceApp")
+    assert html =~ current_scope.current_workspace.slug
+    assert html =~ current_scope.current_workspace.name
+    assert html =~ current_user.username
+    assert html =~ "currentWorkspace"
+    assert html =~ "accessibleWorkspaces"
+    assert html =~ "readFolio"
+    assert html =~ "manageFolio"
   end
 end

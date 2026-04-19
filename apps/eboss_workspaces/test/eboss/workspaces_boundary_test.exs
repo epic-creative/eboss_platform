@@ -27,20 +27,11 @@ defmodule EBoss.WorkspacesBoundaryTest do
     looked_up_workspace =
       Workspaces.get_workspace_by_owner_and_slug!(:user, owner.id, workspace.slug, actor: owner)
 
-    handle_lookup =
-      Workspaces.get_workspace_by_owner_handle_and_slug!(
-        :user,
-        owner.username,
-        workspace.slug,
-        actor: owner
-      )
-
     visible_workspaces = Workspaces.list_workspaces_for_owner!(:user, owner.id, actor: owner)
 
-    assert fetched_workspace.full_path == "@#{owner.username}/studio-space"
-    assert fetched_workspace.owner.handle == owner.username
+    assert fetched_workspace.full_path == "#{owner.owner_slug}/studio-space"
+    assert fetched_workspace.owner.slug == owner.owner_slug
     assert looked_up_workspace.id == workspace.id
-    assert handle_lookup.id == workspace.id
     assert Enum.map(visible_workspaces, & &1.id) == [workspace.id]
 
     membership =
@@ -104,20 +95,11 @@ defmodule EBoss.WorkspacesBoundaryTest do
         actor: owner
       )
 
-    handle_lookup =
-      Workspaces.get_workspace_by_owner_handle_and_slug!(
-        :organization,
-        organization.slug,
-        workspace.slug,
-        actor: owner
-      )
-
-    assert loaded_workspace.full_path == "#{organization.slug}/ops"
-    assert loaded_workspace.owner.handle == organization.slug
+    assert loaded_workspace.full_path == "#{organization.owner_slug}/ops"
+    assert loaded_workspace.owner.slug == organization.owner_slug
     assert Enum.map(member_visible, & &1.id) == [workspace.id]
     assert outsider_visible == []
     assert looked_up_workspace.id == workspace.id
-    assert handle_lookup.id == workspace.id
 
     assert {:error, error} =
              Workspaces.create_workspace_membership(
@@ -153,7 +135,7 @@ defmodule EBoss.WorkspacesBoundaryTest do
     assert {:ok, same_user_workspace} =
              Workspaces.get_workspace(user_workspace.id, actor: owner, load: [:full_path])
 
-    assert same_user_workspace.full_path == "@#{owner.username}/research"
+    assert same_user_workspace.full_path == "#{owner.owner_slug}/research"
 
     assert {:ok, found_user_workspace} =
              Workspaces.get_workspace_by_owner_and_slug(
@@ -163,16 +145,7 @@ defmodule EBoss.WorkspacesBoundaryTest do
                actor: owner
              )
 
-    assert {:ok, found_user_workspace_by_handle} =
-             Workspaces.get_workspace_by_owner_handle_and_slug(
-               :user,
-               owner.username,
-               user_workspace.slug,
-               actor: owner
-             )
-
     assert found_user_workspace.id == user_workspace.id
-    assert found_user_workspace_by_handle.id == user_workspace.id
 
     assert {:ok, visible_user_workspaces} =
              Workspaces.list_workspaces_for_owner(:user, owner.id, actor: owner)
@@ -215,8 +188,8 @@ defmodule EBoss.WorkspacesBoundaryTest do
     assert {:ok, same_org_workspace} =
              Workspaces.get_workspace(org_workspace.id, actor: owner, load: [:full_path, :owner])
 
-    assert same_org_workspace.full_path == "#{organization.slug}/operations"
-    assert same_org_workspace.owner.handle == organization.slug
+    assert same_org_workspace.full_path == "#{organization.owner_slug}/operations"
+    assert same_org_workspace.owner.slug == organization.owner_slug
 
     assert {:ok, found_org_workspace} =
              Workspaces.get_workspace_by_owner_and_slug(
@@ -226,16 +199,7 @@ defmodule EBoss.WorkspacesBoundaryTest do
                actor: owner
              )
 
-    assert {:ok, found_org_workspace_by_handle} =
-             Workspaces.get_workspace_by_owner_handle_and_slug(
-               :organization,
-               organization.slug,
-               org_workspace.slug,
-               actor: owner
-             )
-
     assert found_org_workspace.id == org_workspace.id
-    assert found_org_workspace_by_handle.id == org_workspace.id
 
     assert {:ok, org_visible_workspaces} =
              Workspaces.list_workspaces_for_owner(:organization, organization.id, actor: owner)
@@ -294,13 +258,6 @@ defmodule EBoss.WorkspacesBoundaryTest do
     assert {:ok, nil} =
              Workspaces.get_workspace_by_owner_and_slug(:user, owner.id, workspace.slug)
 
-    assert {:ok, nil} =
-             Workspaces.get_workspace_by_owner_handle_and_slug(
-               :user,
-               owner.username,
-               workspace.slug
-             )
-
     assert nil == Workspaces.get_workspace_by_owner_and_slug!(:user, owner.id, workspace.slug)
 
     assert {:ok, []} = Workspaces.list_workspaces_for_owner(:user, owner.id)
@@ -339,7 +296,7 @@ defmodule EBoss.WorkspacesBoundaryTest do
 
     accessible_summary = %{
       owner_type: :user,
-      owner_handle: owner.username,
+      owner_slug: owner.owner_slug,
       slug: workspace.slug,
       id: workspace.id
     }
@@ -347,20 +304,19 @@ defmodule EBoss.WorkspacesBoundaryTest do
     assert {:ok, ^accessible_summary} =
              Workspaces.resolve_workspace_route(
                owner,
-               :user,
-               owner.username,
+               owner.owner_slug,
                workspace.slug,
                [accessible_summary]
              )
 
     assert {:error, :forbidden} =
-             Workspaces.resolve_workspace_route(outsider, :user, owner.username, workspace.slug)
+             Workspaces.resolve_workspace_route(outsider, owner.owner_slug, workspace.slug)
 
     assert {:error, :not_found} =
-             Workspaces.resolve_workspace_route(owner, :user, owner.username, "missing-workspace")
+             Workspaces.resolve_workspace_route(owner, owner.owner_slug, "missing-workspace")
 
     assert {:error, :unauthorized} =
-             Workspaces.resolve_workspace_route(nil, :user, owner.username, workspace.slug)
+             Workspaces.resolve_workspace_route(nil, owner.owner_slug, workspace.slug)
   end
 
   defp register_user(overrides \\ %{}) do

@@ -4,11 +4,12 @@ defmodule EBoss.Slugs do
   """
 
   @reserved_slugs ~w(
-    login signup reset confirm logout magic_link auth
+    login signup sign-in register forgot-password reset confirm logout magic-link auth
     admin dashboard settings
-    api dev rpc ash-typescript
-    privacy terms features pricing faq about contact
-    storybook workspace workspaces
+    api dev rpc ash-typescript swaggerui open-api open_api mailbox storybook live-vue live_vue
+    privacy terms features pricing faq about contact docs help support
+    users orgs workspace workspaces
+    assets static css js images uploads public
   )
 
   def reserved_slugs, do: @reserved_slugs

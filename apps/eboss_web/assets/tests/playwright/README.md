@@ -50,7 +50,7 @@ This creates a rerunnable browser-test account plus generated storage-state file
 - an anonymous public context
 - an authenticated dashboard context
 
-The default setup user is `playwright-auth@localhost` with username `playwright_auth_user` and password `playwright-pass-123`.
+The default setup user is `playwright-auth@localhost` with username `playwright-auth-user` and password `playwright-pass-123`.
 Override `EBOSS_PLAYWRIGHT_EMAIL`, `EBOSS_PLAYWRIGHT_USERNAME`, `EBOSS_PLAYWRIGHT_PASSWORD`, or `PLAYWRIGHT_BASE_URL` when a local override is required.
 
 To verify the prepared state against the real app:

@@ -22,9 +22,12 @@ defmodule EBoss.OrganizationsBoundaryTest do
 
     _membership = create_membership(owner, organization, org_admin, :admin)
 
-    assert organization.slug == "acme-labs"
+    assert organization.owner_slug == "acme-labs"
     assert organization.settings == %{timezone: "UTC"}
     assert Organizations.get_organization!(organization.id, actor: owner).id == organization.id
+
+    assert Organizations.get_organization_by_owner_slug!("acme-labs", actor: owner).id ==
+             organization.id
 
     updated_organization =
       Organizations.update_organization!(
@@ -33,7 +36,7 @@ defmodule EBoss.OrganizationsBoundaryTest do
         actor: owner
       )
 
-    assert updated_organization.slug == "acme-platform"
+    assert updated_organization.owner_slug == "acme-labs"
     assert updated_organization.description == "Core org"
 
     admin_updated_organization =
@@ -189,6 +192,28 @@ defmodule EBoss.OrganizationsBoundaryTest do
     assert admin_updated_org.description == "admin success"
   end
 
+  test "organization owner slugs remain immutable and global" do
+    owner = register_user()
+    user = register_user(%{username: "global-org-owner"})
+
+    organization = Organizations.create_organization!(%{name: "Immutable Org"}, actor: owner)
+
+    assert organization.owner_slug == "immutable-org"
+
+    assert {:error, error} =
+             Organizations.create_organization(%{name: "Global Org Owner"}, actor: user)
+
+    assert Exception.message(error) =~ "has already been taken"
+    assert invalid_attribute_fields(error) == [:owner_slug]
+
+    assert {:ok, updated_organization} =
+             Organizations.update_organization(organization, %{name: "Immutable Org Renamed"},
+               actor: owner
+             )
+
+    assert updated_organization.owner_slug == "immutable-org"
+  end
+
   defp register_user(overrides \\ %{}) do
     params =
       Map.merge(
@@ -203,6 +228,15 @@ defmodule EBoss.OrganizationsBoundaryTest do
 
     Accounts.register_with_password!(params, authorize?: false)
   end
+
+  defp invalid_attribute_fields(%Ash.Error.Invalid{errors: errors}) do
+    errors
+    |> Enum.flat_map(&invalid_attribute_fields/1)
+    |> Enum.uniq()
+  end
+
+  defp invalid_attribute_fields(%Ash.Error.Changes.InvalidAttribute{field: field}), do: [field]
+  defp invalid_attribute_fields(_error), do: []
 
   defp promote_to_admin(user) do
     user

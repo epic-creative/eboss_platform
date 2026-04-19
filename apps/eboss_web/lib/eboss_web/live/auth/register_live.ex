@@ -44,61 +44,63 @@ defmodule EBossWeb.Auth.RegisterLive do
       flash={@flash}
       current_scope={assigns[:current_scope]}
       current_user={assigns[:current_user]}
-      shell_mode="public"
+      shell_mode="workspace"
       current_path="/register"
     >
-      <.auth_shell
-        eyebrow="Custom authentication"
-        title="Create a first-party account"
-        subtitle="Registration is kept on the password strategy so usernames, confirmation, and session handling stay aligned."
-        detail_one="Username validation uses the existing accounts boundary rules"
-        detail_two="New registrations sign in through Ash sign-in tokens"
-        detail_three="Email confirmation links keep the same public route contract"
-      >
+      <.auth_shell current_path="/register">
         <.auth_page
-          eyebrow="New account"
-          title="Register"
-          subtitle="Create your account with the same shell, spacing, and route hierarchy used across every auth step."
-          current_path="/register"
+          title="Create your account"
+          subtitle="Start building your workspace"
         >
-          <.form_errors form={@form} />
+          <div class="so-auth-card p-4">
+            <.form_errors form={@form} />
 
-          <.auth_form
-            :let={form}
-            for={@form}
-            id="register-form"
-            aria-label={BrowserTestContracts.register_form_label()}
-            phx-change="validate"
-            phx-submit="submit"
-          >
-            <.auth_email_input field={form[:email]} autocomplete="email" />
-            <.auth_username_input field={form[:username]} />
-            <.auth_password_input
-              field={form[:password]}
-              autocomplete="new-password"
-              hint="Use at least 8 characters."
-            />
-            <.auth_password_input
-              field={form[:password_confirmation]}
-              label="Confirm password"
-              hint="Repeat the same password exactly."
-              autocomplete="new-password"
-            />
-
-            <:actions>
-              <.auth_submit
-                label="Create account"
-                busy_label="Creating account..."
+            <.auth_form
+              :let={form}
+              for={@form}
+              id="register-form"
+              aria-label={BrowserTestContracts.register_form_label()}
+              phx-change="validate"
+              phx-submit="submit"
+            >
+              <.auth_username_input
+                field={form[:username]}
+                hint="This becomes your workspace identifier."
               />
-            </:actions>
-          </.auth_form>
+              <.auth_email_input field={form[:email]} autocomplete="email" />
+              <.auth_password_input
+                field={form[:password]}
+                autocomplete="new-password"
+                hint="At least 15 characters, or 8 with a number and letter."
+              />
+              <.auth_password_input
+                field={form[:password_confirmation]}
+                label="Confirm password"
+                hint="Repeat the same password exactly."
+                autocomplete="new-password"
+              />
+
+              <p class="text-[11px] leading-relaxed text-[hsl(var(--so-muted-foreground))]">
+                By creating an account, you agree to the <a
+                  href="#"
+                  class="text-[hsl(var(--so-primary))] hover:underline"
+                >Terms of Service</a>.
+              </p>
+
+              <:actions>
+                <.auth_submit
+                  label="Create account"
+                  busy_label="Creating account..."
+                />
+              </:actions>
+            </.auth_form>
+          </div>
 
           <:footer>
             <.auth_page_footer
-              prompt="Already have access?"
+              prompt="Already have an account?"
               link_text="Sign in"
               link_href={~p"/sign-in"}
-              note="New accounts confirm email on the same public route family before returning to the product shell."
             />
           </:footer>
         </.auth_page>

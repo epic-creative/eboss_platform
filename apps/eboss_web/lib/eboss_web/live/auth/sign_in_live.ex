@@ -9,7 +9,13 @@ defmodule EBossWeb.Auth.SignInLive do
   def mount(_params, _session, socket) do
     {:ok,
      socket
-     |> assign(:page_title, "Sign in")}
+     |> assign(:page_title, "Sign in")
+     |> assign(:mode, "password")}
+  end
+
+  @impl true
+  def handle_event("set_mode", %{"mode" => mode}, socket) when mode in ["password", "magic"] do
+    {:noreply, assign(socket, :mode, mode)}
   end
 
   @impl true
@@ -19,37 +25,63 @@ defmodule EBossWeb.Auth.SignInLive do
       flash={@flash}
       current_scope={assigns[:current_scope]}
       current_user={assigns[:current_user]}
-      shell_mode="public"
+      shell_mode="workspace"
       current_path="/sign-in"
     >
-      <.auth_shell
-        eyebrow="Custom authentication"
-        title="Sign in without leaving the product"
-        subtitle="Use your password for a full session or request a one-time magic link for a faster return."
-        detail_one="Password sign-in still uses AshAuthentication sign-in tokens"
-        detail_two="Magic links stay sign-in only for existing accounts"
-        detail_three="Every session lands on a dedicated dashboard shell"
-      >
-        <.auth_page
-          eyebrow="Account access"
-          title="Sign in"
-          subtitle="Choose your entry path. Password and magic-link access stay inside the same first-party shell."
-          current_path="/sign-in"
-        >
-          <div class="ui-auth-flow-stack">
-            <.live_component module={PasswordSignInComponent} id="password-sign-in" />
+      <.auth_shell current_path="/sign-in">
+        <.auth_page title="Sign in to EBoss" subtitle="Enter your workspace">
+          <section class="so-auth-card">
+            <div class="flex border-b border-[hsl(var(--so-border))] px-1 pt-1">
+              <button
+                type="button"
+                phx-click="set_mode"
+                phx-value-mode="password"
+                class="so-underline-tab flex-1 justify-center text-xs"
+                data-active={@mode == "password"}
+              >
+                Password
+              </button>
+              <button
+                type="button"
+                phx-click="set_mode"
+                phx-value-mode="magic"
+                class="so-underline-tab flex-1 justify-center text-xs"
+                data-active={@mode == "magic"}
+              >
+                Magic link
+              </button>
+            </div>
 
-            <div class="ui-auth-flow-divider" />
+            <div class="p-4">
+              <div
+                class={if(@mode == "password", do: "block", else: "hidden")}
+                data-sign-in-panel="password"
+              >
+                <.live_component
+                  module={PasswordSignInComponent}
+                  id="password-sign-in"
+                  compact
+                />
+              </div>
 
-            <.live_component module={MagicLinkRequestComponent} id="magic-link-request" />
-          </div>
+              <div
+                class={if(@mode == "magic", do: "block", else: "hidden")}
+                data-sign-in-panel="magic"
+              >
+                <.live_component
+                  module={MagicLinkRequestComponent}
+                  id="magic-link-request"
+                  compact
+                />
+              </div>
+            </div>
+          </section>
 
           <:footer>
             <.auth_page_footer
-              prompt="Need a fresh account?"
-              link_text="Register"
+              prompt="New to EBoss?"
+              link_text="Create an account"
               link_href={~p"/register"}
-              note="Password and magic-link access land in the same authenticated dashboard shell."
             />
           </:footer>
         </.auth_page>

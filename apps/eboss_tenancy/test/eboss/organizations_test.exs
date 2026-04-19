@@ -7,15 +7,20 @@ defmodule EBoss.OrganizationsTest do
 
   setup :set_swoosh_global
 
-  test "organizations generate unique slugs and memberships can be managed by the owner" do
+  test "organizations generate immutable owner slugs and memberships can be managed by the owner" do
     owner = register_user()
     member = register_user()
 
     first_org = create_organization(owner, %{name: "Acme Labs"})
-    second_org = create_organization(owner, %{name: "Acme Labs"})
 
-    assert first_org.slug == "acme-labs"
-    assert second_org.slug == "acme-labs-1"
+    assert first_org.owner_slug == "acme-labs"
+
+    assert {:error, error} =
+             EBoss.Organizations.Organization
+             |> Ash.Changeset.for_create(:create, %{name: "Acme Labs"}, actor: owner)
+             |> Ash.create()
+
+    assert Exception.message(error) =~ "has already been taken"
 
     membership =
       EBoss.Organizations.Membership
@@ -36,6 +41,19 @@ defmodule EBoss.OrganizationsTest do
       |> Ash.update!()
 
     assert updated_membership.role == :admin
+  end
+
+  test "organization renames preserve owner_slug" do
+    owner = register_user()
+    organization = create_organization(owner, %{name: "Initial Org"})
+
+    updated_organization =
+      organization
+      |> Ash.Changeset.for_update(:update, %{name: "Renamed Org"}, actor: owner)
+      |> Ash.update!()
+
+    assert updated_organization.owner_slug == "initial-org"
+    assert updated_organization.name == "Renamed Org"
   end
 
   test "organization ownership syncs a protected owner membership" do

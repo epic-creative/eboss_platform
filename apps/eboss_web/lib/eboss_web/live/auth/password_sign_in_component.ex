@@ -43,8 +43,8 @@ defmodule EBossWeb.Auth.PasswordSignInComponent do
   @impl true
   def render(assigns) do
     ~H"""
-    <section class="ui-auth-flow-section" aria-labelledby="sign-in-password-heading">
-      <div class="space-y-1">
+    <section aria-labelledby="sign-in-password-heading">
+      <div :if={!Map.get(assigns, :compact, false)} class="space-y-1">
         <h2 id="sign-in-password-heading" class="ui-text-title" data-size="md">
           Password
         </h2>
@@ -63,26 +63,42 @@ defmodule EBossWeb.Auth.PasswordSignInComponent do
         phx-change="validate_password"
         phx-submit="submit_password"
         phx-target={@myself}
-        actions_layout="between"
       >
         <.auth_email_input
           field={form[:email]}
           autocomplete="section-password email"
+          hint={
+            if(Map.get(assigns, :compact, false),
+              do: nil,
+              else: "Use the email address tied to this account."
+            )
+          }
         />
         <.auth_password_input
           field={form[:password]}
           autocomplete="section-password current-password"
+          hint={if(Map.get(assigns, :compact, false), do: nil, else: "Passwords are case sensitive.")}
         />
+
+        <div :if={Map.get(assigns, :compact, false)} class="-mt-1 text-right">
+          <a
+            href={~p"/forgot-password"}
+            class="text-[11px] text-[hsl(var(--so-primary))] hover:underline"
+          >
+            Forgot password?
+          </a>
+        </div>
 
         <:actions>
           <a
+            :if={!Map.get(assigns, :compact, false)}
             href={~p"/forgot-password"}
             class="ui-text-link"
           >
             Forgot your password?
           </a>
           <.auth_submit
-            label="Continue"
+            label={if(Map.get(assigns, :compact, false), do: "Sign in", else: "Continue")}
             busy_label="Signing in..."
           />
         </:actions>

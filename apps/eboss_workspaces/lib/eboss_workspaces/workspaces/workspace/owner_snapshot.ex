@@ -6,12 +6,12 @@ defmodule EBoss.Workspaces.Workspace.OwnerSnapshot do
 
   def fetch(:user, owner_id) do
     case Accounts.get_user(owner_id, authorize?: false) do
-      {:ok, %{username: username, id: id}} ->
+      {:ok, %{username: username, owner_slug: owner_slug, id: id}} ->
         {:ok,
          %{
            type: :user,
            id: id,
-           handle: username,
+           slug: owner_slug,
            display_name: username
          }}
 
@@ -22,12 +22,12 @@ defmodule EBoss.Workspaces.Workspace.OwnerSnapshot do
 
   def fetch(:organization, owner_id) do
     case Organizations.get_organization(owner_id, authorize?: false) do
-      {:ok, %{id: id, slug: slug, name: name}} ->
+      {:ok, %{id: id, owner_slug: owner_slug, name: name}} ->
         {:ok,
          %{
            type: :organization,
            id: id,
-           handle: slug,
+           slug: owner_slug,
            display_name: name
          }}
 
@@ -40,8 +40,8 @@ defmodule EBoss.Workspaces.Workspace.OwnerSnapshot do
 
   def attributes(owner_type, owner_id) do
     case fetch(owner_type, owner_id) do
-      {:ok, %{handle: handle, display_name: display_name}} ->
-        {:ok, %{owner_handle: handle, owner_display_name: display_name}}
+      {:ok, %{slug: owner_slug, display_name: display_name}} ->
+        {:ok, %{owner_slug: owner_slug, owner_display_name: display_name}}
 
       {:error, reason} ->
         {:error, reason}
@@ -51,28 +51,23 @@ defmodule EBoss.Workspaces.Workspace.OwnerSnapshot do
   def owner_summary(%{
         owner_type: owner_type,
         owner_id: owner_id,
-        owner_handle: owner_handle,
+        owner_slug: owner_slug,
         owner_display_name: owner_display_name
       })
-      when is_binary(owner_handle) and is_binary(owner_display_name) do
+      when is_binary(owner_slug) and is_binary(owner_display_name) do
     %{
       type: owner_type,
       id: owner_id,
-      handle: owner_handle,
+      slug: owner_slug,
       display_name: owner_display_name
     }
   end
 
   def owner_summary(_record), do: nil
 
-  def full_path(%{owner_type: :user, owner_handle: owner_handle, slug: slug})
-      when is_binary(owner_handle) and is_binary(slug) do
-    "@#{owner_handle}/#{slug}"
-  end
-
-  def full_path(%{owner_type: :organization, owner_handle: owner_handle, slug: slug})
-      when is_binary(owner_handle) and is_binary(slug) do
-    "#{owner_handle}/#{slug}"
+  def full_path(%{owner_slug: owner_slug, slug: slug})
+      when is_binary(owner_slug) and is_binary(slug) do
+    "#{owner_slug}/#{slug}"
   end
 
   def full_path(%{slug: slug}) when is_binary(slug), do: "unknown/#{slug}"

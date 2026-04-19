@@ -3,466 +3,163 @@ defmodule EBossWeb.DashboardLive do
 
   alias EBossWeb.AppScope
 
+  @route_configs %{
+    workspace_dashboard: %{page: "dashboard", title: "Overview"},
+    workspace_projects: %{page: "projects", title: "Projects"},
+    workspace_members: %{page: "members", title: "Members"},
+    workspace_access: %{page: "access", title: "Access"},
+    workspace_activity: %{page: "activity", title: "Activity"},
+    workspace_settings: %{page: "settings", title: "Settings"}
+  }
+
   @impl true
   def mount(params, _session, socket) do
-    case resolve_scope(socket.assigns.current_user, socket.assigns.live_action, params) do
+    route_config = route_config(socket.assigns.live_action)
+
+    case resolve_scope(socket.assigns.current_user, route_config, params) do
       {:redirect, dashboard_path} ->
         {:ok, redirect(socket, to: dashboard_path)}
 
       {:ok, current_scope} ->
+        current_path = current_path(current_scope, route_config.page)
+
         {:ok,
          socket
          |> assign(:current_scope, current_scope)
-         |> assign(:page_title, "Dashboard")}
+         |> assign(:current_page, route_config.page)
+         |> assign(:current_path, current_path)
+         |> assign(:page_title, route_config.title)
+         |> assign(:current_user_props, user_props(socket.assigns.current_user))
+         |> assign(:current_scope_props, scope_props(current_scope))}
     end
   end
 
   @impl true
   def render(assigns) do
-    current_scope = assigns[:current_scope]
-
-    current_workspace =
-      if current_scope, do: Map.get(current_scope, :current_workspace), else: nil
-
-    dashboard_path =
-      if current_scope,
-        do: Map.get(current_scope, :dashboard_path, "/dashboard"),
-        else: "/dashboard"
-
-    assigns =
-      assigns
-      |> assign(:current_workspace, current_workspace)
-      |> assign(:dashboard_path, dashboard_path)
-      |> assign(
-        :dashboard_description,
-        if(current_workspace,
-          do:
-            "The shared shell is now resolved to #{current_workspace.full_path}, so route work can evolve without resetting navigation, identity, session controls, or lightweight command cues.",
-          else:
-            "The authenticated shell is ready, but this account does not have an accessible workspace route yet. Keep the frame stable while onboarding or access-grant flows complete."
-        )
-      )
-      |> assign(
-        :workspace_label,
-        if(current_workspace,
-          do: current_workspace.name,
-          else: "No workspace selected"
-        )
-      )
-      |> assign(
-        :workspace_hint,
-        if(current_workspace,
-          do: current_workspace.full_path,
-          else: "Authenticated empty state"
-        )
-      )
+    assigns = ensure_workspace_assigns(assigns)
 
     ~H"""
     <Layouts.app
       flash={@flash}
-      current_scope={assigns[:current_scope]}
-      current_user={assigns[:current_user]}
+      current_scope={@current_scope}
+      current_user={@current_user}
+      current_path={@current_path}
+      shell_mode="workspace"
     >
-      <.dashboard_shell
-        current_user={@current_user}
-        current_scope={@current_scope}
-        current_path={@dashboard_path}
-        shell_label="EBoss dashboard"
-        shell_title="Operator workspace"
-        shell_copy="Keep the authenticated product frame stable while workspaces, folio, and future signed-in routes deepen inside it."
-      >
-        <:page_header>
-          <.dashboard_header
-            id="dashboard-top"
-            class="ui-dashboard-page-heading"
-            eyebrow="EBoss dashboard"
-            title={"Welcome back, @#{Map.get(@current_user, :username)}."}
-            description={@dashboard_description}
-            title_tag="h1"
-            title_size="xl"
-            data-dashboard-contract="page-header"
-          >
-            <:badge>
-              <.badge tone="neutral">Main route</.badge>
-            </:badge>
-            <:badge>
-              <.badge tone="neutral">Authenticated shell</.badge>
-            </:badge>
-            <:signal>
-              <.badge tone="neutral">Stable shell chrome</.badge>
-            </:signal>
-            <:signal>
-              <.badge tone="neutral">
-                {if @current_workspace, do: @current_workspace.full_path, else: "Awaiting workspace"}
-              </.badge>
-            </:signal>
-            <:actions>
-              <.dashboard_action_bar>
-                <.button href="#dashboard-utilities" variant="outline" tone="neutral" size="sm">
-                  Command surface
-                </.button>
-                <.button
-                  href={if @current_workspace, do: "#dashboard-structure", else: "#dashboard-access"}
-                  variant="ghost"
-                  tone="neutral"
-                  size="sm"
-                >
-                  {if @current_workspace, do: "Panel grouping", else: "Workspace access"}
-                </.button>
-              </.dashboard_action_bar>
-            </:actions>
-          </.dashboard_header>
-        </:page_header>
-
-        <:sidebar_footer>
-          <.dashboard_quick_actions
-            :if={@current_workspace}
-            id="dashboard-quick-actions"
-            title="Quick actions"
-            description="Mnemonic route cues keep the next jump obvious while the dashboard stays visually calm."
-          >
-            <:action
-              id="open-launch-surface"
-              label="Open launch surface"
-              description="Return to the primary operator lane and route-owned workspace context."
-              href="#dashboard-launchpad"
-              shortcut="GL"
-              badge="Primary"
-              tone="primary"
-              icon="hero-bolt"
-            />
-            <:action
-              id="inspect-panel-rhythm"
-              label="Inspect panel rhythm"
-              description="Review the support rail, grouped panels, and shell reuse notes."
-              href="#dashboard-structure"
-              shortcut="GR"
-              badge="Review"
-              tone="neutral"
-              icon="hero-rectangle-stack"
-            />
-            <:action
-              id="audit-fallback-states"
-              label="Audit fallback states"
-              description="Check empty, loading, and recovery treatments without leaving the route."
-              href="#dashboard-states"
-              shortcut="GS"
-              badge="States"
-              tone="warning"
-              icon="hero-exclamation-triangle"
-            />
-          </.dashboard_quick_actions>
-        </:sidebar_footer>
-
-        <div :if={@current_workspace} class="ui-dashboard-page" data-dashboard-contract="page-content">
-          <.dashboard_utility_strip
-            id="dashboard-utilities"
-            class="lg:col-span-2"
-            title="Command surface"
-            description="Keep route orientation and the next move visible with lightweight jump cues instead of heavier workflow chrome."
-          >
-            <:item
-              id="primary-lane"
-              label="Primary lane"
-              value={@workspace_label}
-              hint={@workspace_hint}
-              href="#dashboard-launchpad"
-              shortcut="GL"
-              tone="primary"
-              icon="hero-bolt"
-            />
-            <:item
-              id="supporting-rail"
-              label="Supporting rail"
-              value="Panel grouping"
-              hint="Review structure and shell reuse"
-              href="#dashboard-structure"
-              shortcut="GR"
-              tone="neutral"
-              icon="hero-rectangle-stack"
-            />
-            <:item
-              id="state-audit"
-              label="State audit"
-              value="Fallback states"
-              hint="Check empty, loading, and error treatment"
-              href="#dashboard-states"
-              shortcut="GS"
-              tone="warning"
-              icon="hero-command-line"
-            />
-            <:item
-              id="shell-frame"
-              label="Shell frame"
-              value="Route context"
-              hint="Identity and controls stay pinned"
-              href="#dashboard-top"
-              shortcut="GT"
-              tone="neutral"
-              icon="hero-shield-check"
-            />
-          </.dashboard_utility_strip>
-
-          <.dashboard_section id="dashboard-launchpad" section="launchpad">
-            <.dashboard_header
-              eyebrow="Launch surface"
-              title="Route-owned work stays easy to scan."
-              description="The main launch area uses the same section framing, action placement, and spacing rules as the supporting rail."
-            >
-              <:signal>
-                <.badge tone="neutral">Primary work surface</.badge>
-              </:signal>
-              <:signal>
-                <.badge tone="neutral">Repeatable section header</.badge>
-              </:signal>
-              <:actions>
-                <.dashboard_action_bar>
-                  <.button href="#dashboard-structure" variant="outline" tone="neutral" size="sm">
-                    Shell contract
-                  </.button>
-                  <.button href="#dashboard-panel-rhythm" variant="ghost" tone="neutral" size="sm">
-                    Panel rhythm
-                  </.button>
-                </.dashboard_action_bar>
-              </:actions>
-            </.dashboard_header>
-
-            <.DashboardLaunchpad
-              username={Map.get(@current_user, :username)}
-              email={to_string(Map.get(@current_user, :email))}
-              workspaceLabel={"Current workspace route: #{@current_workspace.full_path}."}
-              folioLabel="Folio stays workspace-scoped while reusing the same signed-in shell."
-            />
-          </.dashboard_section>
-
-          <.dashboard_section
-            id="dashboard-structure"
-            section="structure"
-            class="ui-dashboard-page__rail"
-          >
-            <.dashboard_header
-              eyebrow="Working structure"
-              title="Panel groupings stay systematic instead of page-specific."
-              description="Supporting panels now share one header pattern, one action bar rhythm, and one grouped layout contract for authenticated product work."
-            >
-              <:signal>
-                <.badge tone="neutral">Shared panel framing</.badge>
-              </:signal>
-              <:signal>
-                <.badge tone="neutral">Consistent actions</.badge>
-              </:signal>
-              <:actions>
-                <.dashboard_action_bar>
-                  <.button href="#dashboard-launchpad" variant="outline" tone="neutral" size="sm">
-                    Launch surface
-                  </.button>
-                  <.button href="#dashboard-top" variant="ghost" tone="neutral" size="sm">
-                    Back to top
-                  </.button>
-                </.dashboard_action_bar>
-              </:actions>
-            </.dashboard_header>
-
-            <.dashboard_panel_group columns="stack">
-              <.panel id="dashboard-frame" surface="solid" class="space-y-4">
-                <p class="ui-text-meta" data-tone="primary">Route frame</p>
-
-                <div class="space-y-2">
-                  <p class="ui-text-title" data-size="md">
-                    Page content can change without rebuilding the shell.
-                  </p>
-                  <p class="ui-text-body" data-tone="soft">
-                    The dashboard owns the working surface while identity, navigation, theme
-                    controls, and sign-out stay anchored in persistent shell chrome.
-                  </p>
-                </div>
-
-                <ul class="ui-dashboard-page__list">
-                  <li>The main route keeps its own panels and launch surface.</li>
-                  <li>Future authenticated routes can inherit the same shell rhythm.</li>
-                  <li>Small and large breakpoints keep the same dashboard frame.</li>
-                </ul>
-              </.panel>
-
-              <.panel id="dashboard-panel-rhythm" tone="inverse" surface="solid" class="space-y-4">
-                <div class="space-y-2">
-                  <p class="ui-text-meta" data-tone="primary">Shell reuse</p>
-                  <p class="ui-text-title" data-size="md">
-                    One authenticated frame can carry the product system.
-                  </p>
-                  <p class="ui-text-body" data-tone="soft">
-                    The dashboard route now reads like part of EBoss instead of a stand-alone launch
-                    page, which makes the shell ready for the next signed-in surfaces.
-                  </p>
-                </div>
-
-                <div class="flex flex-wrap gap-2">
-                  <.badge tone="neutral">Persistent nav</.badge>
-                  <.badge tone="neutral">Stable session frame</.badge>
-                  <.badge tone="neutral">Route-level panels</.badge>
-                </div>
-              </.panel>
-            </.dashboard_panel_group>
-          </.dashboard_section>
-
-          <.dashboard_section id="dashboard-states" section="states" class="lg:col-span-2">
-            <.dashboard_header
-              eyebrow="State contract"
-              title="Empty, loading, and error states stay in the dashboard language."
-              description="Sparse launch surfaces and dense support panels now share one fallback pattern, so the route keeps its structure before deeper workflow implementation arrives."
-            >
-              <:signal>
-                <.badge tone="neutral">Shared visual contract</.badge>
-              </:signal>
-              <:signal>
-                <.badge tone="neutral">Sparse and dense ready</.badge>
-              </:signal>
-              <:actions>
-                <.dashboard_action_bar>
-                  <.button href="#dashboard-launchpad" variant="outline" tone="neutral" size="sm">
-                    Launch surface
-                  </.button>
-                  <.button href="#dashboard-structure" variant="ghost" tone="neutral" size="sm">
-                    Panel grouping
-                  </.button>
-                </.dashboard_action_bar>
-              </:actions>
-            </.dashboard_header>
-
-            <div class="ui-split-grid">
-              <.dashboard_empty_state
-                density="sparse"
-                title="Nothing is queued for this workspace yet."
-                description="The launch area keeps its frame, action placement, and supporting structure visible so the route reads like a ready workspace instead of a temporary placeholder."
-                details={[
-                  "Primary actions stay where operators expect them.",
-                  "Metrics, rows, and supporting notes keep their footprint reserved."
-                ]}
-              >
-                <:actions>
-                  <.button href="#dashboard-launchpad" size="sm">
-                    Review launch surface
-                  </.button>
-                  <.button href="#dashboard-structure" variant="outline" tone="neutral" size="sm">
-                    Inspect structure
-                  </.button>
-                </:actions>
-              </.dashboard_empty_state>
-
-              <div class="grid gap-4">
-                <.dashboard_loading_state
-                  density="dense"
-                  title="Workspace signals are syncing."
-                  description="Loading keeps the compact panel footprint and reserves the next set of tiles and rows so the rail stays readable while data resolves."
-                >
-                  <:actions>
-                    <.button href="#dashboard-panel-rhythm" variant="ghost" tone="neutral" size="sm">
-                      Review rail rhythm
-                    </.button>
-                  </:actions>
-                </.dashboard_loading_state>
-
-                <.dashboard_error_state
-                  density="dense"
-                  title="The latest sync did not complete."
-                  description="Recovery guidance stays inside the same grouped panel treatment instead of dropping into a generic framework alert."
-                >
-                  <:actions>
-                    <.button href="#dashboard-structure" size="sm">
-                      Retry flow
-                    </.button>
-                    <.button href="#dashboard-top" variant="outline" tone="neutral" size="sm">
-                      Review shell context
-                    </.button>
-                  </:actions>
-                </.dashboard_error_state>
-              </div>
-            </div>
-          </.dashboard_section>
-        </div>
-
-        <div
-          :if={is_nil(@current_workspace)}
-          class="ui-dashboard-page"
-          data-dashboard-contract="page-content"
-        >
-          <.dashboard_utility_strip
-            id="dashboard-utilities"
-            class="lg:col-span-2"
-            title="Command surface"
-            description="Keep the signed-in shell useful even before a concrete workspace route is available."
-          >
-            <:item
-              id="workspace-access"
-              label="Workspace access"
-              value="No accessible workspace"
-              hint="Request access or create your first workspace."
-              href="#dashboard-access"
-              shortcut="GW"
-              tone="warning"
-              icon="hero-user-plus"
-            />
-            <:item
-              id="shell-frame"
-              label="Shell frame"
-              value="Authenticated empty state"
-              hint="Header, identity, and session controls remain stable."
-              href="#dashboard-top"
-              shortcut="GT"
-              tone="neutral"
-              icon="hero-shield-check"
-            />
-          </.dashboard_utility_strip>
-
-          <.dashboard_section id="dashboard-access" section="launchpad">
-            <.dashboard_header
-              eyebrow="Workspace access"
-              title="No accessible workspaces yet."
-              description="The authenticated frame is active, but you still need a workspace route before scoped product surfaces can mount."
-            >
-              <:signal>
-                <.badge tone="neutral">Empty shell state</.badge>
-              </:signal>
-              <:signal>
-                <.badge tone="neutral">Waiting for workspace access</.badge>
-              </:signal>
-            </.dashboard_header>
-
-            <.dashboard_empty_state
-              density="sparse"
-              title="Create or join a workspace to continue."
-              description="Keep the shell mounted so onboarding, invite acceptance, and future workspace creation can reuse the same signed-in frame."
-              details={[
-                "The canonical dashboard route will become workspace-aware as soon as one route is available.",
-                "Bootstrap APIs and upcoming LiveVue surfaces can rely on the same scope contract once a workspace exists."
-              ]}
-            >
-              <:actions>
-                <.button href={~p"/"} variant="outline" tone="neutral" size="sm">
-                  Back to home
-                </.button>
-              </:actions>
-            </.dashboard_empty_state>
-          </.dashboard_section>
-        </div>
-      </.dashboard_shell>
+      <.ShellOperatorWorkspaceApp
+        currentUser={@current_user_props}
+        currentScope={@current_scope_props}
+        currentPage={@current_page}
+        currentPath={@current_path}
+        signOutPath={~p"/logout"}
+        csrfToken={Plug.CSRFProtection.get_csrf_token()}
+      />
     </Layouts.app>
     """
   end
 
-  defp resolve_scope(current_user, :user_workspace, %{
-         "owner_handle" => owner_handle,
-         "workspace_slug" => workspace_slug
-       }) do
-    AppScope.resolve_workspace(current_user, :user, owner_handle, workspace_slug)
+  defp ensure_workspace_assigns(assigns) do
+    current_scope =
+      Map.get(assigns, :current_scope) || AppScope.empty(Map.get(assigns, :current_user))
+
+    current_page = Map.get(assigns, :current_page, "dashboard")
+    current_path = Map.get(assigns, :current_path) || current_path(current_scope, current_page)
+
+    assigns
+    |> assign(:current_scope, current_scope)
+    |> assign(:current_page, current_page)
+    |> assign(:current_path, current_path)
+    |> assign(
+      :current_user_props,
+      Map.get(assigns, :current_user_props) || user_props(Map.get(assigns, :current_user))
+    )
+    |> assign(
+      :current_scope_props,
+      Map.get(assigns, :current_scope_props) || scope_props(current_scope)
+    )
   end
 
-  defp resolve_scope(current_user, :org_workspace, %{
-         "owner_handle" => owner_handle,
-         "workspace_slug" => workspace_slug
-       }) do
-    AppScope.resolve_workspace(current_user, :organization, owner_handle, workspace_slug)
+  defp route_config(live_action) do
+    Map.get(@route_configs, live_action, %{page: "dashboard", title: "Overview"})
   end
 
-  defp resolve_scope(current_user, _live_action, _params), do: {:ok, AppScope.empty(current_user)}
+  defp resolve_scope(current_user, _route_config, %{
+         "owner_slug" => owner_slug,
+         "workspace_slug" => workspace_slug
+       })
+       when is_binary(owner_slug) and is_binary(workspace_slug) do
+    AppScope.resolve_workspace(current_user, owner_slug, workspace_slug)
+  end
+
+  defp resolve_scope(current_user, _route_config, _params),
+    do: {:ok, AppScope.empty(current_user)}
+
+  defp current_path(%AppScope{dashboard_path: dashboard_path}, "dashboard"), do: dashboard_path
+
+  defp current_path(%AppScope{dashboard_path: dashboard_path}, page) do
+    "#{dashboard_path}/#{page}"
+  end
+
+  defp user_props(nil), do: %{username: "guest", email: ""}
+
+  defp user_props(user) do
+    %{
+      username: to_string(Map.get(user, :username)),
+      email: to_string(Map.get(user, :email))
+    }
+  end
+
+  defp scope_props(%AppScope{} = scope) do
+    %{
+      empty: scope.empty?,
+      dashboardPath: scope.dashboard_path,
+      currentWorkspace: workspace_props(scope.current_workspace),
+      owner: owner_props(scope.owner),
+      capabilities: capability_props(scope.capabilities),
+      accessibleWorkspaces: Enum.map(scope.accessible_workspaces, &workspace_props/1)
+    }
+  end
+
+  defp workspace_props(nil), do: nil
+
+  defp workspace_props(workspace) do
+    %{
+      id: workspace.id,
+      name: workspace.name,
+      slug: workspace.slug,
+      fullPath: workspace.full_path,
+      visibility: stringify_optional(workspace.visibility),
+      ownerType: owner_type_label(workspace.owner_type),
+      ownerSlug: workspace.owner_slug,
+      ownerDisplayName: workspace.owner_display_name,
+      dashboardPath: workspace.dashboard_path,
+      current: Map.get(workspace, :current?, false)
+    }
+  end
+
+  defp owner_props(nil), do: nil
+
+  defp owner_props(owner) do
+    %{
+      type: owner_type_label(owner.type),
+      slug: owner.slug,
+      displayName: owner.display_name
+    }
+  end
+
+  defp capability_props(capabilities) do
+    %{
+      readWorkspace: Map.get(capabilities, :read_workspace, false),
+      manageWorkspace: Map.get(capabilities, :manage_workspace, false),
+      readFolio: Map.get(capabilities, :read_folio, false),
+      manageFolio: Map.get(capabilities, :manage_folio, false)
+    }
+  end
+
+  defp owner_type_label(:user), do: "user"
+  defp owner_type_label(:organization), do: "organization"
+  defp owner_type_label(other), do: to_string(other)
+
+  defp stringify_optional(nil), do: nil
+  defp stringify_optional(value), do: to_string(value)
 end

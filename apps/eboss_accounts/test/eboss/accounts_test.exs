@@ -6,9 +6,10 @@ defmodule EBoss.AccountsTest do
   setup :set_swoosh_global
 
   test "register normalizes usernames and sends confirmation email" do
-    user = register_user(%{email: "case@example.com", username: "Case_User"})
+    user = register_user(%{email: "case@example.com", username: "Case-User"})
 
-    assert user.username == "case_user"
+    assert user.username == "case-user"
+    assert user.owner_slug == "case-user"
 
     assert_received {:email, email}
     assert email.subject == "Confirm your email address"
@@ -23,6 +24,33 @@ defmodule EBoss.AccountsTest do
              |> Ash.Changeset.for_create(:register_with_password, %{
                email: unique_email(),
                username: "takenname",
+               password: password(),
+               password_confirmation: password()
+             })
+             |> Ash.Changeset.set_context(%{private: %{ash_authentication?: true}})
+             |> Ash.create(authorize?: false)
+
+    assert Exception.message(error) =~ "has already been taken"
+  end
+
+  test "owner slugs are globally reserved across users and organizations" do
+    user = register_user(%{username: "global-owner"})
+
+    assert user.owner_slug == "global-owner"
+
+    assert {:ok, _reservation} =
+             EBoss.OwnerSlugs.reserve_owner_slug(
+               "cross-entity-owner",
+               :organization,
+               Ecto.UUID.generate(),
+               authorize?: false
+             )
+
+    assert {:error, error} =
+             EBoss.Accounts.User
+             |> Ash.Changeset.for_create(:register_with_password, %{
+               email: unique_email(),
+               username: "cross-entity-owner",
                password: password(),
                password_confirmation: password()
              })

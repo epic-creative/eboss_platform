@@ -28,50 +28,43 @@ defmodule EBossWeb.Auth.MagicLinkLive do
       flash={@flash}
       current_scope={assigns[:current_scope]}
       current_user={assigns[:current_user]}
-      shell_mode="public"
+      shell_mode="workspace"
       current_path="/magic-link"
     >
-      <.auth_shell
-        eyebrow="Magic link access"
-        title="Finish signing in"
-        subtitle="Magic links stay sign-in only in v1, so this route is a simple confirmation step into a normal authenticated session."
-        detail_one="The token stays in the standard AshAuthentication action"
-        detail_two="No parallel custom JSON auth endpoint is introduced"
-        detail_three="The final destination is the same dashboard shell as password sign-in"
-      >
+      <.auth_shell current_path="/magic-link">
         <.auth_page
-          eyebrow="Magic link"
           title="Use this sign-in link"
-          subtitle="Confirm the sign-in and we will take you into the authenticated part of the app."
+          subtitle="Confirm the sign-in and we’ll take you into the authenticated part of the app."
         >
-          <.form_errors form={@form} />
+          <div class="so-auth-card p-4">
+            <.form_errors form={@form} />
 
-          <.auth_form
-            :let={form}
-            for={@form}
-            id="magic-link-form"
-            aria-label={BrowserTestContracts.magic_link_confirmation_form_label()}
-            phx-submit="submit"
-            phx-trigger-action={@trigger_action}
-            action={AuthForms.auth_path(@socket, AuthForms.magic_link_strategy!(), :sign_in)}
-            method="post"
-          >
-            <input type="hidden" name={form[:token].name} value={@token} />
+            <.auth_form
+              :let={form}
+              for={@form}
+              id="magic-link-form"
+              aria-label={BrowserTestContracts.magic_link_confirmation_form_label()}
+              phx-submit="submit"
+              phx-trigger-action={@trigger_action}
+              action={AuthForms.auth_path(@socket, AuthForms.magic_link_strategy!(), :sign_in)}
+              method="post"
+            >
+              <input type="hidden" name={form[:token].name} value={@token} />
 
-            <:actions>
-              <.auth_submit
-                label="Sign me in"
-                busy_label="Signing you in..."
-              />
-            </:actions>
-          </.auth_form>
+              <:actions>
+                <.auth_submit
+                  label="Sign in"
+                  busy_label="Signing you in..."
+                />
+              </:actions>
+            </.auth_form>
+          </div>
 
           <:footer>
             <.auth_page_footer
               prompt="Prefer a standard credential flow?"
               link_text="Sign in with password"
               link_href={~p"/sign-in"}
-              note="Magic-link confirmation uses the same public shell and lands in the same authenticated destination."
             />
           </:footer>
         </.auth_page>

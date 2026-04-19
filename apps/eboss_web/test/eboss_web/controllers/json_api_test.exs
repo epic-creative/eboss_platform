@@ -15,10 +15,7 @@ defmodule EBossWeb.JsonApiTest do
     assert spec["info"]["title"] == "EBoss API"
     assert Map.has_key?(spec["paths"], "/api/v1/workspaces")
     assert Map.has_key?(spec["paths"], "/api/v1/workspaces/{id}")
-    assert Map.has_key?(spec["paths"], "/api/v1/users/{owner_handle}/workspaces/{slug}")
-    assert Map.has_key?(spec["paths"], "/api/v1/orgs/{owner_handle}/workspaces/{slug}")
-    assert Map.has_key?(spec["paths"], "/api/v1/users/{owner_handle}/workspaces/{slug}/bootstrap")
-    assert Map.has_key?(spec["paths"], "/api/v1/orgs/{owner_handle}/workspaces/{slug}/bootstrap")
+    assert Map.has_key?(spec["paths"], "/api/v1/{owner_slug}/workspaces/{slug}/bootstrap")
 
     assert get_in(spec, ["components", "schemas", "WorkspaceSummary", "properties", "full_path"]) ==
              %{
@@ -65,7 +62,6 @@ defmodule EBossWeb.JsonApiTest do
                  "name" => "API Workspace",
                  "slug" => workspace_slug,
                  "owner_type" => "user",
-                 "owner_id" => owner_id,
                  "visibility" => "private"
                }
              }
@@ -73,7 +69,8 @@ defmodule EBossWeb.JsonApiTest do
 
     assert workspace_id == workspace.id
     assert workspace_slug == workspace.slug
-    assert owner_id == owner.id
+    refute Map.has_key?(hd(index_payload["data"])["attributes"], "owner_id")
+    refute Map.has_key?(hd(index_payload["data"])["attributes"], "settings")
 
     show_conn =
       build_conn()
@@ -86,65 +83,61 @@ defmodule EBossWeb.JsonApiTest do
     assert show_payload["data"]["id"] == workspace.id
     assert show_payload["data"]["type"] == "workspace"
     assert show_payload["data"]["attributes"]["name"] == "API Workspace"
+    refute Map.has_key?(show_payload["data"]["attributes"], "owner_id")
+    refute Map.has_key?(show_payload["data"]["attributes"], "settings")
   end
 
-  test "authenticated clients can fetch workspaces by user owner handle and slug", %{conn: conn} do
+  test "public workspace json api does not expose internal owner ids or settings", %{conn: conn} do
     owner = register_user()
-    api_key = create_api_key(owner)
 
     workspace =
       Workspaces.create_workspace!(
         %{
-          name: "Owner Route Workspace",
+          name: "Public API Workspace",
           owner_type: :user,
-          owner_id: owner.id
+          owner_id: owner.id,
+          visibility: :public
         },
         actor: owner
       )
 
-    conn =
+    public_workspace =
+      Workspaces.update_workspace!(workspace, %{settings: %{theme: "field-notes"}}, actor: owner)
+
+    index_conn =
       conn
-      |> put_req_header("authorization", "Bearer #{api_key}")
       |> put_req_header("accept", "application/vnd.api+json")
-      |> get("/api/v1/users/#{owner.username}/workspaces/#{workspace.slug}")
+      |> get("/api/v1/workspaces")
 
-    payload = json_response(conn, 200)
+    index_payload = json_response(index_conn, 200)
 
-    assert payload["data"]["id"] == workspace.id
-    assert payload["data"]["attributes"]["slug"] == workspace.slug
-    assert payload["data"]["attributes"]["owner_type"] == "user"
-  end
+    assert [
+             %{
+               "id" => workspace_id,
+               "type" => "workspace",
+               "attributes" => attributes
+             }
+           ] = index_payload["data"]
 
-  test "organization members can fetch workspaces by org handle and slug", %{conn: conn} do
-    owner = register_user()
-    member = register_user()
-    organization = Organizations.create_organization!(%{name: "API Org"}, actor: owner)
+    assert workspace_id == public_workspace.id
+    assert attributes["name"] == "Public API Workspace"
+    assert attributes["slug"] == public_workspace.slug
+    assert attributes["owner_type"] == "user"
+    assert attributes["visibility"] == "public"
+    refute Map.has_key?(attributes, "owner_id")
+    refute Map.has_key?(attributes, "settings")
 
-    create_org_membership(owner, organization, member, :member)
-
-    api_key = create_api_key(member)
-
-    workspace =
-      Workspaces.create_workspace!(
-        %{
-          name: "Org Route Workspace",
-          owner_type: :organization,
-          owner_id: organization.id
-        },
-        actor: owner
-      )
-
-    conn =
-      conn
-      |> put_req_header("authorization", "Bearer #{api_key}")
+    show_conn =
+      build_conn()
       |> put_req_header("accept", "application/vnd.api+json")
-      |> get("/api/v1/orgs/#{organization.slug}/workspaces/#{workspace.slug}")
+      |> get("/api/v1/workspaces/#{public_workspace.id}")
 
-    payload = json_response(conn, 200)
+    show_payload = json_response(show_conn, 200)
 
-    assert payload["data"]["id"] == workspace.id
-    assert payload["data"]["attributes"]["slug"] == workspace.slug
-    assert payload["data"]["attributes"]["owner_type"] == "organization"
+    assert show_payload["data"]["id"] == public_workspace.id
+    assert show_payload["data"]["attributes"]["name"] == "Public API Workspace"
+    refute Map.has_key?(show_payload["data"]["attributes"], "owner_id")
+    refute Map.has_key?(show_payload["data"]["attributes"], "settings")
   end
 
   test "authenticated clients can fetch a user workspace bootstrap payload", %{conn: conn} do
@@ -175,7 +168,7 @@ defmodule EBossWeb.JsonApiTest do
       conn
       |> put_req_header("authorization", "Bearer #{api_key}")
       |> put_req_header("accept", "application/json")
-      |> get("/api/v1/users/#{owner.username}/workspaces/#{current_workspace.slug}/bootstrap")
+      |> get("/api/v1/#{owner.owner_slug}/workspaces/#{current_workspace.slug}/bootstrap")
 
     payload = json_response(conn, 200)
 
@@ -184,10 +177,10 @@ defmodule EBossWeb.JsonApiTest do
     assert payload["workspace"]["slug"] == current_workspace.slug
 
     assert payload["workspace"]["dashboard_path"] ==
-             "/users/#{owner.username}/#{current_workspace.slug}/dashboard"
+             "/#{owner.owner_slug}/#{current_workspace.slug}"
 
     assert payload["owner"]["type"] == "user"
-    assert payload["owner"]["handle"] == owner.username
+    assert payload["owner"]["slug"] == owner.owner_slug
 
     assert payload["capabilities"] == %{
              "manage_folio" => true,
@@ -228,13 +221,13 @@ defmodule EBossWeb.JsonApiTest do
       conn
       |> put_req_header("authorization", "Bearer #{api_key}")
       |> put_req_header("accept", "application/json")
-      |> get("/api/v1/orgs/#{organization.slug}/workspaces/#{workspace.slug}/bootstrap")
+      |> get("/api/v1/#{organization.owner_slug}/workspaces/#{workspace.slug}/bootstrap")
 
     payload = json_response(conn, 200)
 
     assert payload["workspace"]["id"] == workspace.id
     assert payload["owner"]["type"] == "organization"
-    assert payload["owner"]["handle"] == organization.slug
+    assert payload["owner"]["slug"] == organization.owner_slug
 
     assert payload["capabilities"] == %{
              "manage_folio" => false,
@@ -269,7 +262,7 @@ defmodule EBossWeb.JsonApiTest do
     conn =
       conn
       |> put_req_header("accept", "application/json")
-      |> get("/api/v1/users/#{owner.username}/workspaces/#{workspace.slug}/bootstrap")
+      |> get("/api/v1/#{owner.owner_slug}/workspaces/#{workspace.slug}/bootstrap")
 
     assert %{
              "error" => %{
@@ -298,7 +291,7 @@ defmodule EBossWeb.JsonApiTest do
       conn
       |> put_req_header("authorization", "Bearer #{api_key}")
       |> put_req_header("accept", "application/json")
-      |> get("/api/v1/users/#{owner.username}/workspaces/#{workspace.slug}/bootstrap")
+      |> get("/api/v1/#{owner.owner_slug}/workspaces/#{workspace.slug}/bootstrap")
 
     assert %{
              "error" => %{
@@ -316,7 +309,7 @@ defmodule EBossWeb.JsonApiTest do
       conn
       |> put_req_header("authorization", "Bearer #{api_key}")
       |> put_req_header("accept", "application/json")
-      |> get("/api/v1/users/#{owner.username}/workspaces/missing-workspace/bootstrap")
+      |> get("/api/v1/#{owner.owner_slug}/workspaces/missing-workspace/bootstrap")
 
     assert %{
              "error" => %{

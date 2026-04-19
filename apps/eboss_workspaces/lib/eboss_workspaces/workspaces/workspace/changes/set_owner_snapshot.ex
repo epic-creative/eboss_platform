@@ -10,10 +10,10 @@ defmodule EBoss.Workspaces.Workspace.Changes.SetOwnerSnapshot do
 
     with owner_type when not is_nil(owner_type) <- owner_type,
          owner_id when not is_nil(owner_id) <- owner_id,
-         {:ok, %{owner_handle: owner_handle, owner_display_name: owner_display_name}} <-
+         {:ok, %{owner_slug: owner_slug, owner_display_name: owner_display_name}} <-
            OwnerSnapshot.attributes(owner_type, owner_id) do
       changeset
-      |> Ash.Changeset.force_change_attribute(:owner_handle, owner_handle)
+      |> Ash.Changeset.force_change_attribute(:owner_slug, owner_slug)
       |> Ash.Changeset.force_change_attribute(:owner_display_name, owner_display_name)
     else
       _ -> changeset

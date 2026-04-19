@@ -50,15 +50,14 @@ defmodule EBossWeb.AuthContractSmokeTest do
     for {route, form_labels} <- routes do
       assert {:ok, view, _html} = live(build_conn(), route)
       assert has_element?(view, ~s([data-testid="#{BrowserTestContracts.auth_shell()}"]))
-      assert has_element?(view, ".ui-auth-grid > .ui-panel.ui-panel-padding-sm")
-      assert has_element?(view, ".ui-auth-grid > .ui-panel.ui-panel-padding-lg")
+      assert has_element?(view, ".ui-shell[data-shell-mode='workspace']")
+      assert has_element?(view, ".so-header-bar")
+      assert has_element?(view, ".so-auth-page")
+      assert has_element?(view, ".so-auth-card")
       refute has_element?(view, ".ui-frame-card")
       refute has_element?(view, ".ui-form-card")
-
-      assert has_element?(
-               view,
-               ~s(nav[aria-label="#{BrowserTestContracts.authentication_routes_nav_label()}"])
-             )
+      refute has_element?(view, "[data-public-shell-nav]")
+      refute has_element?(view, "[data-public-shell-footer]")
 
       for form_label <- form_labels do
         assert has_element?(view, ~s(form[aria-label="#{form_label}"]))

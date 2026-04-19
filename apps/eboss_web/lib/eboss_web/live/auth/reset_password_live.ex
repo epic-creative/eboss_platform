@@ -55,60 +55,53 @@ defmodule EBossWeb.Auth.ResetPasswordLive do
       flash={@flash}
       current_scope={assigns[:current_scope]}
       current_user={assigns[:current_user]}
-      shell_mode="public"
+      shell_mode="workspace"
       current_path="/reset"
     >
-      <.auth_shell
-        eyebrow="Password recovery"
-        title="Choose a new password"
-        subtitle="This page validates the password locally in LiveView and hands the final token submission back to AshAuthentication."
-        detail_one="The reset token stays in the standard POST flow"
-        detail_two="Successful resets also create a session"
-        detail_three="Invalid tokens fall back to the sign-in flow cleanly"
-      >
+      <.auth_shell current_path="/reset">
         <.auth_page
-          eyebrow="Reset password"
-          title="Set a new password"
-          subtitle="Choose a fresh password and we will sign you back into the application."
+          title="Set new password"
+          subtitle="Choose a fresh password."
         >
-          <.form_errors form={@form} />
+          <div class="so-auth-card p-4">
+            <.form_errors form={@form} />
 
-          <.auth_form
-            :let={form}
-            for={@form}
-            id="reset-password-form"
-            aria-label={BrowserTestContracts.reset_password_form_label()}
-            phx-change="change"
-            phx-submit="submit"
-          >
-            <input type="hidden" name={form[:reset_token].name} value={@token} />
-            <.auth_password_input
-              field={form[:password]}
-              label="New password"
-              hint="Use at least 8 characters."
-              autocomplete="new-password"
-            />
-            <.auth_password_input
-              field={form[:password_confirmation]}
-              label="Confirm new password"
-              hint="Repeat the same password exactly."
-              autocomplete="new-password"
-            />
-
-            <:actions>
-              <.auth_submit
-                label="Reset password"
-                busy_label="Resetting password..."
+            <.auth_form
+              :let={form}
+              for={@form}
+              id="reset-password-form"
+              aria-label={BrowserTestContracts.reset_password_form_label()}
+              phx-change="change"
+              phx-submit="submit"
+            >
+              <input type="hidden" name={form[:reset_token].name} value={@token} />
+              <.auth_password_input
+                field={form[:password]}
+                label="New password"
+                hint="Use at least 8 characters."
+                autocomplete="new-password"
               />
-            </:actions>
-          </.auth_form>
+              <.auth_password_input
+                field={form[:password_confirmation]}
+                label="Confirm new password"
+                hint="Repeat the same password exactly."
+                autocomplete="new-password"
+              />
+
+              <:actions>
+                <.auth_submit
+                  label="Change password"
+                  busy_label="Resetting password..."
+                />
+              </:actions>
+            </.auth_form>
+          </div>
 
           <:footer>
             <.auth_page_footer
               prompt="Need another reset email?"
               link_text="Request a new link"
               link_href={~p"/forgot-password"}
-              note="Expired or invalid tokens fall back to the same recovery flow without leaving the auth family."
             />
           </:footer>
         </.auth_page>

@@ -1,30 +1,6 @@
 defmodule EBoss.Accounts.User.Changes.NormalizeUsername do
   use Ash.Resource.Change
 
-  @reserved_words ~w[
-    admin api app auth login logout signup register
-    about help support contact privacy terms legal
-    blog docs documentation guide tutorial
-    dashboard settings profile account users
-    organization organizations org orgs
-    workspace workspaces
-    jido agent ai llm ml assistant bot chatbot
-    gpt claude anthropic openai gemini bard
-    system root administrator moderator mod
-    public private shared assets static
-    css js javascript images img uploads
-    download downloads file files
-    search query find discover explore
-    new create edit update delete remove
-    join invite invitation member team
-    billing payment subscribe subscription
-    webhook webhooks callback callbacks
-    test testing debug staging production
-    www mail email smtp ftp sftp ssh
-    localhost null undefined nil none
-    true false yes no
-  ]
-
   def init(opts), do: {:ok, opts}
 
   def change(changeset, _opts, _context) do
@@ -44,24 +20,24 @@ defmodule EBoss.Accounts.User.Changes.NormalizeUsername do
     normalized = String.downcase(username)
 
     cond do
-      String.length(normalized) < 4 ->
+      String.length(normalized) < 3 ->
         Ash.Changeset.add_error(changeset,
           field: :username,
-          message: "Username must be at least 4 characters long"
+          message: "Username must be at least 3 characters long"
         )
 
-      String.length(normalized) > 30 ->
+      String.length(normalized) > 39 ->
         Ash.Changeset.add_error(changeset,
           field: :username,
-          message: "Username must be at most 30 characters long"
+          message: "Username must be at most 39 characters long"
         )
 
-      !Regex.match?(~r/^[a-z0-9][a-z0-9_-]*[a-z0-9]$/, normalized) &&
+      !Regex.match?(~r/^[a-z0-9][a-z0-9-]*[a-z0-9]$/, normalized) &&
           String.length(normalized) > 1 ->
         Ash.Changeset.add_error(changeset,
           field: :username,
           message:
-            "Username must start and end with a letter or number, and can only contain letters, numbers, hyphens, and underscores"
+            "Username must start and end with a letter or number, and can only contain lowercase letters, numbers, and hyphens"
         )
 
       String.length(normalized) == 1 && !Regex.match?(~r/^[a-z0-9]$/, normalized) ->
@@ -70,17 +46,16 @@ defmodule EBoss.Accounts.User.Changes.NormalizeUsername do
           message: "Single character usernames must be a letter or number"
         )
 
-      normalized in @reserved_words ->
+      normalized in EBoss.Slugs.reserved_slugs() ->
         Ash.Changeset.add_error(changeset,
           field: :username,
           message: "Username '#{normalized}' is reserved and cannot be used"
         )
 
-      String.contains?(normalized, "__") || String.contains?(normalized, "--") ||
-        String.contains?(normalized, "-_") || String.contains?(normalized, "_-") ->
+      String.contains?(normalized, "--") ->
         Ash.Changeset.add_error(changeset,
           field: :username,
-          message: "Username cannot contain consecutive special characters"
+          message: "Username cannot contain consecutive hyphens"
         )
 
       true ->

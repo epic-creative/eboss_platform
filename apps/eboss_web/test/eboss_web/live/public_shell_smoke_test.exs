@@ -2,6 +2,7 @@ defmodule EBossWeb.PublicShellSmokeTest do
   use ExUnit.Case, async: false
   use EBossWeb, :verified_routes
 
+  import LiveVue.Test
   import Phoenix.ConnTest
   import Phoenix.LiveViewTest
 
@@ -36,80 +37,36 @@ defmodule EBossWeb.PublicShellSmokeTest do
     :ok
   end
 
-  test "public routes render the shared shell chrome without persistence setup" do
-    routes = [~p"/", ~p"/sign-in", ~p"/register", ~p"/forgot-password"]
-
-    for route <- routes do
+  test "auth routes mount the compact auth shell while home mounts the landing shell" do
+    for route <- [~p"/sign-in", ~p"/register", ~p"/forgot-password"] do
       assert {:ok, view, _html} = live(build_conn(), route)
-      assert has_element?(view, ".ui-shell[data-shell-mode='public']")
-      assert has_element?(view, "[data-public-shell-nav]")
-      assert has_element?(view, "[data-public-shell-footer]")
-      assert has_element?(view, "[data-public-shell-nav] .ui-nav-pill[data-active='true']")
+      assert has_element?(view, ".ui-shell[data-shell-mode='workspace']")
+      assert has_element?(view, ~s([data-testid="#{BrowserTestContracts.auth_shell()}"]))
+      assert has_element?(view, ".so-auth-page")
+      refute has_element?(view, "[data-public-shell-nav]")
+      refute has_element?(view, "[data-public-shell-footer]")
 
-      assert has_element?(
-               view,
-               ~s(nav[aria-label="#{BrowserTestContracts.public_routes_nav_label()}"])
-             )
-
-      assert has_element?(
-               view,
-               ~s(footer[aria-label="#{BrowserTestContracts.public_footer_label()}"])
-             )
-
-      assert has_element?(
+      refute has_element?(
                view,
                ~s([data-testid="#{BrowserTestContracts.public_shell_context_action()}"])
              )
     end
+
+    assert {:ok, home, _html} = live(build_conn(), ~p"/")
+    assert has_element?(home, ".ui-shell[data-shell-mode='workspace']")
+
+    landing = get_vue(home, name: "ShellOperatorLanding")
+    assert landing.component == "ShellOperatorLanding"
+    assert landing.ssr == false
+    assert landing.props == %{}
   end
 
-  test "home route renders the shared CTA frame" do
+  test "home route mounts the new landing vue surface" do
     assert {:ok, view, _html} = live(build_conn(), ~p"/")
-    assert has_element?(view, "[data-public-cta-frame]")
-  end
+    landing = get_vue(view, name: "ShellOperatorLanding")
 
-  test "home route renders the reframed landing narrative" do
-    assert {:ok, view, _html} = live(build_conn(), ~p"/")
-
-    assert has_element?(view, ".ui-public-hero[data-public-section-pattern='hero']")
-    assert has_element?(view, ".ui-public-proof-band[data-public-section-pattern='proof-band']")
-    assert has_element?(view, ".ui-public-feature-row[data-public-section-pattern='feature-row']")
-    assert has_element?(view, "[data-public-cta-frame][data-public-section-pattern='cta-band']")
-
-    assert has_element?(
-             view,
-             ".ui-public-closing-section[data-public-section-pattern='closing-section']"
-           )
-
-    assert has_element?(view, "[data-home-hero]")
-    assert has_element?(view, "[data-home-proof-strip]")
-    assert has_element?(view, "[data-home-story='continuity']")
-    assert has_element?(view, "[data-home-story='tempo']")
-    assert has_element?(view, ~s([data-testid="#{BrowserTestContracts.home_hero()}"]))
-    assert has_element?(view, ~s([data-testid="#{BrowserTestContracts.home_proof_band()}"]))
-
-    assert has_element?(
-             view,
-             ~s([data-testid="#{BrowserTestContracts.home_feature_row_continuity()}"])
-           )
-
-    assert has_element?(
-             view,
-             ~s([data-testid="#{BrowserTestContracts.home_feature_row_tempo()}"])
-           )
-
-    assert has_element?(view, ~s([data-testid="#{BrowserTestContracts.home_closing()}"]))
-
-    assert has_element?(
-             view,
-             "[data-home-hero] .ui-section-header__title",
-             "A calmer launch page for teams that need the shell to stay precise."
-           )
-
-    assert has_element?(
-             view,
-             "[data-home-proof-strip] .ui-text-display",
-             "The landing page leads with product posture, then proves it."
-           )
+    assert landing.component == "ShellOperatorLanding"
+    assert landing.ssr == false
+    assert landing.props == %{}
   end
 end
