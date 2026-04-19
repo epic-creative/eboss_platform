@@ -28,15 +28,15 @@ defmodule EBossWeb.Auth.SignInLive do
       shell_mode="workspace"
       current_path="/sign-in"
     >
-      <.auth_shell current_path="/sign-in">
-        <.auth_page title="Sign in to EBoss" subtitle="Enter your workspace">
-          <section class="so-auth-card">
+        <.auth_shell current_path="/sign-in">
+          <.auth_page title="Sign in to EBoss" subtitle="Enter your workspace">
+          <section class="ui-auth-card so-auth-card">
             <div class="flex border-b border-[hsl(var(--so-border))] px-1 pt-1">
               <button
                 type="button"
                 phx-click="set_mode"
                 phx-value-mode="password"
-                class="so-underline-tab flex-1 justify-center text-xs"
+                class="ui-underline-tab so-underline-tab flex-1 justify-center text-xs"
                 data-active={@mode == "password"}
               >
                 Password
@@ -45,7 +45,7 @@ defmodule EBossWeb.Auth.SignInLive do
                 type="button"
                 phx-click="set_mode"
                 phx-value-mode="magic"
-                class="so-underline-tab flex-1 justify-center text-xs"
+                class="ui-underline-tab so-underline-tab flex-1 justify-center text-xs"
                 data-active={@mode == "magic"}
               >
                 Magic link

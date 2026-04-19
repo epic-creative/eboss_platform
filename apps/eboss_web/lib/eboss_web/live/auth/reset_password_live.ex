@@ -63,7 +63,7 @@ defmodule EBossWeb.Auth.ResetPasswordLive do
           title="Set new password"
           subtitle="Choose a fresh password."
         >
-          <div class="so-auth-card p-4">
+          <div class="ui-auth-card so-auth-card p-4">
             <.form_errors form={@form} />
 
             <.auth_form

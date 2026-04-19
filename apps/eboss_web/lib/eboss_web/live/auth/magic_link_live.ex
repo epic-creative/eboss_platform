@@ -36,7 +36,7 @@ defmodule EBossWeb.Auth.MagicLinkLive do
           title="Use this sign-in link"
           subtitle="Confirm the sign-in and we’ll take you into the authenticated part of the app."
         >
-          <div class="so-auth-card p-4">
+          <div class="ui-auth-card so-auth-card p-4">
             <.form_errors form={@form} />
 
             <.auth_form

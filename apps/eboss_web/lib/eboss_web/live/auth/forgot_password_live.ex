@@ -56,18 +56,18 @@ defmodule EBossWeb.Auth.ForgotPasswordLive do
           title="Reset your password"
           subtitle="Enter your email and we'll send a reset link."
         >
-          <div class="so-auth-card p-4">
+          <div class="ui-auth-card so-auth-card p-4">
             <div
               :if={@request_sent}
-              class="so-alert-panel so-alert-panel-success space-y-3 text-center"
+              class="ui-alert-panel ui-alert-panel-success so-alert-panel so-alert-panel-success space-y-3 text-center"
             >
               <p class="text-sm font-medium text-[hsl(var(--so-foreground))]">Check your email</p>
               <p class="text-xs text-[hsl(var(--so-muted-foreground))]">
                 We sent a link to reset your password. Check spam if you don't see it.
               </p>
-              <a href={~p"/sign-in"} class="so-button-secondary h-8 px-3 text-xs">
+              <.button navigate={~p"/sign-in"} variant="outline" tone="neutral" size="sm">
                 Return to sign in
-              </a>
+              </.button>
             </div>
 
             <div :if={!@request_sent}>
@@ -98,7 +98,7 @@ defmodule EBossWeb.Auth.ForgotPasswordLive do
           </div>
 
           <:footer>
-            <div class="so-auth-card-muted text-center">
+            <div class="ui-auth-card-muted so-auth-card-muted text-center">
               <p class="text-xs text-[hsl(var(--so-muted-foreground))]">
                 <a
                   href={~p"/sign-in"}

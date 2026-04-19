@@ -52,7 +52,7 @@ defmodule EBossWeb.Auth.RegisterLive do
           title="Create your account"
           subtitle="Start building your workspace"
         >
-          <div class="so-auth-card p-4">
+          <div class="ui-auth-card so-auth-card p-4">
             <.form_errors form={@form} />
 
             <.auth_form

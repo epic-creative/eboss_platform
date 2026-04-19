@@ -13,7 +13,7 @@ defmodule EBossWeb.AuthComponents do
     ~H"""
     <div
       class={[
-        "so-theme so-auth-shell flex min-h-screen flex-col bg-[hsl(var(--so-background))] text-[hsl(var(--so-foreground))]",
+        "so-theme so-auth-shell so-auth-surface flex min-h-screen flex-col text-[hsl(var(--so-foreground))]",
         @class
       ]}
       data-auth-shell
@@ -84,7 +84,7 @@ defmodule EBossWeb.AuthComponents do
 
   def auth_page(assigns) do
     ~H"""
-    <div class={["so-auth-page", @class]}>
+    <div class={["ui-auth-page so-auth-page", @class]}>
       <header class="mb-6 text-center">
         <div class="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-[hsl(var(--so-foreground))]">
           <span class="so-font-mono text-sm font-bold text-[hsl(var(--so-background))]">E</span>
@@ -122,7 +122,7 @@ defmodule EBossWeb.AuthComponents do
 
   def auth_page_footer(assigns) do
     ~H"""
-    <div class="so-auth-card-muted text-center">
+    <div class="ui-auth-card-muted so-auth-card-muted text-center">
       <p class="text-xs text-[hsl(var(--so-muted-foreground))]">
         {@prompt}
         <a href={@link_href} class="font-medium text-[hsl(var(--so-primary))] hover:underline">
@@ -238,17 +238,17 @@ defmodule EBossWeb.AuthComponents do
   attr :class, :any, default: nil
 
   def auth_submit(assigns) do
-    assigns =
-      assign(assigns, :submit_class, submit_class(assigns.variant, assigns.tone, assigns.class))
-
     ~H"""
-    <button
+    <.button
       type="submit"
-      class={@submit_class}
+      size="sm"
+      variant={button_variant(@variant)}
+      tone={button_tone(@tone)}
+      class={["ui-auth-submit w-full justify-center", @class]}
       phx-disable-with={@busy_label}
     >
       {@label}
-    </button>
+    </.button>
     """
   end
 
@@ -303,18 +303,30 @@ defmodule EBossWeb.AuthComponents do
   def auth_nav(assigns) do
     ~H"""
     <nav
-      class="ui-auth-nav flex flex-wrap gap-2"
+      class="ui-auth-nav flex flex-wrap gap-1 border-b border-[hsl(var(--so-border))] px-1 pt-1"
       aria-label={BrowserTestContracts.authentication_routes_nav_label()}
     >
-      <.nav_pill to={~p"/sign-in"} active={@current_path == "/sign-in"}>
+      <a
+        href={~p"/sign-in"}
+        class="ui-underline-tab flex-1 justify-center text-xs"
+        data-active={to_string(@current_path == "/sign-in")}
+      >
         Sign in
-      </.nav_pill>
-      <.nav_pill to={~p"/register"} active={@current_path == "/register"}>
+      </a>
+      <a
+        href={~p"/register"}
+        class="ui-underline-tab flex-1 justify-center text-xs"
+        data-active={to_string(@current_path == "/register")}
+      >
         Register
-      </.nav_pill>
-      <.nav_pill to={~p"/forgot-password"} active={@current_path == "/forgot-password"}>
+      </a>
+      <a
+        href={~p"/forgot-password"}
+        class="ui-underline-tab flex-1 justify-center text-xs"
+        data-active={to_string(@current_path == "/forgot-password")}
+      >
         Forgot password
-      </.nav_pill>
+      </a>
     </nav>
     """
   end
@@ -332,12 +344,14 @@ defmodule EBossWeb.AuthComponents do
   defp auth_route_label("/magic-link"), do: "Magic link"
   defp auth_route_label(_), do: "Auth"
 
-  defp submit_class("outline", _tone, class),
-    do: ["so-button-secondary h-8 w-full justify-center text-xs", class]
+  defp button_variant("outline"), do: "outline"
+  defp button_variant("ghost"), do: "ghost"
+  defp button_variant("subtle"), do: "subtle"
+  defp button_variant(_variant), do: "solid"
 
-  defp submit_class(_variant, "neutral", class),
-    do: ["so-button-secondary h-8 w-full justify-center text-xs", class]
-
-  defp submit_class(_variant, _tone, class),
-    do: ["so-button-primary h-8 w-full justify-center text-xs", class]
+  defp button_tone("neutral"), do: "neutral"
+  defp button_tone("warning"), do: "warning"
+  defp button_tone("danger"), do: "danger"
+  defp button_tone("success"), do: "success"
+  defp button_tone(_tone), do: "success"
 end

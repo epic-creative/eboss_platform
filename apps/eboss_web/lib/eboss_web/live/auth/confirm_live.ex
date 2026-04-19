@@ -36,7 +36,7 @@ defmodule EBossWeb.Auth.ConfirmLive do
           title="Confirm account"
           subtitle="Use the button below to verify your email address."
         >
-          <div class="so-auth-card p-4">
+          <div class="ui-auth-card so-auth-card p-4">
             <.form_errors form={@form} />
 
             <.auth_form
