@@ -418,6 +418,136 @@ defmodule EBossWeb.JsonApiTest do
            end)
   end
 
+  test "authenticated clients can create workspace projects through the folio projects endpoint",
+       %{
+         conn: conn
+       } do
+    owner = register_user()
+    api_key = create_api_key(owner)
+
+    workspace =
+      Workspaces.create_workspace!(
+        %{
+          name: "Folio Project Create Workspace",
+          owner_type: :user,
+          owner_id: owner.id
+        },
+        actor: owner
+      )
+
+    second_workspace =
+      Workspaces.create_workspace!(
+        %{
+          name: "External Project Create Workspace",
+          owner_type: :user,
+          owner_id: owner.id
+        },
+        actor: owner
+      )
+
+    conn =
+      conn
+      |> put_req_header("authorization", "Bearer #{api_key}")
+      |> put_req_header("accept", "application/json")
+      |> put_req_header("content-type", "application/json")
+      |> post(
+        "/api/v1/#{owner.owner_slug}/workspaces/#{workspace.slug}/apps/folio/projects",
+        Jason.encode!(%{title: "Launch console"})
+      )
+
+    payload = json_response(conn, 201)
+    project_id = payload["project"]["id"]
+
+    assert payload["scope"]["app_key"] == "folio"
+    assert payload["scope"]["workspace"]["id"] == workspace.id
+    assert payload["project"]["title"] == "Launch console"
+    assert payload["project"]["status"] == "active"
+
+    assert {:ok, created_project} =
+             EBossFolio.get_project_in_workspace(project_id, workspace.id, actor: owner)
+
+    assert created_project.workspace_id == workspace.id
+    assert created_project.title == "Launch console"
+
+    assert {:error, :not_found} =
+             EBossFolio.get_project_in_workspace(project_id, second_workspace.id, actor: owner)
+  end
+
+  test "folio project create endpoint rejects invalid project payloads", %{conn: conn} do
+    owner = register_user()
+    api_key = create_api_key(owner)
+
+    workspace =
+      Workspaces.create_workspace!(
+        %{
+          name: "Folio Project Invalid Payload Workspace",
+          owner_type: :user,
+          owner_id: owner.id
+        },
+        actor: owner
+      )
+
+    conn =
+      conn
+      |> put_req_header("authorization", "Bearer #{api_key}")
+      |> put_req_header("accept", "application/json")
+      |> put_req_header("content-type", "application/json")
+      |> post(
+        "/api/v1/#{owner.owner_slug}/workspaces/#{workspace.slug}/apps/folio/projects",
+        Jason.encode!(%{title: "   "})
+      )
+
+    assert %{
+             "error" => %{
+               "code" => "invalid_project_payload",
+               "message" => "Project payload could not be processed"
+             }
+           } = json_response(conn, 400)
+
+    assert {:ok, []} = EBossFolio.list_projects_in_workspace(workspace.id, actor: owner)
+  end
+
+  test "folio project create endpoint forbids users without folio manage access", %{conn: conn} do
+    owner = register_user()
+    member = register_user()
+
+    organization =
+      Organizations.create_organization!(%{name: "Folio Create-Locked Org Workspace"},
+        actor: owner
+      )
+
+    create_org_membership(owner, organization, member, :member)
+
+    api_key = create_api_key(member)
+
+    workspace =
+      Workspaces.create_workspace!(
+        %{
+          name: "Folio Create-Locked Org Workspace",
+          owner_type: :organization,
+          owner_id: organization.id
+        },
+        actor: owner
+      )
+
+    conn =
+      conn
+      |> put_req_header("authorization", "Bearer #{api_key}")
+      |> put_req_header("accept", "application/json")
+      |> put_req_header("content-type", "application/json")
+      |> post(
+        "/api/v1/#{organization.owner_slug}/workspaces/#{workspace.slug}/apps/folio/projects",
+        Jason.encode!(%{title: "Blocked project"})
+      )
+
+    assert %{
+             "error" => %{
+               "code" => "workspace_forbidden",
+               "message" => "Workspace access is forbidden"
+             }
+           } = json_response(conn, 403)
+  end
+
   test "authenticated clients can list workspace tasks through the folio tasks endpoint", %{
     conn: conn
   } do

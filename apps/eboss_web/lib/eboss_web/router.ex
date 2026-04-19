@@ -72,6 +72,11 @@ defmodule EBossWeb.Router do
 
     get "/:owner_slug/workspaces/:slug/bootstrap", WorkspaceBootstrapController, :show
     get "/:owner_slug/workspaces/:slug/apps/folio/bootstrap", FolioBootstrapController, :show
+
+    post "/:owner_slug/workspaces/:slug/apps/folio/projects",
+         FolioBootstrapController,
+         :create_project
+
     get "/:owner_slug/workspaces/:slug/apps/folio/projects", FolioBootstrapController, :projects
     get "/:owner_slug/workspaces/:slug/apps/folio/tasks", FolioBootstrapController, :tasks
     get "/:owner_slug/workspaces/:slug/apps/folio/activity", FolioBootstrapController, :activity

@@ -53,6 +53,30 @@ defmodule EBossWeb.FolioBootstrapController do
     end
   end
 
+  def create_project(conn, %{"owner_slug" => owner_slug, "slug" => slug}) do
+    current_user = conn.assigns[:current_user] || PlugHelpers.get_actor(conn)
+
+    case AppScope.fetch_workspace_scope(current_user, owner_slug, slug) do
+      {:ok, %AppScope{} = scope} ->
+        case authorize_folio_manage(scope) do
+          :ok ->
+            handle_authorized_project_create(conn, scope, current_user)
+
+          {:error, :forbidden} ->
+            error_json(conn, :forbidden, "workspace_forbidden", "Workspace access is forbidden")
+        end
+
+      {:error, :unauthorized} ->
+        error_json(conn, :unauthorized, "authentication_required", "Authentication is required")
+
+      {:error, :forbidden} ->
+        error_json(conn, :forbidden, "workspace_forbidden", "Workspace access is forbidden")
+
+      {:error, :not_found} ->
+        error_json(conn, :not_found, "workspace_not_found", "Workspace not found")
+    end
+  end
+
   def tasks(conn, %{"owner_slug" => owner_slug, "slug" => slug}) do
     current_user = conn.assigns[:current_user] || PlugHelpers.get_actor(conn)
 
@@ -109,6 +133,14 @@ defmodule EBossWeb.FolioBootstrapController do
     end
   end
 
+  defp authorize_folio_manage(%AppScope{} = scope) do
+    if Map.get(scope.capabilities, :manage_folio, false) do
+      :ok
+    else
+      {:error, :forbidden}
+    end
+  end
+
   defp handle_authorized_scope(conn, %AppScope{} = scope, current_user) do
     with {:ok, summary_counts} <- summary_counts(scope.current_workspace.id, current_user) do
       json(conn, %{
@@ -131,6 +163,30 @@ defmodule EBossWeb.FolioBootstrapController do
     else
       {:error, _reason} ->
         error_json(conn, :forbidden, "workspace_forbidden", "Workspace access is forbidden")
+    end
+  end
+
+  defp handle_authorized_project_create(conn, %AppScope{} = scope, current_user) do
+    with {:ok, params} <- parse_project_create_params(conn.body_params),
+         {:ok, project} <-
+           EBossFolio.create_project(
+             Map.put(params, :workspace_id, scope.current_workspace.id),
+             actor: current_user
+           ) do
+      conn
+      |> put_status(:created)
+      |> json(%{
+        scope: folio_scope_payload(scope),
+        project: project_summary_payload(project)
+      })
+    else
+      {:error, _reason} ->
+        error_json(
+          conn,
+          :bad_request,
+          "invalid_project_payload",
+          "Project payload could not be processed"
+        )
     end
   end
 
@@ -201,6 +257,49 @@ defmodule EBossWeb.FolioBootstrapController do
       due_at: project.due_at,
       review_at: project.review_at
     }
+  end
+
+  defp parse_project_create_params(%{"title" => title}) when is_binary(title) do
+    parse_project_create_params(%{title: String.trim(title)})
+  end
+
+  defp parse_project_create_params(%{"title" => title}) when is_atom(title) do
+    parse_project_create_params(%{title: to_string(title)})
+  end
+
+  defp parse_project_create_params(payload) when is_map(payload) do
+    title = normalized_project_title(payload)
+
+    if title == nil do
+      {:error, :invalid_payload}
+    else
+      {:ok, %{title: title}}
+    end
+  end
+
+  defp parse_project_create_params(_payload) do
+    {:error, :invalid_payload}
+  end
+
+  defp normalized_project_title(payload) do
+    payload
+    |> Map.get("title", Map.get(payload, :title, nil))
+    |> case do
+      title when is_binary(title) and title != "" ->
+        String.trim(title)
+
+      title when is_atom(title) ->
+        title
+        |> to_string()
+        |> String.trim()
+
+      _ ->
+        nil
+    end
+    |> case do
+      "" -> nil
+      value -> value
+    end
   end
 
   defp task_summary_payload(%EBossFolio.Task{} = task) do

@@ -318,6 +318,191 @@ describe("ShellOperatorWorkspaceApp", () => {
     expect(projectsView.text().includes("Members")).toBe(false)
   })
 
+  it("creates a folio project from the projects surface and refreshes the list", async () => {
+    const fetchMock = vi
+      .spyOn(global, "fetch")
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          scope: {},
+          projects: [
+            {
+              id: "project-1",
+              title: "Atlas Service",
+              status: "active",
+              priority_position: 1,
+              due_at: null,
+              review_at: null,
+            },
+          ],
+        }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 201,
+        json: async () => ({
+          scope: {},
+          project: {
+            id: "project-2",
+            title: "Launch Console",
+            status: "active",
+            priority_position: null,
+            due_at: null,
+            review_at: null,
+          },
+        }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          scope: {},
+          projects: [
+            {
+              id: "project-1",
+              title: "Atlas Service",
+              status: "active",
+              priority_position: 1,
+              due_at: null,
+              review_at: null,
+            },
+            {
+              id: "project-2",
+              title: "Launch Console",
+              status: "active",
+              priority_position: null,
+              due_at: null,
+              review_at: null,
+            },
+          ],
+        }),
+      } as Response)
+
+    const wrapper = mountComponent(ShellOperatorWorkspaceApp, {
+      props: {
+        currentUser: {
+          username: "operator",
+          email: "operator@example.com",
+        },
+        currentScope: scope({
+          apps: {
+            folio: {
+              key: "folio",
+              label: "Folio",
+              defaultPath: "/primary-owner/primary-workspace/apps/folio",
+              enabled: true,
+              capabilities: {
+                read: true,
+                manage: true,
+              },
+            },
+          },
+        }),
+        currentPage: appRoute("folio", "projects"),
+        currentPath: "/primary-owner/primary-workspace/apps/folio/projects",
+        signOutPath: "/sign-out",
+        csrfToken: "csrf-token",
+      },
+      global: {
+        stubs: {
+          ThemeToggleButton: {
+            template: "<button data-testid=\"theme-toggle-stub\" />",
+          },
+        },
+      },
+    })
+
+    await nextTick()
+    await nextMacrotask()
+
+    const projectsView = wrapper.get('[data-testid="workspace-page-projects"]')
+    await projectsView.get('[data-testid="projects-create-open"]').trigger("click")
+
+    const titleInput = projectsView.get('[data-testid="projects-create-title-input"]')
+    await titleInput.setValue("Launch Console")
+    await projectsView.get('[data-testid="projects-create-form-element"]').trigger("submit")
+
+    await nextTick()
+    await nextMacrotask()
+    await nextTick()
+    await nextMacrotask()
+
+    expect(fetchMock).toHaveBeenCalledTimes(3)
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      "/api/v1/primary-owner/workspaces/primary-workspace/apps/folio/projects",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({ title: "Launch Console" }),
+        headers: expect.objectContaining({
+          "Content-Type": "application/json",
+        }),
+      }),
+    )
+
+    expect(projectsView.text()).toContain("Launch Console")
+    expect(projectsView.find('[data-testid="projects-create-form"]').exists()).toBe(false)
+  })
+
+  it("hides project creation controls when folio manage access is not granted", async () => {
+    vi.spyOn(global, "fetch").mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        scope: {},
+        projects: [],
+      }),
+    } as Response)
+
+    const wrapper = mountComponent(ShellOperatorWorkspaceApp, {
+      props: {
+        currentUser: {
+          username: "operator",
+          email: "operator@example.com",
+        },
+        currentScope: scope({
+          capabilities: {
+            readWorkspace: true,
+            manageWorkspace: false,
+            readFolio: true,
+            manageFolio: false,
+          },
+          apps: {
+            folio: {
+              key: "folio",
+              label: "Folio",
+              defaultPath: "/primary-owner/primary-workspace/apps/folio",
+              enabled: true,
+              capabilities: {
+                read: true,
+                manage: false,
+              },
+            },
+          },
+        }),
+        currentPage: appRoute("folio", "projects"),
+        currentPath: "/primary-owner/primary-workspace/apps/folio/projects",
+        signOutPath: "/sign-out",
+        csrfToken: "csrf-token",
+      },
+      global: {
+        stubs: {
+          ThemeToggleButton: {
+            template: "<button data-testid=\"theme-toggle-stub\" />",
+          },
+        },
+      },
+    })
+
+    await nextTick()
+    await nextMacrotask()
+
+    const projectsView = wrapper.get('[data-testid="workspace-page-projects"]')
+    expect(projectsView.find('[data-testid="projects-create-open"]').exists()).toBe(false)
+    expect(projectsView.find('[data-testid="projects-create-form"]').exists()).toBe(false)
+  })
+
   it("renders real folio task details from task summary fields", async () => {
     vi.spyOn(global, "fetch").mockResolvedValue({
       ok: true,
@@ -596,7 +781,7 @@ describe("ShellOperatorWorkspaceApp", () => {
     })
 
     await nextTick()
-    expect(wrapper.get('[data-testid="projects-state-loading"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="projects-state-loading"]').exists()).toBe(true)
 
     resolveFetch({
       ok: true,
@@ -641,7 +826,7 @@ describe("ShellOperatorWorkspaceApp", () => {
     await nextMacrotask()
     await nextTick()
 
-    expect(wrapper.get('[data-testid="projects-state-empty"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="projects-state-empty"]').exists()).toBe(true)
     expect(wrapper.get('[data-testid="projects-state-empty"]').text()).toContain("No projects yet")
   })
 
@@ -779,8 +964,7 @@ describe("ShellOperatorWorkspaceApp", () => {
     await nextTick()
     await nextMacrotask()
 
-    const emptyState = wrapper.get('[data-testid="activity-state-empty"]')
-    expect(emptyState.exists()).toBe(true)
-    expect(emptyState.text()).toContain("No activity yet")
+    expect(wrapper.find('[data-testid="activity-state-empty"]').exists()).toBe(true)
+    expect(wrapper.get('[data-testid="activity-state-empty"]').text()).toContain("No activity yet")
   })
 })

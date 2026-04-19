@@ -241,6 +241,34 @@ defmodule EBossWeb.ApiSpec do
           "403" => %{"description" => "Workspace access is forbidden"},
           "404" => %{"description" => "Workspace not found"}
         }
+      },
+      "post" => %{
+        "summary" => "Create a workspace-scoped Folio project",
+        "description" =>
+          "Creates a new Folio project for the workspace. Returns the created project summary.",
+        "parameters" => workspace_path_parameters(),
+        "requestBody" => %{
+          "required" => true,
+          "content" => %{
+            "application/json" => %{
+              "schema" => %{"$ref" => "#/components/schemas/FolioProjectCreateRequest"}
+            }
+          }
+        },
+        "responses" => %{
+          "201" => %{
+            "description" => "Folio project created",
+            "content" => %{
+              "application/json" => %{
+                "schema" => %{"$ref" => "#/components/schemas/FolioProjectCreateResponse"}
+              }
+            }
+          },
+          "400" => %{"description" => "Invalid payload"},
+          "401" => %{"description" => "Authentication required"},
+          "403" => %{"description" => "Workspace access is forbidden"},
+          "404" => %{"description" => "Workspace not found"}
+        }
       }
     }
   end
@@ -360,6 +388,36 @@ defmodule EBossWeb.ApiSpec do
           },
           "required" => ["id", "title", "status"]
         },
+        "FolioProjectCreateRequest" => %{
+          "type" => "object",
+          "properties" => %{
+            "title" => %{
+              "type" => "string",
+              "minLength" => 1,
+              "description" => "Project title"
+            },
+            "status" => %{
+              "type" => "string",
+              "enum" => ["active", "on_hold", "completed", "canceled", "archived"],
+              "description" => "Initial project status"
+            },
+            "description" => %{
+              "type" => "string",
+              "nullable" => true
+            },
+            "due_at" => %{
+              "type" => "string",
+              "format" => "date-time",
+              "nullable" => true
+            },
+            "review_at" => %{
+              "type" => "string",
+              "format" => "date-time",
+              "nullable" => true
+            }
+          },
+          "required" => ["title"]
+        },
         "FolioTaskSummary" => %{
           "type" => "object",
           "properties" => %{
@@ -383,6 +441,14 @@ defmodule EBossWeb.ApiSpec do
             }
           },
           "required" => ["scope", "projects"]
+        },
+        "FolioProjectCreateResponse" => %{
+          "type" => "object",
+          "properties" => %{
+            "scope" => %{"$ref" => "#/components/schemas/FolioAppScope"},
+            "project" => %{"$ref" => "#/components/schemas/FolioProjectSummary"}
+          },
+          "required" => ["scope", "project"]
         },
         "FolioTasksResponse" => %{
           "type" => "object",

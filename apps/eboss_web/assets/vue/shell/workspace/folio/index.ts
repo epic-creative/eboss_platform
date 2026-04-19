@@ -1,6 +1,12 @@
 export { folioActivityPath, folioBasePath, folioBootstrapPath, folioProjectsPath, folioTasksPath, folioWorkspaceRef } from "./paths"
 export { requestJson, FolioApiError } from "./http"
-export { fetchFolioActivity, fetchFolioBootstrap, fetchFolioProjects, fetchFolioTasks } from "./queries"
+export {
+  createFolioProject,
+  fetchFolioActivity,
+  fetchFolioBootstrap,
+  fetchFolioProjects,
+  fetchFolioTasks,
+} from "./queries"
 export {
   useFolioActivity,
   useFolioBootstrap,

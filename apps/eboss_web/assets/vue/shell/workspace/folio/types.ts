@@ -77,6 +77,15 @@ export interface FolioProjectSummary {
   review_at: string | null
 }
 
+export interface FolioProjectCreatePayload {
+  title: string
+}
+
+export interface FolioProjectCreateResponse {
+  scope: FolioScope
+  project: FolioProjectSummary
+}
+
 export interface FolioTaskSummary {
   id: string
   title: string

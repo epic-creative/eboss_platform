@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue"
+import { computed, ref } from "vue"
 import {
   AlertTriangle,
   ExternalLink,
@@ -14,6 +14,7 @@ import InspectorPane from "../InspectorPane.vue"
 import InspectorSection from "../InspectorSection.vue"
 import WorkspaceEmptyState from "../WorkspaceEmptyState.vue"
 import WorkspacePageHeader from "../WorkspacePageHeader.vue"
+import WorkspacePanel from "../WorkspacePanel.vue"
 import { formatFolioDate, projectStatusClass, statusLabel } from "../presenters"
 import type { Project, ProjectFilter } from "../types"
 
@@ -25,7 +26,10 @@ const props = defineProps<{
   selectedProject: Project | null
   loading: boolean
   error: string | null
+  canCreateProject: boolean
+  creatingProject: boolean
   refresh: () => Promise<void>
+  createProject: (title: string) => Promise<void>
 }>()
 
 const emit = defineEmits<{
@@ -48,9 +52,46 @@ const canInspectProject = computed(
 )
 
 const priorityLabel = (value: number | null): string => (value === null ? "—" : String(value))
+const createFormOpen = ref(false)
+const createProjectTitle = ref("")
+const createProjectError = ref<string | null>(null)
 
 const toggleProject = (project: Project) => {
   emit("update:selectedProject", props.selectedProject?.id === project.id ? null : project)
+}
+
+const openCreateProjectForm = () => {
+  if (!props.canCreateProject) return
+
+  createProjectError.value = null
+  createFormOpen.value = true
+}
+
+const closeCreateProjectForm = () => {
+  createProjectTitle.value = ""
+  createProjectError.value = null
+  createFormOpen.value = false
+}
+
+const submitCreateProject = async () => {
+  if (!props.canCreateProject || props.creatingProject) return
+
+  const title = createProjectTitle.value.trim()
+
+  if (!title) {
+    createProjectError.value = "Project title is required."
+    return
+  }
+
+  createProjectError.value = null
+
+  try {
+    await props.createProject(title)
+    closeCreateProjectForm()
+  } catch (cause) {
+    createProjectError.value =
+      cause instanceof Error ? cause.message : "Project creation failed."
+  }
 }
 </script>
 
@@ -58,7 +99,13 @@ const toggleProject = (project: Project) => {
   <div class="ui-workspace-page" data-testid="workspace-page-projects">
     <WorkspacePageHeader title="Projects" :subtitle="workspaceReference">
       <template #actions>
-        <button type="button" class="so-button-primary">
+        <button
+          v-if="canCreateProject"
+          type="button"
+          class="so-button-primary"
+          data-testid="projects-create-open"
+          @click="openCreateProjectForm"
+        >
           <Plus class="h-3 w-3" />
           New project
         </button>
@@ -88,6 +135,66 @@ const toggleProject = (project: Project) => {
         </button>
       </div>
     </div>
+
+    <WorkspacePanel
+      v-if="createFormOpen"
+      title="Create project"
+      subtitle="Add a project to this workspace."
+      data-testid="projects-create-form"
+    >
+      <form class="space-y-3" data-testid="projects-create-form-element" @submit.prevent="submitCreateProject">
+        <div class="space-y-1">
+          <label
+            for="folio-project-title"
+            class="so-font-mono text-[11px] uppercase tracking-[0.06em] text-[hsl(var(--so-muted-foreground))]"
+          >
+            Project title
+          </label>
+          <input
+            id="folio-project-title"
+            v-model="createProjectTitle"
+            class="so-input-field"
+            type="text"
+            autocomplete="off"
+            placeholder="Example: Atlas migration"
+            data-testid="projects-create-title-input"
+            :disabled="creatingProject"
+            @input="createProjectError = null"
+          />
+        </div>
+
+        <div
+          v-if="createProjectError"
+          class="so-alert-panel so-alert-panel-error"
+          data-testid="projects-create-error"
+        >
+          <p class="text-xs text-[hsl(var(--so-destructive))]">{{ createProjectError }}</p>
+        </div>
+
+        <div class="flex flex-wrap items-center justify-end gap-2">
+          <button
+            type="button"
+            class="so-button-secondary"
+            :disabled="creatingProject"
+            data-testid="projects-create-cancel"
+            @click="closeCreateProjectForm"
+          >
+            Cancel
+          </button>
+
+          <button
+            type="submit"
+            class="so-button-primary"
+            :disabled="creatingProject"
+            data-testid="projects-create-submit"
+          >
+            <LoaderCircle v-if="creatingProject" class="h-3 w-3 animate-spin" />
+            <Plus v-else class="h-3 w-3" />
+            {{ creatingProject ? "Creating..." : "Create project" }}
+          </button>
+        </div>
+      </form>
+    </WorkspacePanel>
 
     <div class="flex gap-0">
       <div

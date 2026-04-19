@@ -3,6 +3,8 @@ import { folioActivityPath, folioBootstrapPath, folioProjectsPath, folioTasksPat
 import type {
   FolioActivityResponse,
   FolioBootstrapResponse,
+  FolioProjectCreatePayload,
+  FolioProjectCreateResponse,
   FolioProjectsResponse,
   FolioTasksResponse,
   FolioWorkspaceRef,
@@ -19,3 +21,13 @@ export const fetchFolioTasks = (scope: FolioWorkspaceRef): Promise<FolioTasksRes
 
 export const fetchFolioActivity = (scope: FolioWorkspaceRef): Promise<FolioActivityResponse> =>
   requestJson<FolioActivityResponse>(folioActivityPath(scope))
+
+export const createFolioProject = (
+  scope: FolioWorkspaceRef,
+  payload: FolioProjectCreatePayload,
+): Promise<FolioProjectCreateResponse> =>
+  requestJson<FolioProjectCreateResponse>(folioProjectsPath(scope), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  })

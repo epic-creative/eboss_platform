@@ -21,6 +21,7 @@ import ProjectsPage from "./pages/ProjectsPage.vue"
 import TasksPage from "./pages/TasksPage.vue"
 import SettingsPage from "./pages/SettingsPage.vue"
 import {
+  createFolioProject,
   useFolioActivity,
   useFolioProjects,
   useFolioTasks,
@@ -65,6 +66,7 @@ const selectedProject = ref<Project | null>(null)
 const selectedTask = ref<Task | null>(null)
 const selectedActivity = ref<FolioActivityEvent | null>(null)
 const selectedProjectFilter = ref<ProjectFilter>("all")
+const creatingProject = ref(false)
 const projectFilters = ["all", "active", "on_hold", "completed", "canceled", "archived"] satisfies ProjectFilter[]
 const isWorkspaceRoute = computed(() => props.currentPage.type === "workspace")
 const isAppRoute = computed(() => props.currentPage.type === "app")
@@ -123,6 +125,33 @@ const folioProjectsQuery = useFolioProjects(folioWorkspaceScope, {
   enabled: isFolioProjectsSurface,
 })
 const folioProjects = computed(() => folioProjectsQuery.projects.value.map(mapFolioProject))
+
+const createWorkspaceProject = async (title: string): Promise<void> => {
+  const scope = folioWorkspaceScope.value
+
+  if (!scope) {
+    throw new Error("Workspace scope is unavailable.")
+  }
+
+  if (!props.currentScope.capabilities.manageFolio) {
+    throw new Error("You do not have permission to create projects in this workspace.")
+  }
+
+  if (creatingProject.value) return
+
+  creatingProject.value = true
+
+  try {
+    const response = await createFolioProject(scope, { title })
+
+    selectedProjectFilter.value = "all"
+    selectedProject.value = mapFolioProject(response.project)
+    await folioProjectsQuery.refresh()
+  } finally {
+    creatingProject.value = false
+  }
+}
+
 const folioTasksQuery = useFolioTasks(folioWorkspaceScope, {
   autoFetch: true,
   enabled: isFolioTasksSurface,
@@ -358,7 +387,10 @@ watch(currentWorkspaceKey, () => {
               :selected-project="selectedProject"
               :loading="folioProjectsQuery.loading.value"
               :error="folioProjectsQuery.error.value"
+              :can-create-project="currentScope.capabilities.manageFolio"
+              :creating-project="creatingProject"
               :refresh="folioProjectsQuery.refresh"
+              :create-project="createWorkspaceProject"
               @update:project-filter="selectedProjectFilter = $event"
               @update:selected-project="selectedProject = $event"
             />
