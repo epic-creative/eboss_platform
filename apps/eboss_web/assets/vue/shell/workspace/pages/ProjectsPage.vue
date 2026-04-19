@@ -1,21 +1,12 @@
 <script setup lang="ts">
 import { computed } from "vue"
-import {
-  CheckCircle2,
-  Clock,
-  ExternalLink,
-  FolderKanban,
-  GitBranch,
-  Globe,
-  Plus,
-  Rocket,
-  Search,
-  Settings,
-  Users,
-} from "lucide-vue-next"
+import { ExternalLink, FolderKanban, Plus, Search } from "lucide-vue-next"
 
+import InspectorField from "../InspectorField.vue"
 import InspectorPane from "../InspectorPane.vue"
+import InspectorSection from "../InspectorSection.vue"
 import WorkspacePageHeader from "../WorkspacePageHeader.vue"
+import { formatFolioDate, projectStatusClass, statusLabel } from "../presenters"
 import type { Project, ProjectFilter } from "../types"
 
 const props = defineProps<{
@@ -40,6 +31,8 @@ const filteredProjects = computed(() =>
 const toggleProject = (project: Project) => {
   emit("update:selectedProject", props.selectedProject?.id === project.id ? null : project)
 }
+
+const priorityLabel = (value: number | null): string => (value === null ? "—" : String(value))
 </script>
 
 <template>
@@ -84,9 +77,9 @@ const toggleProject = (project: Project) => {
       >
         <div class="so-font-mono flex items-center gap-4 border-b border-[hsl(var(--so-border))] px-4 py-2 text-[11px] text-[hsl(var(--so-muted-foreground))]">
           <span class="flex-1">Name</span>
-          <span class="hidden w-16 text-center sm:block">Status</span>
-          <span class="hidden w-24 text-right md:block">Last deploy</span>
-          <span class="hidden w-16 text-center lg:block">Members</span>
+          <span class="hidden w-40 text-center sm:block">Status</span>
+          <span class="hidden w-28 text-right sm:block">Due</span>
+          <span class="hidden w-20 text-center lg:block">Priority</span>
         </div>
 
         <div class="divide-y divide-[hsl(var(--so-border))]">
@@ -96,6 +89,7 @@ const toggleProject = (project: Project) => {
             type="button"
             class="flex w-full items-center gap-4 px-4 py-3 text-left transition-colors"
             :class="selectedProject?.id === project.id ? 'so-row-selected' : 'hover:bg-[hsl(var(--so-accent))/0.3]'"
+            :data-testid="`project-row-${project.id}`"
             @click="toggleProject(project)"
           >
             <div class="min-w-0 flex-1">
@@ -103,34 +97,23 @@ const toggleProject = (project: Project) => {
                 <FolderKanban class="h-3.5 w-3.5 shrink-0 text-[hsl(var(--so-muted-foreground))]" />
                 <span class="truncate text-sm font-medium">{{ project.name }}</span>
                 <span class="so-font-mono hidden text-[11px] text-[hsl(var(--so-muted-foreground))] sm:inline">
-                  {{ project.slug }}
+                  {{ project.id }}
                 </span>
               </div>
-              <p class="ml-[22px] mt-0.5 truncate text-[11px] text-[hsl(var(--so-muted-foreground))]">
-                {{ project.description }}
-              </p>
             </div>
 
-            <span class="hidden w-16 text-center sm:block">
-              <CheckCircle2
-                v-if="project.status === 'active'"
-                class="mx-auto h-3.5 w-3.5 text-[hsl(var(--so-success))]"
-              />
-              <Clock
-                v-else-if="project.status === 'paused'"
-                class="mx-auto h-3.5 w-3.5 text-[hsl(var(--so-warning))]"
-              />
-              <FolderKanban
-                v-else
-                class="mx-auto h-3.5 w-3.5 text-[hsl(var(--so-muted-foreground))]"
-              />
+            <span class="hidden w-40 text-center sm:block">
+              <span class="inline-flex items-center gap-1.5 text-[11px]" :class="projectStatusClass(project.status)">
+                <span class="h-1.5 w-1.5 rounded-full bg-current" />
+                {{ statusLabel(project.status) }}
+              </span>
             </span>
 
-            <span class="so-font-mono hidden w-24 text-right text-[11px] text-[hsl(var(--so-muted-foreground))] md:block">
-              {{ project.lastDeploy }}
+            <span class="so-font-mono hidden w-28 text-right text-[11px] text-[hsl(var(--so-muted-foreground))] sm:block">
+              {{ formatFolioDate(project.dueAt) }}
             </span>
-            <span class="so-font-mono hidden w-16 text-center text-[11px] text-[hsl(var(--so-muted-foreground))] lg:block">
-              {{ project.members }}
+            <span class="so-font-mono hidden w-20 text-center text-[11px] text-[hsl(var(--so-muted-foreground))] lg:block">
+              {{ priorityLabel(project.priorityPosition) }}
             </span>
           </button>
         </div>
@@ -143,7 +126,8 @@ const toggleProject = (project: Project) => {
       <InspectorPane
         :open="!!selectedProject"
         :title="selectedProject?.name || ''"
-        :subtitle="selectedProject?.slug"
+        :subtitle="selectedProject?.id"
+        data-testid="project-inspector"
         @close="emit('update:selectedProject', null)"
       >
         <template #actions>
@@ -153,107 +137,29 @@ const toggleProject = (project: Project) => {
         </template>
 
         <div v-if="selectedProject" class="space-y-4">
-          <p class="text-xs text-[hsl(var(--so-muted-foreground))]">{{ selectedProject.description }}</p>
-
-          <div class="space-y-2.5">
-            <div class="flex items-center justify-between">
-              <span class="so-font-mono text-[11px] text-[hsl(var(--so-muted-foreground))]">Status</span>
-              <span
-                class="flex items-center gap-1.5 capitalize"
-                :class="
-                  selectedProject.status === 'active'
-                    ? 'text-[hsl(var(--so-success))]'
-                    : selectedProject.status === 'paused'
-                      ? 'text-[hsl(var(--so-warning))]'
-                      : 'text-[hsl(var(--so-muted-foreground))]'
-                "
-              >
+          <InspectorSection title="Status">
+            <InspectorField label="Current status" :valueClass="projectStatusClass(selectedProject.status)">
+              <span class="flex items-center gap-1.5">
                 <span class="h-1.5 w-1.5 rounded-full bg-current" />
-                {{ selectedProject.status }}
+                {{ statusLabel(selectedProject.status) }}
               </span>
-            </div>
+            </InspectorField>
 
-            <div class="flex items-center justify-between">
-              <span class="so-font-mono text-[11px] text-[hsl(var(--so-muted-foreground))]">Environment</span>
-              <span class="so-font-mono text-xs capitalize">{{ selectedProject.environment }}</span>
-            </div>
+            <InspectorField label="Project ID" :value="selectedProject.id" mono />
+            <InspectorField label="Priority position" :value="priorityLabel(selectedProject.priorityPosition)" mono />
+          </InspectorSection>
 
-            <div class="flex items-center justify-between">
-              <span class="so-font-mono text-[11px] text-[hsl(var(--so-muted-foreground))]">Region</span>
-              <span class="flex items-center gap-1 text-xs">
-                <Globe class="h-3 w-3 text-[hsl(var(--so-muted-foreground))]" />
-                {{ selectedProject.region }}
-              </span>
-            </div>
+          <InspectorSection title="Schedule" with-divider>
+            <InspectorField label="Due date" :value="formatFolioDate(selectedProject.dueAt)" mono />
+            <InspectorField label="Review date" :value="formatFolioDate(selectedProject.reviewAt)" mono />
+          </InspectorSection>
 
-            <div class="flex items-center justify-between">
-              <span class="so-font-mono text-[11px] text-[hsl(var(--so-muted-foreground))]">Uptime</span>
-              <span class="so-font-mono text-xs">{{ selectedProject.uptime }}</span>
-            </div>
-          </div>
-
-          <div class="space-y-2.5 border-t border-[hsl(var(--so-border))] pt-3">
-            <div class="flex items-center justify-between">
-              <span class="so-font-mono text-[11px] text-[hsl(var(--so-muted-foreground))]">Last deploy</span>
-              <span class="so-font-mono text-xs">{{ selectedProject.lastDeploy }}</span>
-            </div>
-
-            <div class="flex items-center justify-between">
-              <span class="so-font-mono text-[11px] text-[hsl(var(--so-muted-foreground))]">Last commit</span>
-              <span class="so-font-mono text-xs text-[hsl(var(--so-primary))]">{{ selectedProject.lastCommit }}</span>
-            </div>
-
-            <div class="flex items-center justify-between">
-              <span class="so-font-mono text-[11px] text-[hsl(var(--so-muted-foreground))]">Created</span>
-              <span class="so-font-mono text-xs">{{ selectedProject.created }}</span>
-            </div>
-          </div>
-
-          <div class="space-y-2.5 border-t border-[hsl(var(--so-border))] pt-3">
-            <div class="flex items-center gap-2 text-xs text-[hsl(var(--so-muted-foreground))]">
-              <Users class="h-3.5 w-3.5" />
-              <span>{{ selectedProject.members }} members</span>
-            </div>
-
-            <div class="flex items-center gap-2 text-xs text-[hsl(var(--so-muted-foreground))]">
-              <GitBranch class="h-3.5 w-3.5" />
-              <span>{{ selectedProject.branches }} branches</span>
-            </div>
-          </div>
-
-          <div class="space-y-2.5 border-t border-[hsl(var(--so-border))] pt-3">
-            <h4 class="so-font-mono mb-2 text-[11px] text-[hsl(var(--so-muted-foreground))]">Recent activity</h4>
-
-            <div class="flex items-center gap-2 text-xs">
-              <Rocket class="h-3 w-3 shrink-0 text-[hsl(var(--so-muted-foreground))]" />
-              <span class="flex-1 truncate">Deployed to production</span>
-              <span class="so-font-mono shrink-0 text-[10px] text-[hsl(var(--so-muted-foreground))]">2h ago</span>
-            </div>
-
-            <div class="flex items-center gap-2 text-xs">
-              <Settings class="h-3 w-3 shrink-0 text-[hsl(var(--so-muted-foreground))]" />
-              <span class="flex-1 truncate">Config updated</span>
-              <span class="so-font-mono shrink-0 text-[10px] text-[hsl(var(--so-muted-foreground))]">1d ago</span>
-            </div>
-
-            <div class="flex items-center gap-2 text-xs">
-              <Users class="h-3 w-3 shrink-0 text-[hsl(var(--so-muted-foreground))]" />
-              <span class="flex-1 truncate">Member added</span>
-              <span class="so-font-mono shrink-0 text-[10px] text-[hsl(var(--so-muted-foreground))]">3d ago</span>
-            </div>
-          </div>
-
-          <div class="space-y-2 border-t border-[hsl(var(--so-border))] pt-3">
+          <InspectorSection title="Actions" with-divider>
             <button type="button" class="so-button-secondary w-full justify-start">
               <ExternalLink class="h-3 w-3" />
               Open project
             </button>
-
-            <button type="button" class="so-button-secondary w-full justify-start">
-              <Settings class="h-3 w-3" />
-              Project settings
-            </button>
-          </div>
+          </InspectorSection>
         </div>
       </InspectorPane>
     </div>

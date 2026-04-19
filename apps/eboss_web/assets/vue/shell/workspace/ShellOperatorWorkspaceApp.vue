@@ -65,32 +65,29 @@ const selectedProject = ref<Project | null>(null)
 const selectedTask = ref<Task | null>(null)
 const selectedActivity = ref<FolioActivityEvent | null>(null)
 const selectedProjectFilter = ref<ProjectFilter>("all")
-const projectFilters = ["all", "active", "paused", "archived"] satisfies ProjectFilter[]
+const projectFilters = ["all", "active", "on_hold", "completed", "canceled", "archived"] satisfies ProjectFilter[]
 const isWorkspaceRoute = computed(() => props.currentPage.type === "workspace")
 const isAppRoute = computed(() => props.currentPage.type === "app")
 
-const formatFolioDate = (value: string | null): string => value ?? "—"
-const mapFolioProjectStatus = (status: string): Project["status"] =>
-  status === "active"
-    ? "active"
-    : status === "archived" || status === "completed" || status === "canceled"
-      ? "archived"
-      : "paused"
+const mapFolioProjectStatus = (status: string): Project["status"] => {
+  if (
+    status === "active" ||
+    status === "on_hold" ||
+    status === "completed" ||
+    status === "canceled" ||
+    status === "archived"
+  ) return status
+
+  return "active"
+}
 
 const mapFolioProject = (project: FolioProjectSummary): Project => ({
   id: project.id,
   name: project.title,
-  slug: project.id,
   status: mapFolioProjectStatus(project.status),
-  lastDeploy: formatFolioDate(project.due_at),
-  members: 0,
-  branches: 0,
-  description: `Project ${project.title}`,
-  region: "—",
-  created: formatFolioDate(project.review_at),
-  environment: "—",
-  lastCommit: formatFolioDate(project.review_at ?? project.due_at),
-  uptime: "—",
+  dueAt: project.due_at,
+  reviewAt: project.review_at,
+  priorityPosition: project.priority_position,
 })
 
 const currentWorkspace = computed(() => props.currentScope.currentWorkspace)

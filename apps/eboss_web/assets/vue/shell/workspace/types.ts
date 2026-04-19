@@ -13,12 +13,13 @@ export interface AppNavigation {
 }
 
 export type WorkspaceNavigationContext = WorkspaceNavigation | AppNavigation
-export type ProjectStatus = "active" | "paused" | "archived"
+export type ProjectStatus = "active" | "on_hold" | "completed" | "canceled" | "archived"
 export type MemberRole = "owner" | "admin" | "member" | "viewer"
 export type MemberStatus = "active" | "invited" | "suspended"
 export type AccessTab = "roles" | "policies" | "api-keys" | "audit"
 export type SettingsTab = "general" | "billing" | "integrations" | "danger"
 export type ProjectFilter = "all" | ProjectStatus
+export type TaskStatus = "inbox" | "next_action" | "waiting_for" | "scheduled" | "someday_maybe" | "done" | "canceled" | "archived"
 
 export interface CurrentUser {
   username: string
@@ -77,17 +78,10 @@ export interface WorkspaceScope {
 export interface Project {
   id: string
   name: string
-  slug: string
   status: ProjectStatus
-  lastDeploy: string
-  members: number
-  branches: number
-  description: string
-  region: string
-  created: string
-  environment: string
-  lastCommit: string
-  uptime: string
+  dueAt: string | null
+  reviewAt: string | null
+  priorityPosition: number | null
 }
 
 export interface Member {
@@ -159,7 +153,7 @@ export interface ActivityEvent {
 export interface Task {
   id: string
   title: string
-  status: string
+  status: TaskStatus
   projectId: string | null
   priorityPosition: number | null
   dueAt: string | null

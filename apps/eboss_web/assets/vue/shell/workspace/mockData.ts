@@ -33,14 +33,14 @@ export const overviewEvents = [
   { hash: "e4h6j2k", action: "Billing plan upgraded to Pro", time: "5 hours ago", user: "jdoe", status: "success" },
 ] satisfies OverviewEvent[]
 
-export const projectFilters = ["all", "active", "paused", "archived"] satisfies ProjectFilter[]
+export const projectFilters = ["all", "active", "on_hold", "completed", "canceled", "archived"] satisfies ProjectFilter[]
 
 export const projects = [
-  { id: "1", name: "API Gateway", slug: "api-gateway", status: "active", lastDeploy: "2 hours ago", members: 4, branches: 3, description: "Core API gateway service for routing and authentication", region: "us-east-1", created: "2024-01-20", environment: "production", lastCommit: "a3f2c1d", uptime: "99.98%" },
-  { id: "2", name: "Dashboard UI", slug: "dashboard-ui", status: "active", lastDeploy: "1 day ago", members: 3, branches: 5, description: "Main dashboard frontend application", region: "us-east-1", created: "2024-02-01", environment: "production", lastCommit: "b7e4a9f", uptime: "99.95%" },
-  { id: "3", name: "Auth Service", slug: "auth-service", status: "active", lastDeploy: "3 days ago", members: 2, branches: 2, description: "Authentication and authorization microservice", region: "us-east-1", created: "2024-01-15", environment: "staging", lastCommit: "c9d1e3b", uptime: "99.99%" },
-  { id: "4", name: "Billing Engine", slug: "billing-engine", status: "paused", lastDeploy: "1 week ago", members: 2, branches: 1, description: "Subscription and payment processing", region: "eu-west-1", created: "2024-03-01", environment: "staging", lastCommit: "d2f5g8h", uptime: "—" },
-  { id: "5", name: "Legacy Importer", slug: "legacy-importer", status: "archived", lastDeploy: "2 months ago", members: 1, branches: 0, description: "Data migration tool from legacy systems", region: "us-east-1", created: "2023-11-10", environment: "—", lastCommit: "e4h6j2k", uptime: "—" },
+  { id: "1", name: "API Gateway", status: "active", dueAt: "2026-01-10T00:00:00Z", reviewAt: "2026-01-09T00:00:00Z", priorityPosition: 1 },
+  { id: "2", name: "Dashboard UI", status: "active", dueAt: null, reviewAt: null, priorityPosition: 2 },
+  { id: "3", name: "Auth Service", status: "completed", dueAt: "2026-01-15T00:00:00Z", reviewAt: "2026-01-14T00:00:00Z", priorityPosition: 3 },
+  { id: "4", name: "Billing Engine", status: "on_hold", dueAt: "2026-01-20T00:00:00Z", reviewAt: null, priorityPosition: 4 },
+  { id: "5", name: "Legacy Importer", status: "archived", dueAt: null, reviewAt: null, priorityPosition: null },
 ] satisfies Project[]
 
 export const members = [

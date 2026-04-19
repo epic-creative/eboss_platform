@@ -2,9 +2,12 @@
 import { computed, ref } from "vue"
 import { CheckCircle2, Search, Star } from "lucide-vue-next"
 
+import InspectorField from "../InspectorField.vue"
 import InspectorPane from "../InspectorPane.vue"
+import InspectorSection from "../InspectorSection.vue"
 import WorkspacePageHeader from "../WorkspacePageHeader.vue"
 import type { Task } from "../types"
+import { formatFolioDate, statusLabel, taskStatusClass } from "../presenters"
 
 const props = defineProps<{
   workspaceReference: string
@@ -16,30 +19,21 @@ const emit = defineEmits<{
   "update:selectedTask": [value: Task | null]
 }>()
 
-const statusFilters = ["all", "inbox", "next_action", "waiting_for", "scheduled", "someday_maybe", "done", "canceled", "archived"] as const
+const statusFilters = [
+  "all",
+  "inbox",
+  "next_action",
+  "waiting_for",
+  "scheduled",
+  "someday_maybe",
+  "done",
+  "canceled",
+  "archived",
+] as const
 type StatusFilter = (typeof statusFilters)[number]
 
 const selectedTaskFilter = ref<StatusFilter>("all")
 const searchQuery = ref("")
-
-const normalizeStatus = (status: string): string =>
-  status.replace(/_/g, " ").replace(/\b\w/g, char => char.toUpperCase())
-
-const statusClass = (status: string): string =>
-  status === "done"
-    ? "text-[hsl(var(--so-success))]"
-    : status === "archived" || status === "canceled"
-      ? "text-[hsl(var(--so-destructive))]"
-      : status === "scheduling"
-        ? "text-[hsl(var(--so-warning))]"
-        : "text-[hsl(var(--so-primary))]"
-
-const formatDate = (value: string | null): string => {
-  if (!value) return "—"
-
-  const parsed = new Date(value)
-  return Number.isNaN(parsed.valueOf()) ? value : parsed.toLocaleDateString()
-}
 
 const taskQuery = computed(() => {
   const search = searchQuery.value.trim().toLowerCase()
@@ -55,7 +49,7 @@ const taskQuery = computed(() => {
   })
 })
 
-const selectedTaskStatus = (task: Task) =>
+const selectedTaskBucket = (task: Task) =>
   task.status === "done"
     ? "done"
     : task.status === "archived" || task.status === "canceled"
@@ -68,8 +62,8 @@ const toggleTask = (task: Task) => {
 
 const sortTasks = computed(() =>
   [...taskQuery.value].sort((left, right) => {
-    const leftStatus = selectedTaskStatus(left)
-    const rightStatus = selectedTaskStatus(right)
+    const leftStatus = selectedTaskBucket(left)
+    const rightStatus = selectedTaskBucket(right)
 
     if (leftStatus !== rightStatus) {
       return leftStatus.localeCompare(rightStatus)
@@ -146,7 +140,7 @@ const sortTasks = computed(() =>
               <div class="flex items-center gap-2">
                 <CheckCircle2
                   class="h-3.5 w-3.5 shrink-0"
-                  :class="statusClass(task.status)"
+                  :class="taskStatusClass(task.status)"
                 />
                 <span class="truncate text-sm font-medium">{{ task.title }}</span>
                 <span class="so-font-mono hidden text-[11px] text-[hsl(var(--so-muted-foreground))] sm:inline">
@@ -157,9 +151,9 @@ const sortTasks = computed(() =>
 
             <span
               class="so-font-mono hidden w-20 text-center text-[11px] sm:block"
-              :class="statusClass(task.status)"
+              :class="taskStatusClass(task.status)"
             >
-              {{ normalizeStatus(task.status) }}
+              {{ statusLabel(task.status) }}
             </span>
 
             <span class="so-font-mono hidden w-28 shrink-0 truncate text-right text-[11px] text-[hsl(var(--so-muted-foreground))] md:block">
@@ -167,7 +161,7 @@ const sortTasks = computed(() =>
             </span>
 
             <span class="so-font-mono hidden w-20 shrink-0 text-right text-[11px] text-[hsl(var(--so-muted-foreground))] lg:block">
-              {{ formatDate(task.dueAt) }}
+              {{ formatFolioDate(task.dueAt) }}
             </span>
 
             <span class="so-font-mono hidden w-16 text-center text-[11px] text-[hsl(var(--so-muted-foreground))] lg:block">
@@ -192,6 +186,7 @@ const sortTasks = computed(() =>
         :open="!!selectedTask"
         :title="selectedTask?.title || ''"
         :subtitle="selectedTask?.id"
+        data-testid="task-inspector"
         @close="emit('update:selectedTask', null)"
       >
         <template #actions>
@@ -201,42 +196,25 @@ const sortTasks = computed(() =>
         </template>
 
         <div v-if="selectedTask" class="space-y-4">
-          <p class="text-xs text-[hsl(var(--so-muted-foreground))]">
-            Task details for the selected item in the current workspace.
-          </p>
-
-          <div class="space-y-2.5 border-t border-[hsl(var(--so-border))] pt-3">
-            <div class="flex items-center justify-between">
-              <span class="so-font-mono text-[11px] text-[hsl(var(--so-muted-foreground))]">Status</span>
-              <span
-                class="flex items-center gap-1.5 capitalize"
-                :class="statusClass(selectedTask.status)"
-              >
+          <InspectorSection title="Status">
+            <InspectorField label="Current status" :valueClass="taskStatusClass(selectedTask.status)">
+              <span class="flex items-center gap-1.5">
                 <span class="h-1.5 w-1.5 rounded-full bg-current" />
-                {{ normalizeStatus(selectedTask.status) }}
+                {{ statusLabel(selectedTask.status) }}
               </span>
-            </div>
+            </InspectorField>
+            <InspectorField label="Task ID" :value="selectedTask.id" mono />
+          </InspectorSection>
 
-            <div class="flex items-center justify-between">
-              <span class="so-font-mono text-[11px] text-[hsl(var(--so-muted-foreground))]">Project</span>
-              <span class="text-xs">{{ selectedTask.projectId || "Unassigned" }}</span>
-            </div>
+          <InspectorSection title="Context" with-divider>
+            <InspectorField label="Project" :value="selectedTask.projectId || 'Unassigned'" />
+            <InspectorField label="Priority" :value="selectedTask.priorityPosition?.toString() || '—'" mono />
+          </InspectorSection>
 
-            <div class="flex items-center justify-between">
-              <span class="so-font-mono text-[11px] text-[hsl(var(--so-muted-foreground))]">Due date</span>
-              <span class="so-font-mono text-xs">{{ formatDate(selectedTask.dueAt) }}</span>
-            </div>
-
-            <div class="flex items-center justify-between">
-              <span class="so-font-mono text-[11px] text-[hsl(var(--so-muted-foreground))]">Review date</span>
-              <span class="so-font-mono text-xs">{{ formatDate(selectedTask.reviewAt) }}</span>
-            </div>
-
-            <div class="flex items-center justify-between">
-              <span class="so-font-mono text-[11px] text-[hsl(var(--so-muted-foreground))]">Priority</span>
-              <span class="so-font-mono text-xs">{{ selectedTask.priorityPosition ?? "—" }}</span>
-            </div>
-          </div>
+          <InspectorSection title="Schedule" with-divider>
+            <InspectorField label="Due date" :value="formatFolioDate(selectedTask.dueAt)" mono />
+            <InspectorField label="Review date" :value="formatFolioDate(selectedTask.reviewAt)" mono />
+          </InspectorSection>
         </div>
       </InspectorPane>
     </div>

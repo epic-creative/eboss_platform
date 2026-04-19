@@ -302,9 +302,135 @@ describe("ShellOperatorWorkspaceApp", () => {
       "/api/v1/primary-owner/workspaces/primary-workspace/apps/folio/projects",
       expect.any(Object),
     )
-    expect(wrapper.get('[data-testid="workspace-page-projects"]').text()).toContain("Atlas Service")
-    expect(wrapper.get('[data-testid="workspace-page-projects"]').text()).toContain("Nimbus Engine")
-    expect(wrapper.get('[data-testid="workspace-page-projects"]').text()).not.toContain("API Gateway")
+    const projectsView = wrapper.get('[data-testid="workspace-page-projects"]')
+    expect(projectsView.text()).toContain("Atlas Service")
+    expect(projectsView.text()).toContain("Nimbus Engine")
+    expect(projectsView.text().includes("API Gateway")).toBe(false)
+
+    await projectsView.get('[data-testid="project-row-project-1"]').trigger("click")
+    await nextTick()
+
+    expect(projectsView.text()).toContain("Status")
+    expect(projectsView.text()).toContain("Due date")
+    expect(projectsView.text()).toContain("Review date")
+    expect(projectsView.text().includes("Environment")).toBe(false)
+    expect(projectsView.text().includes("Region")).toBe(false)
+    expect(projectsView.text().includes("Members")).toBe(false)
+  })
+
+  it("renders real folio task details from task summary fields", async () => {
+    vi.spyOn(global, "fetch").mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        scope: {
+          app_key: "folio",
+          workspace: {
+            id: "workspace-1",
+            name: "Primary Workspace",
+            slug: "primary-workspace",
+            full_path: "/primary-owner/primary-workspace",
+            visibility: "private",
+            owner_type: "user",
+            owner_id: "owner-1",
+            owner_slug: "primary-owner",
+            owner_display_name: "Primary Owner",
+            dashboard_path: "/primary-owner/primary-workspace",
+            "current?": true,
+          },
+          owner: {
+            type: "user",
+            id: "owner-1",
+            slug: "primary-owner",
+            display_name: "Primary Owner",
+          },
+          app: {
+            key: "folio",
+            label: "Folio",
+            default_path: "/primary-owner/primary-workspace/apps/folio",
+            enabled: true,
+            capabilities: { read: true, manage: true },
+          },
+          capabilities: { read: true, manage: true },
+          workspace_path: "/primary-owner/primary-workspace",
+          app_path: "/primary-owner/primary-workspace/apps/folio",
+        },
+        tasks: [
+          {
+            id: "task-1",
+            title: "Refine queueing",
+            status: "scheduled",
+            project_id: "project-1",
+            priority_position: 7,
+            due_at: "2026-05-01T00:00:00Z",
+            review_at: null,
+          },
+          {
+            id: "task-2",
+            title: "Archive old notes",
+            status: "done",
+            project_id: null,
+            priority_position: null,
+            due_at: null,
+            review_at: "2026-04-02T00:00:00Z",
+          },
+        ],
+      }),
+    } as Response)
+
+    const wrapper = mountComponent(ShellOperatorWorkspaceApp, {
+      props: {
+        currentUser: {
+          username: "operator",
+          email: "operator@example.com",
+        },
+        currentScope: scope({
+          apps: {
+            folio: {
+              key: "folio",
+              label: "Folio",
+              defaultPath: "/primary-owner/primary-workspace/apps/folio",
+              enabled: true,
+              capabilities: {
+                read: true,
+                manage: true,
+              },
+            },
+          },
+        }),
+        currentPage: appRoute("folio", "tasks"),
+        currentPath: "/primary-owner/primary-workspace/apps/folio/tasks",
+        signOutPath: "/sign-out",
+        csrfToken: "csrf-token",
+      },
+      global: {
+        stubs: {
+          ThemeToggleButton: {
+            template: "<button data-testid=\"theme-toggle-stub\" />",
+          },
+        },
+      },
+    })
+
+    await nextTick()
+    await nextMacrotask()
+
+    expect(global.fetch).toHaveBeenCalledWith(
+      "/api/v1/primary-owner/workspaces/primary-workspace/apps/folio/tasks",
+      expect.any(Object),
+    )
+
+    const tasksView = wrapper.get('[data-testid="workspace-page-tasks"]')
+    expect(tasksView.text()).toContain("Refine queueing")
+    expect(tasksView.text()).toContain("Archive old notes")
+
+    await tasksView.get('[data-testid="task-row-task-1"]').trigger("click")
+    await nextTick()
+
+    expect(tasksView.text()).toContain("Current status")
+    expect(tasksView.text()).toContain("Due date")
+    expect(tasksView.text()).toContain("Task ID")
+    expect(tasksView.text()).toContain("Review date")
   })
 
   it("renders real folio activity on folio activity surface", async () => {

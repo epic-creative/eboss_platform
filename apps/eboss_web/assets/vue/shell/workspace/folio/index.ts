@@ -10,6 +10,8 @@ export {
   type UseFolioReadOptions,
 } from "./composables"
 export type {
+  FolioProjectStatus,
+  FolioTaskStatus,
   FolioActivityEvent,
   FolioActivityResponse,
   FolioBootstrapResponse,

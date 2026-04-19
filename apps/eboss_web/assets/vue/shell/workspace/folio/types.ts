@@ -3,6 +3,17 @@ export interface FolioWorkspaceRef {
   workspaceSlug: string
 }
 
+export type FolioProjectStatus = "active" | "on_hold" | "completed" | "canceled" | "archived"
+export type FolioTaskStatus =
+  | "inbox"
+  | "next_action"
+  | "waiting_for"
+  | "scheduled"
+  | "someday_maybe"
+  | "done"
+  | "canceled"
+  | "archived"
+
 export interface FolioWorkspaceSummary {
   id: string
   name: string
@@ -60,7 +71,7 @@ export interface FolioBootstrapResponse {
 export interface FolioProjectSummary {
   id: string
   title: string
-  status: string
+  status: FolioProjectStatus
   priority_position: number | null
   due_at: string | null
   review_at: string | null
@@ -69,7 +80,7 @@ export interface FolioProjectSummary {
 export interface FolioTaskSummary {
   id: string
   title: string
-  status: string
+  status: FolioTaskStatus
   project_id: string | null
   priority_position: number | null
   due_at: string | null
