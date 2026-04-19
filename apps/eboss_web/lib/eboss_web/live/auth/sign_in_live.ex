@@ -28,8 +28,8 @@ defmodule EBossWeb.Auth.SignInLive do
       shell_mode="workspace"
       current_path="/sign-in"
     >
-        <.auth_shell current_path="/sign-in">
-          <.auth_page title="Sign in to EBoss" subtitle="Enter your workspace">
+      <.auth_shell current_path="/sign-in">
+        <.auth_page title="Sign in to EBoss" subtitle="Enter your workspace">
           <section class="ui-auth-card so-auth-card">
             <div class="flex border-b border-[hsl(var(--so-border))] px-1 pt-1">
               <button

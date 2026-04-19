@@ -44,21 +44,24 @@ defmodule EBossWeb.Dev.DesignSystemLiveTest do
     assert html =~ "Shared HEEx review index"
     assert html =~ "Theme and density review matrix"
     assert html =~ "Operator console first, marketing polish second."
-    assert html =~ "Workflow shells and page composition"
+    assert html =~ "Runtime shell composition"
     assert html =~ "Empty, loading, and error states keep the same operator-grade frame."
     assert html =~ "Field states and action controls"
     assert html =~ "Runtime feedback, flash messages, and semantic status"
     assert html =~ "Primary, secondary, and auth navigation patterns"
     assert html =~ "Authentication shell reference"
-    assert html =~ "No escalations in this shell"
+    assert html =~ "Public landing runtime"
+    assert html =~ "Workspace shell runtime"
     assert html =~ "Nothing is queued for this workspace yet."
     assert html =~ "The latest sync did not complete."
     assert html =~ "Queued for review"
     assert html =~ "Delivery failed"
     assert html =~ "Disabled CTA"
 
-    assert has_element?(view, "tbody#shell-preview-runs")
-    assert has_element?(view, "tbody#shell-preview-runs tr#shell-run-queue-sync")
+    assert has_element?(view, ".ui-runtime-preview--public")
+    assert has_element?(view, ".ui-runtime-preview--workspace")
+    assert has_element?(view, ~s([data-name="ShellOperatorLanding"]))
+    assert has_element?(view, ~s([data-name="ShellOperatorWorkspaceApp"]))
     assert has_element?(view, "#auth-shell-preview")
     assert has_element?(view, "input[name='workspace_slug']")
     assert has_element?(view, "select[name='execution_mode']")

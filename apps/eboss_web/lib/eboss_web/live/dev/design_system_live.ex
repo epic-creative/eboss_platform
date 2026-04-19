@@ -472,112 +472,119 @@ defmodule EBossWeb.Dev.DesignSystemLive do
         <section id="shells" class="ui-dev-preview__section">
           <.section_heading
             eyebrow="Shells"
-            title="Workflow shells and page composition"
-            subtitle="Review the main shell hierarchy, interior headers, data tables, and fallback content as one surface instead of checking each screen in isolation."
+            title="Runtime shell composition"
+            subtitle="Review the actual Lovable-derived public, auth, and workspace shell direction in one place instead of checking old mock shells."
             title_size="sm"
           />
 
-          <div id="shell-preview-frame" class="ui-preview-frame" data-theme="dark">
-            <div class="ui-preview-shell">
-              <header class="ui-shell-header">
-                <div class="ui-shell-header__inner">
-                  <div class="ui-shell-brand">
-                    <div class="ui-brand-mark">EB</div>
-                    <div class="ui-shell-brand__lockup">
-                      <p class="ui-kicker">Workflow shell</p>
-                      <p class="ui-text-body" data-size="sm" data-tone="soft">
-                        Shared page rhythm under real content density.
-                      </p>
-                    </div>
-                  </div>
+          <div class="grid gap-4">
+            <.panel surface="solid" padding="sm" class="space-y-4">
+              <p class="ui-text-meta" data-tone="soft">Review focus</p>
+              <.list>
+                <:item title="Public shell">
+                  Check the real landing route framing, header chrome, proof panel treatment, and
+                  CTA rhythm.
+                </:item>
+                <:item title="Auth shell">
+                  Check the compact auth frame, card edges, tabs, feedback, and form density against
+                  the Lovable source.
+                </:item>
+                <:item title="Workspace shell">
+                  Check the real sidebar, top bar, search, action states, and inspector relationship
+                  instead of reviewing a fake dashboard shell.
+                </:item>
+              </.list>
+            </.panel>
 
-                  <div class="ui-control-cluster">
-                    <.badge tone="neutral">Dark</.badge>
-                    <.button variant="outline" tone="neutral" size="sm">
-                      Inspect shell
-                    </.button>
-                  </div>
+            <div class="ui-dev-preview__grid ui-dev-preview__grid--2">
+              <div class="space-y-3">
+                <p class="ui-text-meta" data-tone="soft">Public landing runtime</p>
+                <div class="ui-runtime-preview ui-runtime-preview--public" data-theme="light">
+                  <.ShellOperatorLanding />
                 </div>
-              </header>
+              </div>
 
-              <div class="ui-preview-shell__body">
-                <div class="ui-preview-shell__nav">
-                  <.nav_pill to="#runs" active>Runs</.nav_pill>
-                  <.nav_pill to="#agents">Agents</.nav_pill>
-                  <.nav_pill to="#audit">Audit</.nav_pill>
-                  <.nav_pill to="#settings">Settings</.nav_pill>
-                </div>
-
-                <div class="ui-preview-shell__grid">
-                  <.panel surface="floating" class="space-y-4">
-                    <.header title_size="md">
-                      Operator queue
-                      <:subtitle>
-                        Headers, actions, and tables should read cleanly inside the same shell rhythm
-                        used elsewhere in the product.
-                      </:subtitle>
-                      <:actions>
-                        <div class="flex flex-wrap gap-3">
-                          <.button size="sm">Approve queue</.button>
-                          <.button variant="outline" tone="neutral" size="sm">
-                            Export report
-                          </.button>
-                        </div>
-                      </:actions>
-                    </.header>
-
-                    <.table
-                      id="shell-preview-runs"
-                      rows={shell_preview_rows()}
-                      row_id={&"shell-run-#{&1.id}"}
-                    >
-                      <:col :let={row} label="Run">
-                        <div class="space-y-1">
-                          <p class="ui-text-title" data-size="sm">{row.name}</p>
-                          <p class="ui-text-body" data-size="sm" data-tone="soft">
-                            {row.summary}
-                          </p>
-                        </div>
-                      </:col>
-                      <:col :let={row} label="Owner">
-                        <span class="ui-text-body" data-size="sm">{row.owner}</span>
-                      </:col>
-                      <:col :let={row} label="Status">
-                        <.badge tone={row.tone}>{row.status}</.badge>
-                      </:col>
-                      <:action :let={row}>
-                        <.button variant="ghost" tone="neutral" size="sm" href={"#run-#{row.id}"}>
-                          Inspect
-                        </.button>
-                      </:action>
-                    </.table>
-                  </.panel>
-
-                  <div class="grid gap-4">
-                    <.panel surface="solid" padding="sm" class="space-y-4">
-                      <p class="ui-text-meta" data-tone="soft">Shell review notes</p>
-                      <.list>
-                        <:item :for={item <- shell_review_notes()} title={item.title}>
-                          {item.copy}
-                        </:item>
-                      </.list>
-                    </.panel>
-
-                    <.panel surface="solid" padding="sm" class="space-y-4">
-                      <.empty_state
-                        title="No escalations in this shell"
-                        copy="Fallback states should preserve the same frame, spacing, and action treatment as busy tables."
+              <div class="space-y-3">
+                <p class="ui-text-meta" data-tone="soft">Auth shell reference</p>
+                <div class="ui-runtime-preview ui-runtime-preview--auth" data-theme="light">
+                  <div class="p-6">
+                    <.auth_shell current_path="/sign-in">
+                      <.auth_page
+                        title="Sign in"
+                        subtitle="Compact auth shell and form density aligned to the Lovable source."
                       >
-                        <:actions>
-                          <.button size="sm">Create escalation</.button>
-                          <.button variant="outline" tone="neutral" size="sm">
-                            Inspect history
-                          </.button>
-                        </:actions>
-                      </.empty_state>
-                    </.panel>
+                        <div class="ui-auth-card so-auth-card p-4">
+                          <div class="mb-4 flex border-b border-[hsl(var(--so-border))] px-1 pt-1">
+                            <button
+                              type="button"
+                              class="ui-underline-tab so-underline-tab flex-1 justify-center text-xs"
+                              data-active="true"
+                            >
+                              Password
+                            </button>
+                            <button
+                              type="button"
+                              class="ui-underline-tab so-underline-tab flex-1 justify-center text-xs"
+                              data-active="false"
+                            >
+                              Magic link
+                            </button>
+                          </div>
+
+                          <div class="space-y-4">
+                            <.input
+                              name="auth_email_shell_preview"
+                              type="email"
+                              label="Email address"
+                              autocomplete="email"
+                              value="operator@example.com"
+                            />
+                            <.input
+                              name="auth_password_shell_preview"
+                              type="password"
+                              label="Password"
+                              autocomplete="current-password"
+                              value="supersecret123"
+                            />
+
+                            <div class="flex justify-end">
+                              <a href="#forgot-password" class="ui-text-link text-xs">
+                                Forgot password?
+                              </a>
+                            </div>
+
+                            <.button type="button" size="sm" tone="success" class="w-full">
+                              Sign in
+                            </.button>
+                          </div>
+                        </div>
+
+                        <:footer>
+                          <.auth_page_footer
+                            prompt="Need a neighboring route?"
+                            link_text="Register"
+                            link_href="#register"
+                            note="Preview the shell hierarchy, then carry the same frame across every auth route."
+                          />
+                        </:footer>
+                      </.auth_page>
+                    </.auth_shell>
                   </div>
                 </div>
+              </div>
+            </div>
+
+            <div class="space-y-3">
+              <p class="ui-text-meta" data-tone="soft">Workspace shell runtime</p>
+              <div class="ui-runtime-preview ui-runtime-preview--workspace" data-theme="dark">
+                <.ShellOperatorWorkspaceApp
+                  currentUser={runtime_preview_user()}
+                  currentScope={runtime_preview_scope()}
+                  currentPage="dashboard"
+                  currentPath={runtime_preview_dashboard_path()}
+                  signOutPath="#sign-out"
+                  csrfToken="preview-token"
+                />
               </div>
             </div>
           </div>
@@ -827,19 +834,19 @@ defmodule EBossWeb.Dev.DesignSystemLive do
                       title="Sign in"
                       subtitle="Review the compact auth shell, card treatment, and form controls without leaving the preview route."
                     >
-                      <div class="so-auth-card p-4">
-                        <div class="mb-4 flex items-center gap-1 rounded-md border border-[hsl(var(--so-border))] bg-[hsl(var(--so-muted))] p-1">
+                      <div class="ui-auth-card so-auth-card p-4">
+                        <div class="mb-4 flex border-b border-[hsl(var(--so-border))] px-1 pt-1">
                           <button
                             type="button"
-                            class="so-underline-tab flex-1 justify-center is-active"
-                            aria-pressed="true"
+                            class="ui-underline-tab so-underline-tab flex-1 justify-center text-xs"
+                            data-active="true"
                           >
                             Password
                           </button>
                           <button
                             type="button"
-                            class="so-underline-tab flex-1 justify-center"
-                            aria-pressed="false"
+                            class="ui-underline-tab so-underline-tab flex-1 justify-center text-xs"
+                            data-active="false"
                           >
                             Magic link
                           </button>
@@ -847,14 +854,14 @@ defmodule EBossWeb.Dev.DesignSystemLive do
 
                         <div class="space-y-4">
                           <.input
-                            name="auth_email_preview"
+                            name="auth_email_form_preview"
                             type="email"
                             label="Email"
                             autocomplete="email"
                             value="operator@example.com"
                           />
                           <.input
-                            name="auth_password_preview"
+                            name="auth_password_form_preview"
                             type="password"
                             label="Password"
                             autocomplete="current-password"
@@ -867,12 +874,9 @@ defmodule EBossWeb.Dev.DesignSystemLive do
                             </a>
                           </div>
 
-                          <button
-                            type="button"
-                            class="so-button-primary h-8 w-full justify-center text-xs"
-                          >
+                          <.button type="button" size="sm" tone="success" class="w-full">
                             Sign in
-                          </button>
+                          </.button>
                         </div>
                       </div>
 
@@ -1239,53 +1243,69 @@ defmodule EBossWeb.Dev.DesignSystemLive do
     ]
   end
 
-  defp shell_preview_rows do
-    [
-      %{
-        id: "queue-sync",
-        name: "Policy sync for onboarding",
-        summary: "Two approvals are still pending before the rollout can continue.",
-        owner: "@ops_lead",
-        status: "Needs review",
-        tone: "warning"
-      },
-      %{
-        id: "audit-report",
-        name: "Weekly audit export",
-        summary: "All checks passed and the report package is ready for delivery.",
-        owner: "@finance_ops",
-        status: "Healthy",
-        tone: "success"
-      },
-      %{
-        id: "workspace-import",
-        name: "Workspace import",
-        summary: "The queue is staged and waiting on the next orchestration step.",
-        owner: "@platform",
-        status: "Queued",
-        tone: "primary"
-      }
-    ]
+  defp runtime_preview_dashboard_path, do: "/shell-operator/personal-hq"
+
+  defp runtime_preview_user do
+    %{
+      username: "operator",
+      email: "operator@eboss.dev"
+    }
   end
 
-  defp shell_review_notes do
-    [
-      %{
-        title: "Headers stay utility-first",
-        copy:
-          "Page-level headers should lead with status, next actions, and context instead of decorative hero treatment."
+  defp runtime_preview_scope do
+    %{
+      empty: false,
+      dashboardPath: runtime_preview_dashboard_path(),
+      currentWorkspace: %{
+        id: "preview-workspace",
+        name: "Personal HQ",
+        slug: "personal-hq",
+        fullPath: "shell-operator/personal-hq",
+        visibility: "private",
+        ownerType: "user",
+        ownerSlug: "shell-operator",
+        ownerDisplayName: "Shell Operator",
+        dashboardPath: runtime_preview_dashboard_path(),
+        current: true
       },
-      %{
-        title: "Tables live inside the shell system",
-        copy:
-          "Dense data views still need the same border, spacing, and action treatment as the rest of the interface."
+      owner: %{
+        type: "user",
+        slug: "shell-operator",
+        displayName: "Shell Operator"
       },
-      %{
-        title: "Fallbacks keep the frame",
-        copy:
-          "Empty states should occupy the same surface hierarchy as busy data views so the route never feels visually reset."
-      }
-    ]
+      capabilities: %{
+        readWorkspace: true,
+        manageWorkspace: true,
+        readFolio: true,
+        manageFolio: true
+      },
+      accessibleWorkspaces: [
+        %{
+          id: "preview-workspace",
+          name: "Personal HQ",
+          slug: "personal-hq",
+          fullPath: "shell-operator/personal-hq",
+          visibility: "private",
+          ownerType: "user",
+          ownerSlug: "shell-operator",
+          ownerDisplayName: "Shell Operator",
+          dashboardPath: runtime_preview_dashboard_path(),
+          current: true
+        },
+        %{
+          id: "preview-lab",
+          name: "Lab",
+          slug: "lab",
+          fullPath: "shell-operator/lab",
+          visibility: "private",
+          ownerType: "user",
+          ownerSlug: "shell-operator",
+          ownerDisplayName: "Shell Operator",
+          dashboardPath: "/shell-operator/lab",
+          current: false
+        }
+      ]
+    }
   end
 
   defp feedback_statuses do

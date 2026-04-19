@@ -1272,6 +1272,30 @@
   gap: var(--space-stack);
 }
 
+.ui-runtime-preview {
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--color-border-strong) 18%, var(--color-border-subtle));
+  border-radius: var(--radius-shell);
+  background: var(--color-shell);
+  box-shadow: var(--shadow-surface-default);
+}
+
+.ui-runtime-preview--public {
+  max-height: 34rem;
+}
+
+.ui-runtime-preview--auth {
+  min-height: 0;
+}
+
+.ui-runtime-preview--workspace {
+  height: 44rem;
+}
+
+.ui-runtime-preview > * {
+  min-height: 100%;
+}
+
 @media (min-width: 768px) {
   .ui-dev-preview__grid--2 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
