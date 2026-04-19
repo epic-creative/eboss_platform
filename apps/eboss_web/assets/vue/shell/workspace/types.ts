@@ -156,6 +156,16 @@ export interface ActivityEvent {
   changes?: ActivityChange[]
 }
 
+export interface Task {
+  id: string
+  title: string
+  status: string
+  projectId: string | null
+  priorityPosition: number | null
+  dueAt: string | null
+  reviewAt: string | null
+}
+
 export interface OverviewEvent {
   hash: string
   action: string

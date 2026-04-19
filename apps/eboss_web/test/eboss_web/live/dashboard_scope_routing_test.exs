@@ -122,7 +122,8 @@ defmodule EBossWeb.DashboardScopeRoutingTest do
 
     base_path = dashboard_path(context.current_user.owner_slug, workspace.slug)
     app_base_path = "#{base_path}/apps/folio"
-    app_view_surface_path = "#{app_base_path}/files"
+    app_tasks_surface_path = "#{app_base_path}/tasks"
+    app_files_surface_path = "#{app_base_path}/files"
 
     assert {:ok, view, _html} = live(context.conn, app_base_path)
 
@@ -135,14 +136,23 @@ defmodule EBossWeb.DashboardScopeRoutingTest do
     assert workspace_shell.props["currentScope"]["dashboardPath"] == base_path
     assert workspace_shell.props["currentScope"]["currentWorkspace"]["slug"] == workspace.slug
 
-    assert {:ok, view_with_surface, _html} = live(context.conn, app_view_surface_path)
+    assert {:ok, view_with_tasks, _html} = live(context.conn, app_tasks_surface_path)
+
+    workspace_shell_with_tasks = get_vue(view_with_tasks, name: "ShellOperatorWorkspaceApp")
+
+    assert workspace_shell_with_tasks.props["currentPage"]["type"] == "app"
+    assert workspace_shell_with_tasks.props["currentPage"]["app_key"] == "folio"
+    assert workspace_shell_with_tasks.props["currentPage"]["app_surface"] == "tasks"
+    assert workspace_shell_with_tasks.props["currentPath"] == app_tasks_surface_path
+
+    assert {:ok, view_with_surface, _html} = live(context.conn, app_files_surface_path)
 
     workspace_shell_with_surface = get_vue(view_with_surface, name: "ShellOperatorWorkspaceApp")
 
     assert workspace_shell_with_surface.props["currentPage"]["type"] == "app"
     assert workspace_shell_with_surface.props["currentPage"]["app_key"] == "folio"
     assert workspace_shell_with_surface.props["currentPage"]["app_surface"] == "files"
-    assert workspace_shell_with_surface.props["currentPath"] == app_view_surface_path
+    assert workspace_shell_with_surface.props["currentPath"] == app_files_surface_path
   end
 
   test "invalid workspace routes redirect to the first accessible workspace", %{conn: conn} do

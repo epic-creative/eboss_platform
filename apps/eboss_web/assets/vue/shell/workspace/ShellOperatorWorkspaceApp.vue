@@ -18,18 +18,21 @@ import EmptyWorkspacePage from "./pages/EmptyWorkspacePage.vue"
 import MembersPage from "./pages/MembersPage.vue"
 import ActivityPage from "./pages/ActivityPage.vue"
 import ProjectsPage from "./pages/ProjectsPage.vue"
+import TasksPage from "./pages/TasksPage.vue"
 import SettingsPage from "./pages/SettingsPage.vue"
 import {
   useFolioActivity,
   useFolioProjects,
+  useFolioTasks,
   useFolioWorkspaceScope,
 } from "./folio"
-import type { FolioActivityEvent, FolioProjectSummary } from "./folio/types"
+import type { FolioActivityEvent, FolioProjectSummary, FolioTaskSummary } from "./folio/types"
 import type {
   AccessAuditRecord,
   AccessTab,
   ApiKeyRecord,
   Project,
+  Task,
   ProjectFilter,
   CurrentUser,
   Member,
@@ -59,6 +62,7 @@ const selectedRole = ref<RoleRecord | null>(null)
 const selectedKey = ref<ApiKeyRecord | null>(null)
 const selectedAccessAudit = ref<AccessAuditRecord | null>(null)
 const selectedProject = ref<Project | null>(null)
+const selectedTask = ref<Task | null>(null)
 const selectedActivity = ref<FolioActivityEvent | null>(null)
 const selectedProjectFilter = ref<ProjectFilter>("all")
 const projectFilters = ["all", "active", "paused", "archived"] satisfies ProjectFilter[]
@@ -108,6 +112,11 @@ const isFolioAppRoute = computed(() => isAppRoute.value && currentAppPage.value?
 const isFolioProjectsSurface = computed(
   () => isFolioAppRoute.value && currentAppPage.value?.app_surface === "projects",
 )
+const isFolioTasksSurface = computed(
+  () =>
+    isFolioAppRoute.value &&
+    (currentAppPage.value?.app_surface === "tasks" || !currentAppPage.value?.app_surface),
+)
 const isFolioActivitySurface = computed(
   () => isFolioAppRoute.value && currentAppPage.value?.app_surface === "activity",
 )
@@ -117,6 +126,20 @@ const folioProjectsQuery = useFolioProjects(folioWorkspaceScope, {
   enabled: isFolioProjectsSurface,
 })
 const folioProjects = computed(() => folioProjectsQuery.projects.value.map(mapFolioProject))
+const folioTasksQuery = useFolioTasks(folioWorkspaceScope, {
+  autoFetch: true,
+  enabled: isFolioTasksSurface,
+})
+const mapFolioTask = (task: FolioTaskSummary): Task => ({
+  id: task.id,
+  title: task.title,
+  status: task.status,
+  projectId: task.project_id,
+  priorityPosition: task.priority_position,
+  dueAt: task.due_at,
+  reviewAt: task.review_at,
+})
+const folioTasks = computed(() => folioTasksQuery.tasks.value.map(mapFolioTask))
 const folioActivityQuery = useFolioActivity(folioWorkspaceScope, {
   autoFetch: true,
   enabled: isFolioActivitySurface,
@@ -135,7 +158,7 @@ const currentWorkspaceApp = computed<WorkspaceApp | null>(() => {
 const appSurfaceLabel = computed(() =>
   currentAppPage.value && currentAppPage.value.app_surface
     ? currentAppPage.value.app_surface
-    : "Home",
+    : "tasks",
 )
 const appSurfaceTitle = computed(() =>
   appSurfaceLabel.value
@@ -153,6 +176,7 @@ const clearInspectors = () => {
   selectedKey.value = null
   selectedAccessAudit.value = null
   selectedProject.value = null
+  selectedTask.value = null
   selectedActivity.value = null
 }
 
@@ -337,6 +361,13 @@ watch(currentWorkspaceKey, () => {
               :selected-project="selectedProject"
               @update:project-filter="selectedProjectFilter = $event"
               @update:selected-project="selectedProject = $event"
+            />
+            <TasksPage
+              v-else-if="isFolioTasksSurface"
+              :workspace-reference="workspaceReference"
+              :tasks="folioTasks"
+              :selected-task="selectedTask"
+              @update:selected-task="selectedTask = $event"
             />
             <ActivityPage
               v-else-if="isFolioActivitySurface"

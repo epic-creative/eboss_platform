@@ -44,5 +44,8 @@ defmodule EBossWeb.DashboardAuthGateSmokeTest do
 
     assert {:error, {:redirect, %{to: "/sign-in"}}} =
              live(build_conn(), ~p"/route-owner/route-workspace/apps/folio/files")
+
+    assert {:error, {:redirect, %{to: "/sign-in"}}} =
+             live(build_conn(), ~p"/route-owner/route-workspace/apps/folio/tasks")
   end
 end
