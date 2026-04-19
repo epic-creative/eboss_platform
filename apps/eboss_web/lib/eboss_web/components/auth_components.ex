@@ -13,64 +13,33 @@ defmodule EBossWeb.AuthComponents do
     ~H"""
     <div
       class={[
-        "so-theme so-auth-shell so-auth-surface flex min-h-screen flex-col text-[hsl(var(--so-foreground))]",
+        "ui-public-auth-shell so-theme so-auth-surface text-[hsl(var(--so-foreground))]",
         @class
       ]}
       data-auth-shell
       data-testid={BrowserTestContracts.auth_shell()}
     >
-      <header class="so-header-bar border-b border-[hsl(var(--so-header-border))]">
-        <div class="mx-auto flex h-12 w-full max-w-7xl items-center px-4 sm:px-6 lg:px-8">
-          <a href={~p"/"} class="flex shrink-0 items-center gap-2">
-            <div class="flex h-6 w-6 items-center justify-center rounded bg-[hsl(var(--so-header-foreground))]">
-              <span class="so-font-mono text-[10px] font-bold text-[hsl(var(--so-header-bg))]">
-                E
-              </span>
-            </div>
-            <span class="text-sm font-semibold text-[hsl(var(--so-header-foreground))]">EBoss</span>
-          </a>
-
-          <div class="ml-4 hidden items-center gap-1.5 text-xs sm:flex">
-            <span class="text-[hsl(var(--so-header-muted))]">/</span>
-            <span class="so-font-mono text-[hsl(var(--so-header-muted))]">
+      <.panel
+        surface="floating"
+        padding="lg"
+        class="ui-public-auth-shell__frame"
+      >
+        <div class="ui-public-auth-shell__route">
+          <p class="ui-text-meta" data-tone="soft">Public auth route</p>
+          <div class="ui-public-auth-shell__route-path">
+            <span class="text-[hsl(var(--so-muted-foreground))]">/</span>
+            <span class="so-font-mono text-[hsl(var(--so-muted-foreground))]">
               {auth_route_label(@current_path)}
             </span>
           </div>
-
-          <div class="ml-auto flex items-center gap-2">
-            <.ThemeToggleButton />
-          </div>
         </div>
-      </header>
 
-      <main class="flex flex-1 items-start justify-center px-4 pb-16 pt-16">
-        <div class="w-full max-w-[360px]">
+        <.auth_nav current_path={@current_path} />
+
+        <div class="ui-public-auth-shell__content">
           {render_slot(@inner_block)}
         </div>
-      </main>
-
-      <footer class="border-t border-[hsl(var(--so-border))] py-4">
-        <div class="mx-auto flex max-w-7xl items-center justify-center gap-6 px-4 sm:px-6 lg:px-8">
-          <a
-            href="#"
-            class="text-xs text-[hsl(var(--so-muted-foreground))] transition-colors hover:text-[hsl(var(--so-foreground))]"
-          >
-            Terms
-          </a>
-          <a
-            href="#"
-            class="text-xs text-[hsl(var(--so-muted-foreground))] transition-colors hover:text-[hsl(var(--so-foreground))]"
-          >
-            Privacy
-          </a>
-          <a
-            href="mailto:support@eboss.dev"
-            class="text-xs text-[hsl(var(--so-muted-foreground))] transition-colors hover:text-[hsl(var(--so-foreground))]"
-          >
-            Contact
-          </a>
-        </div>
-      </footer>
+      </.panel>
     </div>
     """
   end

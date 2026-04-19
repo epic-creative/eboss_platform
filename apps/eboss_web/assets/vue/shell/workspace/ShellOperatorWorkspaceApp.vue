@@ -32,7 +32,7 @@ import {
 } from "lucide-vue-next"
 
 import InspectorPane from "./InspectorPane.vue"
-import ThemeToggleButton from "./ThemeToggleButton.vue"
+import ThemeToggleButton from "../shared/ThemeToggleButton.vue"
 import WorkspaceSidebar from "./WorkspaceSidebar.vue"
 import type { CurrentUser, PageKey, WorkspaceScope } from "./types"
 

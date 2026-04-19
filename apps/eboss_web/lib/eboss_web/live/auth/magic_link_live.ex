@@ -28,7 +28,7 @@ defmodule EBossWeb.Auth.MagicLinkLive do
       flash={@flash}
       current_scope={assigns[:current_scope]}
       current_user={assigns[:current_user]}
-      shell_mode="workspace"
+      shell_mode="public"
       current_path="/magic-link"
     >
       <.auth_shell current_path="/magic-link">

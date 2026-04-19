@@ -17,21 +17,50 @@
     />
     <script>
       (() => {
-        const setTheme = (theme) => {
-          if (theme === "system") {
-            localStorage.removeItem("phx:theme");
-            document.documentElement.removeAttribute("data-theme");
-          } else {
-            localStorage.setItem("phx:theme", theme);
-            document.documentElement.setAttribute("data-theme", theme);
-          }
+        const listeners = new Set();
+
+        const readTheme = () => {
+          const stored = localStorage.getItem("phx:theme");
+          return stored === "light" || stored === "dark" ? stored : "system";
         };
+
+        const notify = (theme) => listeners.forEach((listener) => listener(theme));
+
+        const commitTheme = (theme, {persist = true} = {}) => {
+          if (theme === "light" || theme === "dark") {
+            if (persist) localStorage.setItem("phx:theme", theme);
+            document.documentElement.setAttribute("data-theme", theme);
+          } else {
+            if (persist) localStorage.removeItem("phx:theme");
+            document.documentElement.removeAttribute("data-theme");
+            theme = "system";
+          }
+
+          notify(theme);
+        };
+
+        window.EBossTheme = {
+          getTheme: () => readTheme(),
+          setTheme: (theme) => commitTheme(theme),
+          subscribe: (listener) => {
+            listeners.add(listener);
+            return () => listeners.delete(listener);
+          },
+        };
+
         if (!document.documentElement.hasAttribute("data-theme")) {
-          setTheme(localStorage.getItem("phx:theme") || "system");
+          commitTheme(readTheme(), {persist: false});
         }
-        window.addEventListener("storage", (e) => e.key === "phx:theme" && setTheme(e.newValue || "system"));
-        
-        window.addEventListener("phx:set-theme", (e) => setTheme(e.target.dataset.phxTheme));
+
+        window.addEventListener("storage", (e) => {
+          if (e.key === "phx:theme") {
+            commitTheme(e.newValue || "system", {persist: false});
+          }
+        });
+
+        window.addEventListener("phx:set-theme", (e) => {
+          commitTheme(e.target.dataset.phxTheme || "system");
+        });
       })();
     </script>
   </head>

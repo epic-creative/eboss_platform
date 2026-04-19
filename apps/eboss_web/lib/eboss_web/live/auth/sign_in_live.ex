@@ -25,7 +25,7 @@ defmodule EBossWeb.Auth.SignInLive do
       flash={@flash}
       current_scope={assigns[:current_scope]}
       current_user={assigns[:current_user]}
-      shell_mode="workspace"
+      shell_mode="public"
       current_path="/sign-in"
     >
       <.auth_shell current_path="/sign-in">
