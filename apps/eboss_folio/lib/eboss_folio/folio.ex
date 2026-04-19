@@ -52,6 +52,11 @@ defmodule EBoss.Folio do
   defdelegate get_project_in_workspace(project_id, workspace_id, opts \\ []), to: EBossFolio
   defdelegate get_project_in_workspace!(project_id, workspace_id, opts \\ []), to: EBossFolio
 
+  defdelegate list_tasks_in_workspace(workspace_id, opts \\ []), to: EBossFolio
+  defdelegate list_tasks_in_workspace!(workspace_id, opts \\ []), to: EBossFolio
+  defdelegate get_task_in_workspace(task_id, workspace_id, opts \\ []), to: EBossFolio
+  defdelegate get_task_in_workspace!(task_id, workspace_id, opts \\ []), to: EBossFolio
+
   defdelegate create_task(attrs, opts \\ []), to: EBossFolio
   defdelegate create_task!(attrs, opts \\ []), to: EBossFolio
   defdelegate update_task_details(record, attrs, opts \\ []), to: EBossFolio

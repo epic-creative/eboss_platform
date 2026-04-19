@@ -403,6 +403,81 @@ defmodule EBossWeb.JsonApiTest do
            end)
   end
 
+  test "authenticated clients can list workspace tasks through the folio tasks endpoint", %{
+    conn: conn
+  } do
+    owner = register_user()
+    api_key = create_api_key(owner)
+
+    workspace =
+      Workspaces.create_workspace!(
+        %{
+          name: "Folio Tasks Workspace",
+          owner_type: :user,
+          owner_id: owner.id
+        },
+        actor: owner
+      )
+
+    second_workspace =
+      Workspaces.create_workspace!(
+        %{
+          name: "External Tasks Workspace",
+          owner_type: :user,
+          owner_id: owner.id
+        },
+        actor: owner
+      )
+
+    linked_project =
+      EBossFolio.create_project!(
+        %{workspace_id: workspace.id, title: "Task detail project"},
+        actor: owner
+      )
+
+    inbox_task =
+      EBossFolio.create_task!(%{workspace_id: workspace.id, title: "Inbox task"}, actor: owner)
+
+    linked_task =
+      EBossFolio.create_task!(
+        %{
+          workspace_id: workspace.id,
+          title: "Task tied to project",
+          status: :next_action,
+          project_id: linked_project.id
+        },
+        actor: owner
+      )
+
+    _foreign_task =
+      EBossFolio.create_task!(%{workspace_id: second_workspace.id, title: "Foreign task"},
+        actor: owner
+      )
+
+    conn =
+      conn
+      |> put_req_header("authorization", "Bearer #{api_key}")
+      |> put_req_header("accept", "application/json")
+      |> get("/api/v1/#{owner.owner_slug}/workspaces/#{workspace.slug}/apps/folio/tasks")
+
+    payload = json_response(conn, 200)
+    task_ids = Enum.map(payload["tasks"], & &1["id"])
+
+    assert payload["scope"]["app_key"] == "folio"
+    assert payload["scope"]["workspace"]["id"] == workspace.id
+    assert length(payload["tasks"]) == 2
+    assert inbox_task.id in task_ids
+    assert linked_task.id in task_ids
+    refute _foreign_task.id in task_ids
+
+    assert Enum.any?(payload["tasks"], fn task ->
+             task["id"] == linked_task.id and
+               task["title"] == "Task tied to project" and
+               task["project_id"] == linked_project.id and
+               task["status"] == "next_action"
+           end)
+  end
+
   test "folio projects endpoint forbids users without folio read access", %{conn: conn} do
     owner = register_user()
     member = register_user()
@@ -431,6 +506,41 @@ defmodule EBossWeb.JsonApiTest do
       |> get(
         "/api/v1/#{organization.owner_slug}/workspaces/#{workspace.slug}/apps/folio/projects"
       )
+
+    assert %{
+             "error" => %{
+               "code" => "workspace_forbidden",
+               "message" => "Workspace access is forbidden"
+             }
+           } = json_response(conn, 403)
+  end
+
+  test "folio tasks endpoint forbids users without folio read access", %{conn: conn} do
+    owner = register_user()
+    member = register_user()
+
+    organization =
+      Organizations.create_organization!(%{name: "Folio Read-Locked Org Workspace"}, actor: owner)
+
+    create_org_membership(owner, organization, member, :member)
+
+    api_key = create_api_key(member)
+
+    workspace =
+      Workspaces.create_workspace!(
+        %{
+          name: "Folio Read-Locked Org Workspace",
+          owner_type: :organization,
+          owner_id: organization.id
+        },
+        actor: owner
+      )
+
+    conn =
+      conn
+      |> put_req_header("authorization", "Bearer #{api_key}")
+      |> put_req_header("accept", "application/json")
+      |> get("/api/v1/#{organization.owner_slug}/workspaces/#{workspace.slug}/apps/folio/tasks")
 
     assert %{
              "error" => %{

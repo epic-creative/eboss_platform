@@ -110,8 +110,47 @@ defmodule EBossFolio do
     end
   end
 
+  def list_tasks_in_workspace(workspace_id, opts \\ []) when is_binary(workspace_id) do
+    workspace_id
+    |> tasks_query()
+    |> Ash.read(opts)
+  end
+
+  def list_tasks_in_workspace!(workspace_id, opts \\ []) when is_binary(workspace_id) do
+    case list_tasks_in_workspace(workspace_id, opts) do
+      {:ok, tasks} -> tasks
+      {:error, reason} -> raise reason
+    end
+  end
+
+  def get_task_in_workspace(task_id, workspace_id, opts \\ [])
+      when is_binary(task_id) and is_binary(workspace_id) do
+    case Task
+         |> Ash.Query.for_read(:read)
+         |> Ash.Query.filter(expr(id == ^task_id and workspace_id == ^workspace_id))
+         |> Ash.read_one(opts) do
+      {:ok, nil} -> {:error, :not_found}
+      result -> result
+    end
+  end
+
+  def get_task_in_workspace!(task_id, workspace_id, opts \\ [])
+      when is_binary(task_id) and is_binary(workspace_id) do
+    case get_task_in_workspace(task_id, workspace_id, opts) do
+      {:ok, task} -> task
+      {:error, reason} -> raise reason
+    end
+  end
+
   defp projects_query(workspace_id) do
     Project
+    |> Ash.Query.for_read(:read)
+    |> Ash.Query.filter(expr(workspace_id == ^workspace_id))
+    |> Ash.Query.sort(inserted_at: :asc)
+  end
+
+  defp tasks_query(workspace_id) do
+    Task
     |> Ash.Query.for_read(:read)
     |> Ash.Query.filter(expr(workspace_id == ^workspace_id))
     |> Ash.Query.sort(inserted_at: :asc)

@@ -206,6 +206,54 @@ defmodule EBossFolio.FolioBoundaryTest do
              Folio.get_project_in_workspace(active_project.id, other_workspace.id, actor: owner)
   end
 
+  test "workspace-scoped task reads are available through the folio boundary" do
+    owner = TestSupport.register_user()
+    workspace = TestSupport.create_user_workspace(owner)
+    other_workspace = TestSupport.create_user_workspace(owner)
+
+    linked_project =
+      Folio.create_project!(%{workspace_id: workspace.id, title: "Home task project"},
+        actor: owner
+      )
+
+    inbox_task =
+      Folio.create_task!(%{workspace_id: workspace.id, title: "Inbox task"}, actor: owner)
+
+    next_action_task =
+      Folio.create_task!(
+        %{
+          workspace_id: workspace.id,
+          title: "Linked next action",
+          status: :next_action,
+          project_id: linked_project.id
+        },
+        actor: owner
+      )
+
+    _other_workspace_task =
+      Folio.create_task!(%{workspace_id: other_workspace.id, title: "Different workspace"},
+        actor: owner
+      )
+
+    assert {:ok, tasks} = Folio.list_tasks_in_workspace(workspace.id, actor: owner)
+    assert length(tasks) == 2
+
+    assert Enum.any?(tasks, &(&1.id == inbox_task.id))
+    assert Enum.any?(tasks, &(&1.id == next_action_task.id))
+    assert Enum.all?(tasks, &(&1.workspace_id == workspace.id))
+
+    assert {:ok, fetched_task} =
+             Folio.get_task_in_workspace(next_action_task.id, workspace.id, actor: owner)
+
+    assert fetched_task.id == next_action_task.id
+    assert fetched_task.title == "Linked next action"
+    assert fetched_task.project_id == linked_project.id
+    assert fetched_task.status == :next_action
+
+    assert {:error, _} =
+             Folio.get_task_in_workspace(next_action_task.id, other_workspace.id, actor: owner)
+  end
+
   test "non-bang folio boundary functions return expected tuples" do
     owner = TestSupport.register_user()
     workspace = TestSupport.create_user_workspace(owner)
