@@ -2,7 +2,14 @@ defmodule EBossWeb.Dev.DesignSystemLive do
   use EBossWeb, :live_view
 
   import EBossWeb.AuthComponents,
-    only: [auth_nav: 1, auth_page: 1, auth_page_footer: 1, auth_shell: 1]
+    only: [
+      auth_form: 1,
+      auth_nav: 1,
+      auth_page: 1,
+      auth_page_footer: 1,
+      auth_shell: 1,
+      auth_submit: 1
+    ]
 
   @public_section_patterns EBossWeb.PublicPagePatterns
 
@@ -513,51 +520,34 @@ defmodule EBossWeb.Dev.DesignSystemLive do
                         title="Sign in"
                         subtitle="Compact auth shell and form density aligned to the Lovable source."
                       >
-                        <div class="ui-auth-card so-auth-card p-4">
-                          <div class="mb-4 flex border-b border-[hsl(var(--so-border))] px-1 pt-1">
-                            <button
-                              type="button"
-                              class="ui-underline-tab so-underline-tab flex-1 justify-center text-xs"
-                              data-active="true"
-                            >
-                              Password
-                            </button>
-                            <button
-                              type="button"
-                              class="ui-underline-tab so-underline-tab flex-1 justify-center text-xs"
-                              data-active="false"
-                            >
-                              Magic link
-                            </button>
-                          </div>
+                        <.auth_nav current_path="/sign-in" />
 
-                          <div class="space-y-4">
-                            <.input
-                              name="auth_email_shell_preview"
-                              type="email"
-                              label="Email address"
-                              autocomplete="email"
-                              value="operator@example.com"
-                            />
-                            <.input
-                              name="auth_password_shell_preview"
-                              type="password"
-                              label="Password"
-                              autocomplete="current-password"
-                              value="supersecret123"
-                            />
+                        <.auth_form
+                          for={to_form(%{}, as: :runtime_shell_preview)}
+                          id="auth-shell-runtime-preview"
+                        >
+                          <.input
+                            name="auth_email_shell_preview"
+                            type="email"
+                            label="Email address"
+                            autocomplete="email"
+                            value="operator@example.com"
+                          />
+                          <.input
+                            name="auth_password_shell_preview"
+                            type="password"
+                            label="Password"
+                            autocomplete="current-password"
+                            value="supersecret123"
+                          />
 
-                            <div class="flex justify-end">
-                              <a href="#forgot-password" class="ui-text-link text-xs">
-                                Forgot password?
-                              </a>
-                            </div>
-
-                            <.button type="button" size="sm" tone="success" class="w-full">
-                              Sign in
-                            </.button>
-                          </div>
-                        </div>
+                          <:actions :let={_form}>
+                            <a href="#forgot-password" class="ui-text-link text-xs">
+                              Forgot password?
+                            </a>
+                            <.auth_submit label="Sign in" busy_label="Signing in..." tone="success" />
+                          </:actions>
+                        </.auth_form>
 
                         <:footer>
                           <.auth_page_footer
@@ -834,51 +824,34 @@ defmodule EBossWeb.Dev.DesignSystemLive do
                       title="Sign in"
                       subtitle="Review the compact auth shell, card treatment, and form controls without leaving the preview route."
                     >
-                      <div class="ui-auth-card so-auth-card p-4">
-                        <div class="mb-4 flex border-b border-[hsl(var(--so-border))] px-1 pt-1">
-                          <button
-                            type="button"
-                            class="ui-underline-tab so-underline-tab flex-1 justify-center text-xs"
-                            data-active="true"
-                          >
-                            Password
-                          </button>
-                          <button
-                            type="button"
-                            class="ui-underline-tab so-underline-tab flex-1 justify-center text-xs"
-                            data-active="false"
-                          >
-                            Magic link
-                          </button>
-                        </div>
+                      <.auth_nav current_path="/sign-in" />
 
-                        <div class="space-y-4">
-                          <.input
-                            name="auth_email_form_preview"
-                            type="email"
-                            label="Email"
-                            autocomplete="email"
-                            value="operator@example.com"
-                          />
-                          <.input
-                            name="auth_password_form_preview"
-                            type="password"
-                            label="Password"
-                            autocomplete="current-password"
-                            value="supersecret123"
-                          />
+                      <.auth_form
+                        for={to_form(%{}, as: :forms_shell_preview)}
+                        id="auth-shell-form-preview"
+                      >
+                        <.input
+                          name="auth_email_form_preview"
+                          type="email"
+                          label="Email"
+                          autocomplete="email"
+                          value="operator@example.com"
+                        />
+                        <.input
+                          name="auth_password_form_preview"
+                          type="password"
+                          label="Password"
+                          autocomplete="current-password"
+                          value="supersecret123"
+                        />
 
-                          <div class="flex justify-end">
-                            <a href="#forgot-password" class="ui-text-link text-xs">
-                              Forgot password?
-                            </a>
-                          </div>
-
-                          <.button type="button" size="sm" tone="success" class="w-full">
-                            Sign in
-                          </.button>
-                        </div>
-                      </div>
+                        <:actions :let={_form}>
+                          <a href="#forgot-password" class="ui-text-link text-xs">
+                            Forgot password?
+                          </a>
+                          <.auth_submit label="Sign in" busy_label="Signing in..." tone="success" />
+                        </:actions>
+                      </.auth_form>
 
                       <:footer>
                         <.auth_page_footer

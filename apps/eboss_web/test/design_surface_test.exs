@@ -91,8 +91,9 @@ defmodule EBossWeb.DesignSurfaceTest do
     assert shell_operator_landing_vue =~ ~s(v-for="story in storySections")
 
     assert shell_operator_workspace_vue =~ "WorkspaceSidebar"
-    assert shell_operator_workspace_vue =~ "InspectorPane"
-    assert shell_operator_workspace_vue =~ "No accessible workspaces yet"
+    assert shell_operator_workspace_vue =~ "DashboardPage"
+    assert shell_operator_workspace_vue =~ "ProjectsPage"
+    assert shell_operator_workspace_vue =~ "EmptyWorkspacePage"
     assert workspace_sidebar_vue =~ "Projects"
     assert workspace_sidebar_vue =~ "Members"
 
