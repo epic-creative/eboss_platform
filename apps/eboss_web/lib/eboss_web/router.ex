@@ -99,12 +99,14 @@ defmodule EBossWeb.Router do
     ash_authentication_live_session :canonical_workspace_routes,
       otp_app: :eboss_accounts,
       on_mount: {EBossWeb.LiveUserAuth, :live_user_required} do
-      live "/:owner_slug/:workspace_slug", DashboardLive, :workspace_dashboard
-      live "/:owner_slug/:workspace_slug/projects", DashboardLive, :workspace_projects
-      live "/:owner_slug/:workspace_slug/members", DashboardLive, :workspace_members
-      live "/:owner_slug/:workspace_slug/access", DashboardLive, :workspace_access
-      live "/:owner_slug/:workspace_slug/activity", DashboardLive, :workspace_activity
-      live "/:owner_slug/:workspace_slug/settings", DashboardLive, :workspace_settings
+      live "/:owner_slug/:workspace_slug", DashboardLive, :workspace_root
+      live "/:owner_slug/:workspace_slug/apps/:app_key", DashboardLive, :workspace_app
+
+      live "/:owner_slug/:workspace_slug/apps/:app_key/:app_surface",
+           DashboardLive,
+           :workspace_app
+
+      live "/:owner_slug/:workspace_slug/:workspace_surface", DashboardLive, :workspace_surface
     end
   end
 end

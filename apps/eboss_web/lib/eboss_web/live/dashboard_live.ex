@@ -3,32 +3,34 @@ defmodule EBossWeb.DashboardLive do
 
   alias EBossWeb.AppScope
 
-  @route_configs %{
-    workspace_dashboard: %{page: "dashboard", title: "Overview"},
-    workspace_projects: %{page: "projects", title: "Projects"},
-    workspace_members: %{page: "members", title: "Members"},
-    workspace_access: %{page: "access", title: "Access"},
-    workspace_activity: %{page: "activity", title: "Activity"},
-    workspace_settings: %{page: "settings", title: "Settings"}
+  @workspace_routes %{
+    "dashboard" => %{page: "dashboard", title: "Overview"},
+    "projects" => %{page: "projects", title: "Projects"},
+    "members" => %{page: "members", title: "Members"},
+    "access" => %{page: "access", title: "Access"},
+    "activity" => %{page: "activity", title: "Activity"},
+    "settings" => %{page: "settings", title: "Settings"}
   }
+  @default_workspace_page "dashboard"
+  @app_page_prefix "app:"
 
   @impl true
   def mount(params, _session, socket) do
-    route_config = route_config(socket.assigns.live_action)
-
-    case resolve_scope(socket.assigns.current_user, route_config, params) do
+    case resolve_scope(socket.assigns.current_user, params) do
       {:redirect, dashboard_path} ->
         {:ok, redirect(socket, to: dashboard_path)}
 
       {:ok, current_scope} ->
-        current_path = current_path(current_scope, route_config.page)
+        route = resolve_current_route(current_scope, socket.assigns.live_action, params)
+        current_page = route.page
+        current_path = route.current_path
 
         {:ok,
          socket
          |> assign(:current_scope, current_scope)
-         |> assign(:current_page, route_config.page)
+         |> assign(:current_page, current_page)
          |> assign(:current_path, current_path)
-         |> assign(:page_title, route_config.title)
+         |> assign(:page_title, route.title)
          |> assign(:current_user_props, user_props(socket.assigns.current_user))
          |> assign(:current_scope_props, scope_props(current_scope))}
     end
@@ -79,11 +81,70 @@ defmodule EBossWeb.DashboardLive do
     )
   end
 
-  defp route_config(live_action) do
-    Map.get(@route_configs, live_action, %{page: "dashboard", title: "Overview"})
+  defp resolve_current_route(current_scope, :workspace_root, _params) do
+    resolve_workspace_route(current_scope, @default_workspace_page)
   end
 
-  defp resolve_scope(current_user, _route_config, %{
+  defp resolve_current_route(current_scope, :workspace_surface, %{"workspace_surface" => surface}) do
+    resolve_workspace_route(current_scope, surface)
+  end
+
+  defp resolve_current_route(current_scope, :workspace_surface, _params),
+    do: resolve_workspace_route(current_scope, @default_workspace_page)
+
+  defp resolve_current_route(current_scope, :workspace_app, %{"app_key" => app_key} = params) do
+    resolve_app_route(current_scope, app_key, Map.get(params, "app_surface"))
+  end
+
+  defp resolve_current_route(current_scope, _live_action, _params) do
+    resolve_workspace_route(current_scope, @default_workspace_page)
+  end
+
+  defp resolve_workspace_route(%AppScope{} = current_scope, page)
+       when is_binary(page) do
+    resolved = Map.get(@workspace_routes, page, @workspace_routes[@default_workspace_page])
+
+    %{
+      route_type: :workspace,
+      page: resolved.page,
+      title: resolved.title,
+      app_key: nil,
+      app_surface: nil,
+      current_path: workspace_path(current_scope, resolved.page)
+    }
+  end
+
+  defp resolve_app_route(%AppScope{apps: apps} = current_scope, app_key, app_surface)
+       when is_binary(app_key) do
+    case fetch_map_field(apps, app_key) do
+      app when is_map(app) ->
+        if fetch_map_field(app, :enabled, false) do
+          app_label = fetch_map_field(app, :label, to_string(app_key))
+          normalized_surface = normalize_app_surface(app_surface)
+          app_key_string = to_string(app_key)
+
+          %{
+            route_type: :app,
+            page: app_page(app_key_string, normalized_surface),
+            title: app_title(app_label, normalized_surface),
+            app_key: app_key_string,
+            app_surface: normalized_surface,
+            current_path: app_path(current_scope, app, app_key_string, normalized_surface)
+          }
+        else
+          resolve_workspace_route(current_scope, @default_workspace_page)
+        end
+
+      _ ->
+        resolve_workspace_route(current_scope, @default_workspace_page)
+    end
+  end
+
+  defp resolve_app_route(%AppScope{} = current_scope, _app_key, _app_surface) do
+    resolve_workspace_route(current_scope, @default_workspace_page)
+  end
+
+  defp resolve_scope(current_user, %{
          "owner_slug" => owner_slug,
          "workspace_slug" => workspace_slug
        })
@@ -91,14 +152,54 @@ defmodule EBossWeb.DashboardLive do
     AppScope.resolve_workspace(current_user, owner_slug, workspace_slug)
   end
 
-  defp resolve_scope(current_user, _route_config, _params),
+  defp resolve_scope(current_user, _params),
     do: {:ok, AppScope.empty(current_user)}
 
   defp current_path(%AppScope{dashboard_path: dashboard_path}, "dashboard"), do: dashboard_path
 
-  defp current_path(%AppScope{dashboard_path: dashboard_path}, page) do
+  defp current_path(%AppScope{dashboard_path: dashboard_path}, page) when is_binary(page) do
+    if String.starts_with?(page, @app_page_prefix) do
+      dashboard_path
+    else
+      "#{dashboard_path}/#{page}"
+    end
+  end
+
+  defp workspace_path(%AppScope{dashboard_path: dashboard_path}, "dashboard"), do: dashboard_path
+
+  defp workspace_path(%AppScope{dashboard_path: dashboard_path}, page)
+       when is_binary(page) do
     "#{dashboard_path}/#{page}"
   end
+
+  defp app_path(%AppScope{dashboard_path: dashboard_path}, app, app_key, nil) do
+    fetch_map_field(app, :default_path, "#{dashboard_path}/apps/#{app_key}")
+  end
+
+  defp app_path(%AppScope{dashboard_path: dashboard_path}, app, app_key, app_surface)
+       when is_binary(app_surface) do
+    base_path = fetch_map_field(app, :default_path, "#{dashboard_path}/apps/#{app_key}")
+    "#{base_path}/#{app_surface}"
+  end
+
+  defp app_page(app_key, nil) do
+    "#{@app_page_prefix}#{app_key}"
+  end
+
+  defp app_page(app_key, app_surface) do
+    "#{@app_page_prefix}#{app_key}:#{app_surface}"
+  end
+
+  defp app_title(app_label, nil), do: app_label
+
+  defp app_title(app_label, app_surface) do
+    "#{app_label} · #{String.capitalize(app_surface)}"
+  end
+
+  defp normalize_app_surface(surface) when is_binary(surface) and byte_size(surface) > 0,
+    do: surface
+
+  defp normalize_app_surface(_), do: nil
 
   defp user_props(nil), do: %{username: "guest", email: ""}
 

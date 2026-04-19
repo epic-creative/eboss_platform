@@ -99,6 +99,37 @@ defmodule EBossWeb.DashboardScopeRoutingTest do
     end
   end
 
+  test "app-aware workspace routes map to app-specific currentRoute keys", %{conn: conn} do
+    context =
+      register_and_log_in_user(%{conn: conn}, %{
+        email: "app-route-contract@example.com",
+        username: "app-route-contract-user"
+      })
+
+    workspace =
+      create_user_workspace(context.current_user, %{name: "App Route Workspace"})
+
+    base_path = dashboard_path(context.current_user.owner_slug, workspace.slug)
+    app_base_path = "#{base_path}/apps/folio"
+    app_view_surface_path = "#{app_base_path}/files"
+
+    assert {:ok, view, _html} = live(context.conn, app_base_path)
+
+    workspace_shell = get_vue(view, name: "ShellOperatorWorkspaceApp")
+
+    assert workspace_shell.props["currentPage"] == "app:folio"
+    assert workspace_shell.props["currentPath"] == app_base_path
+    assert workspace_shell.props["currentScope"]["dashboardPath"] == base_path
+    assert workspace_shell.props["currentScope"]["currentWorkspace"]["slug"] == workspace.slug
+
+    assert {:ok, view_with_surface, _html} = live(context.conn, app_view_surface_path)
+
+    workspace_shell_with_surface = get_vue(view_with_surface, name: "ShellOperatorWorkspaceApp")
+
+    assert workspace_shell_with_surface.props["currentPage"] == "app:folio:files"
+    assert workspace_shell_with_surface.props["currentPath"] == app_view_surface_path
+  end
+
   test "invalid workspace routes redirect to the first accessible workspace", %{conn: conn} do
     context =
       register_and_log_in_user(%{conn: conn}, %{

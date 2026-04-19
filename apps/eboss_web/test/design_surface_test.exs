@@ -300,9 +300,10 @@ defmodule EBossWeb.DesignSurfaceTest do
     assert dashboard_live =~ "AppScope.resolve_workspace"
     assert dashboard_live =~ "current_scope_props"
     assert dashboard_live =~ "current_user_props"
-    assert dashboard_live =~ "defp route_config"
-    assert dashboard_live =~ "workspace_dashboard"
-    assert dashboard_live =~ "workspace_projects"
+    assert dashboard_live =~ "defp resolve_current_route"
+    assert dashboard_live =~ "workspace_root"
+    assert dashboard_live =~ "workspace_surface"
+    assert dashboard_live =~ "workspace_app"
 
     assert design_system_live =~ ~s(id="dashboard-commands")
     assert design_system_live =~ "Quick actions and utility cues stay light but task-oriented."
