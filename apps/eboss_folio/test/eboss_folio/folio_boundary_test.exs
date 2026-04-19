@@ -165,6 +165,60 @@ defmodule EBossFolio.FolioBoundaryTest do
     assert update_event.after["description"] == "Core operations"
   end
 
+  test "folio activity feed can be read through the folio boundary" do
+    owner = TestSupport.register_user()
+    workspace = TestSupport.create_user_workspace(owner)
+    correlation_id = Ash.UUID.generate()
+
+    area =
+      Folio.create_area!(
+        %{workspace_id: workspace.id, name: "Operations"},
+        actor: owner,
+        context: TestSupport.audit_context(%{correlation_id: correlation_id, reason: "seed area"})
+      )
+
+    _updated_area =
+      Folio.update_area!(
+        area,
+        %{description: "Core operations"},
+        actor: owner,
+        context:
+          TestSupport.audit_context(%{
+            correlation_id: correlation_id,
+            reason: "add context"
+          })
+      )
+
+    events = Folio.list_activity_feed!(workspace.id, actor: owner)
+
+    assert length(events) >= 2
+    assert Enum.all?(events, &(&1.app_key == "folio"))
+    assert Enum.all?(events, &(&1.provider_key == "revision_event"))
+    assert Enum.all?(events, &is_binary(&1.occurred_at))
+
+    create_event = Enum.find(events, &(&1.action == "create"))
+    update_event = Enum.find(events, &(&1.action == "update"))
+
+    assert create_event != nil
+    assert create_event.provider_event_id == create_event.id
+    assert create_event.subject.type == "area"
+    assert create_event.subject.id == area.id
+    assert create_event.actor.type == :user
+    assert create_event.actor.id == owner.id
+    assert create_event.summary == "created area #{area.id}"
+
+    assert create_event.metadata == %{
+             source: "internal",
+             reason: "seed area",
+             workspace_id: workspace.id,
+             correlation_id: correlation_id
+           }
+
+    assert update_event != nil
+    assert update_event.metadata[:reason] == "add context"
+    assert update_event.status == :success
+  end
+
   test "workspace-scoped project reads are available through the folio boundary" do
     owner = TestSupport.register_user()
     workspace = TestSupport.create_user_workspace(owner)

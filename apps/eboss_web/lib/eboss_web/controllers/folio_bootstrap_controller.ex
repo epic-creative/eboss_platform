@@ -77,6 +77,30 @@ defmodule EBossWeb.FolioBootstrapController do
     end
   end
 
+  def activity(conn, %{"owner_slug" => owner_slug, "slug" => slug}) do
+    current_user = conn.assigns[:current_user] || PlugHelpers.get_actor(conn)
+
+    case AppScope.fetch_workspace_scope(current_user, owner_slug, slug) do
+      {:ok, %AppScope{} = scope} ->
+        case authorize_folio_read(scope) do
+          :ok ->
+            handle_authorized_activity_scope(conn, scope, current_user)
+
+          {:error, :forbidden} ->
+            error_json(conn, :forbidden, "workspace_forbidden", "Workspace access is forbidden")
+        end
+
+      {:error, :unauthorized} ->
+        error_json(conn, :unauthorized, "authentication_required", "Authentication is required")
+
+      {:error, :forbidden} ->
+        error_json(conn, :forbidden, "workspace_forbidden", "Workspace access is forbidden")
+
+      {:error, :not_found} ->
+        error_json(conn, :not_found, "workspace_not_found", "Workspace not found")
+    end
+  end
+
   defp authorize_folio_read(%AppScope{} = scope) do
     if Map.get(scope.capabilities, :read_folio, false) do
       :ok
@@ -116,6 +140,19 @@ defmodule EBossWeb.FolioBootstrapController do
       json(conn, %{
         scope: folio_scope_payload(scope),
         tasks: Enum.map(tasks, &task_summary_payload/1)
+      })
+    else
+      {:error, _reason} ->
+        error_json(conn, :forbidden, "workspace_forbidden", "Workspace access is forbidden")
+    end
+  end
+
+  defp handle_authorized_activity_scope(conn, %AppScope{} = scope, current_user) do
+    with {:ok, events} <-
+           EBossFolio.list_activity_feed(scope.current_workspace.id, actor: current_user) do
+      json(conn, %{
+        scope: folio_scope_payload(scope),
+        events: events
       })
     else
       {:error, _reason} ->

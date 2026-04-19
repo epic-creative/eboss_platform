@@ -30,6 +30,11 @@ defmodule EBossWeb.JsonApiTest do
 
     assert Map.has_key?(spec["paths"], "/api/v1/{owner_slug}/workspaces/{slug}/apps/folio/tasks")
 
+    assert Map.has_key?(
+             spec["paths"],
+             "/api/v1/{owner_slug}/workspaces/{slug}/apps/folio/activity"
+           )
+
     assert get_in(spec, ["components", "schemas", "WorkspaceSummary", "properties", "full_path"]) ==
              %{
                "type" => "string",
@@ -68,6 +73,16 @@ defmodule EBossWeb.JsonApiTest do
              "array"
 
     assert get_in(spec, ["components", "schemas", "FolioTasksResponse", "properties", "tasks"])[
+             "type"
+           ] ==
+             "array"
+
+    assert get_in(spec, ["components", "schemas", "FolioActivityResponse", "required"]) == [
+             "scope",
+             "events"
+           ]
+
+    assert get_in(spec, ["components", "schemas", "FolioActivityResponse", "properties", "events"])[
              "type"
            ] ==
              "array"
@@ -478,6 +493,59 @@ defmodule EBossWeb.JsonApiTest do
            end)
   end
 
+  test "authenticated clients can list workspace activity through the folio activity endpoint", %{
+    conn: conn
+  } do
+    owner = register_user()
+    api_key = create_api_key(owner)
+
+    workspace =
+      Workspaces.create_workspace!(
+        %{
+          name: "Folio Activity Workspace",
+          owner_type: :user,
+          owner_id: owner.id
+        },
+        actor: owner
+      )
+
+    area =
+      EBossFolio.create_area!(
+        %{workspace_id: workspace.id, name: "Ops area"},
+        actor: owner
+      )
+
+    _updated_area =
+      EBossFolio.update_area!(
+        area,
+        %{description: "Operational activity"},
+        actor: owner
+      )
+
+    conn =
+      conn
+      |> put_req_header("authorization", "Bearer #{api_key}")
+      |> put_req_header("accept", "application/json")
+      |> get("/api/v1/#{owner.owner_slug}/workspaces/#{workspace.slug}/apps/folio/activity")
+
+    payload = json_response(conn, 200)
+    event_actions = Enum.map(payload["events"], & &1["action"])
+
+    assert payload["scope"]["app_key"] == "folio"
+    assert payload["scope"]["workspace"]["id"] == workspace.id
+    assert is_list(payload["events"])
+    assert length(payload["events"]) >= 2
+    assert "create" in event_actions
+    assert "update" in event_actions
+
+    assert Enum.any?(payload["events"], fn event ->
+             event["app_key"] == "folio" and
+               event["provider_key"] == "revision_event" and
+               event["subject"]["type"] == "area" and
+               event["subject"]["id"] == area.id
+           end)
+  end
+
   test "folio projects endpoint forbids users without folio read access", %{conn: conn} do
     owner = register_user()
     member = register_user()
@@ -541,6 +609,43 @@ defmodule EBossWeb.JsonApiTest do
       |> put_req_header("authorization", "Bearer #{api_key}")
       |> put_req_header("accept", "application/json")
       |> get("/api/v1/#{organization.owner_slug}/workspaces/#{workspace.slug}/apps/folio/tasks")
+
+    assert %{
+             "error" => %{
+               "code" => "workspace_forbidden",
+               "message" => "Workspace access is forbidden"
+             }
+           } = json_response(conn, 403)
+  end
+
+  test "folio activity endpoint forbids users without folio read access", %{conn: conn} do
+    owner = register_user()
+    member = register_user()
+
+    organization =
+      Organizations.create_organization!(%{name: "Folio Read-Locked Org Workspace"}, actor: owner)
+
+    create_org_membership(owner, organization, member, :member)
+
+    api_key = create_api_key(member)
+
+    workspace =
+      Workspaces.create_workspace!(
+        %{
+          name: "Folio Read-Locked Org Workspace",
+          owner_type: :organization,
+          owner_id: organization.id
+        },
+        actor: owner
+      )
+
+    conn =
+      conn
+      |> put_req_header("authorization", "Bearer #{api_key}")
+      |> put_req_header("accept", "application/json")
+      |> get(
+        "/api/v1/#{organization.owner_slug}/workspaces/#{workspace.slug}/apps/folio/activity"
+      )
 
     assert %{
              "error" => %{

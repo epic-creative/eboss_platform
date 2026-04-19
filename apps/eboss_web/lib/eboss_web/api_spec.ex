@@ -192,7 +192,8 @@ defmodule EBossWeb.ApiSpec do
       "/api/v1/{owner_slug}/workspaces/{slug}/apps/folio/bootstrap" =>
         folio_bootstrap_path_item(),
       "/api/v1/{owner_slug}/workspaces/{slug}/apps/folio/projects" => folio_projects_path_item(),
-      "/api/v1/{owner_slug}/workspaces/{slug}/apps/folio/tasks" => folio_tasks_path_item()
+      "/api/v1/{owner_slug}/workspaces/{slug}/apps/folio/tasks" => folio_tasks_path_item(),
+      "/api/v1/{owner_slug}/workspaces/{slug}/apps/folio/activity" => folio_activity_path_item()
     }
   end
 
@@ -257,6 +258,30 @@ defmodule EBossWeb.ApiSpec do
             "content" => %{
               "application/json" => %{
                 "schema" => %{"$ref" => "#/components/schemas/FolioTasksResponse"}
+              }
+            }
+          },
+          "401" => %{"description" => "Authentication required"},
+          "403" => %{"description" => "Workspace access is forbidden"},
+          "404" => %{"description" => "Workspace not found"}
+        }
+      }
+    }
+  end
+
+  defp folio_activity_path_item do
+    %{
+      "get" => %{
+        "summary" => "List workspace-scoped Folio activity events",
+        "description" =>
+          "Returns activity feed events sourced from Folio revision history for a workspace.",
+        "parameters" => workspace_path_parameters(),
+        "responses" => %{
+          "200" => %{
+            "description" => "Folio workspace activity feed response",
+            "content" => %{
+              "application/json" => %{
+                "schema" => %{"$ref" => "#/components/schemas/FolioActivityResponse"}
               }
             }
           },
@@ -369,6 +394,63 @@ defmodule EBossWeb.ApiSpec do
             }
           },
           "required" => ["scope", "tasks"]
+        },
+        "FolioActivityEvent" => %{
+          "type" => "object",
+          "properties" => %{
+            "id" => %{"type" => "string"},
+            "app_key" => %{"type" => "string"},
+            "provider_key" => %{"type" => "string"},
+            "provider_event_id" => %{"type" => "string"},
+            "occurred_at" => %{"type" => "string", "format" => "date-time"},
+            "actor" => %{
+              "type" => "object",
+              "properties" => %{
+                "type" => %{"type" => "string"},
+                "id" => %{"type" => "string", "nullable" => true},
+                "label" => %{"type" => "string", "nullable" => true}
+              },
+              "required" => ["type"]
+            },
+            "action" => %{"type" => "string"},
+            "summary" => %{"type" => "string"},
+            "subject" => %{
+              "type" => "object",
+              "properties" => %{
+                "type" => %{"type" => "string"},
+                "id" => %{"type" => "string", "nullable" => true},
+                "label" => %{"type" => "string", "nullable" => true}
+              },
+              "required" => ["type", "id"]
+            },
+            "details" => %{"type" => "string", "nullable" => true},
+            "status" => %{"type" => "string", "nullable" => true},
+            "changes" => %{"type" => "object", "nullable" => true},
+            "metadata" => %{"type" => "object"},
+            "resource_path" => %{"type" => "string", "nullable" => true}
+          },
+          "required" => [
+            "id",
+            "app_key",
+            "provider_key",
+            "provider_event_id",
+            "occurred_at",
+            "actor",
+            "action",
+            "summary",
+            "subject"
+          ]
+        },
+        "FolioActivityResponse" => %{
+          "type" => "object",
+          "properties" => %{
+            "scope" => %{"$ref" => "#/components/schemas/FolioAppScope"},
+            "events" => %{
+              "type" => "array",
+              "items" => %{"$ref" => "#/components/schemas/FolioActivityEvent"}
+            }
+          },
+          "required" => ["scope", "events"]
         }
       }
     }

@@ -31,6 +31,11 @@ defmodule EBossWeb.JsonApiHttpTest do
              response.body["paths"],
              "/api/v1/{owner_slug}/workspaces/{slug}/apps/folio/tasks"
            )
+
+    assert Map.has_key?(
+             response.body["paths"],
+             "/api/v1/{owner_slug}/workspaces/{slug}/apps/folio/activity"
+           )
   end
 
   test "user-owned workspaces are reachable over http by id", %{req: req} do
@@ -247,6 +252,46 @@ defmodule EBossWeb.JsonApiHttpTest do
     refute Map.has_key?(response.body, "current_user")
     refute Map.has_key?(response.body, "apps")
     refute Map.has_key?(response.body, "capabilities")
+  end
+
+  test "folio activity endpoint is reachable over http and returns revision events", %{req: req} do
+    owner = register_user()
+    api_key = create_api_key(owner)
+
+    workspace =
+      Workspaces.create_workspace!(
+        %{
+          name: "HTTP Folio Activity Workspace",
+          owner_type: :user,
+          owner_id: owner.id
+        },
+        actor: owner
+      )
+
+    area =
+      EBossFolio.create_area!(%{workspace_id: workspace.id, name: "HTTP Area"}, actor: owner)
+
+    EBossFolio.update_area!(
+      area,
+      %{description: "Revised via HTTP"},
+      actor: owner
+    )
+
+    response =
+      req
+      |> Req.merge(
+        headers: [{"authorization", "Bearer #{api_key}"}, {"accept", "application/json"}]
+      )
+      |> Req.get!(
+        url: "/api/v1/#{owner.owner_slug}/workspaces/#{workspace.slug}/apps/folio/activity"
+      )
+
+    assert response.status == 200
+    assert response.body["scope"]["app_key"] == "folio"
+    assert response.body["scope"]["workspace"]["id"] == workspace.id
+    assert is_list(response.body["events"])
+    assert length(response.body["events"]) >= 2
+    assert Enum.any?(response.body["events"], &(&1["subject"]["type"] == "area"))
   end
 
   test "folio bootstrap endpoints return 401, 403, and 404 with distinct semantics", %{req: req} do

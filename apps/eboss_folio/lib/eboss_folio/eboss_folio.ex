@@ -7,6 +7,7 @@ defmodule EBossFolio do
   import Ash.Expr
   require Ash.Query
 
+  alias EBossFolio.ActivityFeedProvider
   alias EBossFolio.Project
   alias EBossFolio.Task
 
@@ -138,6 +139,19 @@ defmodule EBossFolio do
       when is_binary(task_id) and is_binary(workspace_id) do
     case get_task_in_workspace(task_id, workspace_id, opts) do
       {:ok, task} -> task
+      {:error, reason} -> raise reason
+    end
+  end
+
+  def list_activity_feed(workspace_id, opts \\ []) when is_binary(workspace_id) do
+    with {:ok, revision_events} <- list_revision_events(%{workspace_id: workspace_id}, opts) do
+      {:ok, ActivityFeedProvider.map_events(revision_events)}
+    end
+  end
+
+  def list_activity_feed!(workspace_id, opts \\ []) when is_binary(workspace_id) do
+    case list_activity_feed(workspace_id, opts) do
+      {:ok, activity_events} -> activity_events
       {:error, reason} -> raise reason
     end
   end

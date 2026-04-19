@@ -89,4 +89,6 @@ defmodule EBoss.Folio do
 
   defdelegate list_revision_events(filters \\ %{}, opts \\ []), to: EBossFolio
   defdelegate list_revision_events!(filters \\ %{}, opts \\ []), to: EBossFolio
+  defdelegate list_activity_feed(workspace_id, opts \\ []), to: EBossFolio
+  defdelegate list_activity_feed!(workspace_id, opts \\ []), to: EBossFolio
 end
