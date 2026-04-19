@@ -22,6 +22,18 @@ defmodule EBossWeb.JsonApiTest do
                "type" => "string",
                "nullable" => true
              }
+
+    assert is_map(
+             get_in(spec, ["components", "schemas", "WorkspaceBootstrap", "properties", "apps"])
+           )
+
+    assert get_in(spec, ["components", "schemas", "WorkspaceApp"])["required"] == [
+             "key",
+             "label",
+             "default_path",
+             "enabled",
+             "capabilities"
+           ]
   end
 
   test "swagger ui is exposed for the v1 json api", %{conn: conn} do
@@ -189,6 +201,16 @@ defmodule EBossWeb.JsonApiTest do
              "read_workspace" => true
            }
 
+    assert payload["apps"] == %{
+             "folio" => %{
+               "capabilities" => %{"manage" => true, "read" => true},
+               "default_path" => "/#{owner.owner_slug}/#{current_workspace.slug}/apps/folio",
+               "enabled" => true,
+               "key" => "folio",
+               "label" => "Folio"
+             }
+           }
+
     assert Enum.any?(payload["accessible_workspaces"], fn workspace ->
              workspace["slug"] == current_workspace.slug and workspace["current?"]
            end)
@@ -235,6 +257,9 @@ defmodule EBossWeb.JsonApiTest do
              "read_folio" => false,
              "read_workspace" => true
            }
+
+    assert payload["apps"]["folio"]["enabled"] == false
+    assert payload["apps"]["folio"]["capabilities"] == %{"read" => false, "manage" => false}
 
     assert [
              %{

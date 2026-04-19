@@ -37,6 +37,7 @@ defmodule EBossWeb.DashboardContractSmokeTest do
     assert html =~ current_user.username
     assert html =~ "currentWorkspace"
     assert html =~ "accessibleWorkspaces"
+    assert html =~ "&quot;apps&quot;"
     assert html =~ "readFolio"
     assert html =~ "manageFolio"
   end

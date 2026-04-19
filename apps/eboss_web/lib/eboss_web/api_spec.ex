@@ -137,6 +137,25 @@ defmodule EBossWeb.ApiSpec do
           },
           "required" => ["read_workspace", "manage_workspace", "read_folio", "manage_folio"]
         },
+        "WorkspaceAppCapabilities" => %{
+          "type" => "object",
+          "properties" => %{
+            "read" => %{"type" => "boolean"},
+            "manage" => %{"type" => "boolean"}
+          },
+          "required" => ["read", "manage"]
+        },
+        "WorkspaceApp" => %{
+          "type" => "object",
+          "properties" => %{
+            "key" => %{"type" => "string"},
+            "label" => %{"type" => "string"},
+            "default_path" => %{"type" => "string"},
+            "enabled" => %{"type" => "boolean"},
+            "capabilities" => %{"$ref" => "#/components/schemas/WorkspaceAppCapabilities"}
+          },
+          "required" => ["key", "label", "default_path", "enabled", "capabilities"]
+        },
         "WorkspaceBootstrap" => %{
           "type" => "object",
           "properties" => %{
@@ -144,6 +163,10 @@ defmodule EBossWeb.ApiSpec do
             "workspace" => %{"$ref" => "#/components/schemas/WorkspaceSummary"},
             "owner" => %{"$ref" => "#/components/schemas/OwnerSummary"},
             "capabilities" => %{"$ref" => "#/components/schemas/WorkspaceCapabilities"},
+            "apps" => %{
+              "type" => "object",
+              "additionalProperties" => %{"$ref" => "#/components/schemas/WorkspaceApp"}
+            },
             "accessible_workspaces" => %{
               "type" => "array",
               "items" => %{"$ref" => "#/components/schemas/WorkspaceSummary"}
@@ -154,6 +177,7 @@ defmodule EBossWeb.ApiSpec do
             "workspace",
             "owner",
             "capabilities",
+            "apps",
             "accessible_workspaces"
           ]
         }

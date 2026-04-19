@@ -126,6 +126,7 @@ defmodule EBossWeb.JsonApiHttpTest do
     assert user_response.status == 200
     assert user_response.body["workspace"]["slug"] == user_workspace.slug
     assert user_response.body["capabilities"]["manage_folio"] == true
+    assert user_response.body["apps"]["folio"]["enabled"] == true
     assert user_response.body["owner"]["slug"] == owner.owner_slug
 
     org_response =
@@ -140,6 +141,7 @@ defmodule EBossWeb.JsonApiHttpTest do
     assert org_response.status == 200
     assert org_response.body["workspace"]["slug"] == org_workspace.slug
     assert org_response.body["capabilities"]["manage_folio"] == false
+    assert org_response.body["apps"]["folio"]["enabled"] == false
     assert org_response.body["owner"]["slug"] == organization.owner_slug
   end
 

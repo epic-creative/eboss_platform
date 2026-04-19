@@ -39,12 +39,26 @@ export interface WorkspaceCapabilities {
   manageFolio: boolean
 }
 
+export interface WorkspaceAppCapabilities {
+  read: boolean
+  manage: boolean
+}
+
+export interface WorkspaceApp {
+  key: string
+  label: string
+  defaultPath: string
+  enabled: boolean
+  capabilities: WorkspaceAppCapabilities
+}
+
 export interface WorkspaceScope {
   empty: boolean
   dashboardPath: string
   currentWorkspace: WorkspaceSummary | null
   owner: OwnerSummary | null
   capabilities: WorkspaceCapabilities
+  apps?: Record<string, WorkspaceApp>
   accessibleWorkspaces: WorkspaceSummary[]
 }
 

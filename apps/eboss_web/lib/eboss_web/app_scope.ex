@@ -10,6 +10,7 @@ defmodule EBossWeb.AppScope do
             current_workspace: nil,
             owner: nil,
             capabilities: %{},
+            apps: %{},
             accessible_workspaces: [],
             dashboard_path: "/dashboard",
             empty?: true
@@ -32,6 +33,7 @@ defmodule EBossWeb.AppScope do
           current_workspace: workspace_summary() | nil,
           owner: map() | nil,
           capabilities: map(),
+          apps: map(),
           accessible_workspaces: [workspace_summary()],
           dashboard_path: String.t(),
           empty?: boolean()
@@ -107,6 +109,7 @@ defmodule EBossWeb.AppScope do
       current_workspace: nil,
       owner: nil,
       capabilities: empty_capabilities(),
+      apps: %{},
       accessible_workspaces: [],
       dashboard_path: ~p"/dashboard",
       empty?: true
@@ -119,9 +122,18 @@ defmodule EBossWeb.AppScope do
       workspace: scope.current_workspace,
       owner: scope.owner,
       capabilities: scope.capabilities,
+      apps: normalize_payload_map(scope.apps),
       accessible_workspaces: scope.accessible_workspaces
     }
   end
+
+  defp normalize_payload_map(%{} = payload) do
+    Enum.into(payload, %{}, fn {key, value} ->
+      {to_string(key), normalize_payload_map(value)}
+    end)
+  end
+
+  defp normalize_payload_map(value), do: value
 
   def dashboard_path_for(%{
         owner_slug: owner_slug,
@@ -210,6 +222,7 @@ defmodule EBossWeb.AppScope do
       current_workspace: current_workspace,
       owner: owner,
       capabilities: capabilities,
+      apps: app_registry(current_workspace, capabilities),
       accessible_workspaces:
         mark_current_workspace(access_context.dashboard_workspaces, current_workspace.id),
       dashboard_path: current_workspace.dashboard_path,
@@ -263,6 +276,23 @@ defmodule EBossWeb.AppScope do
       manage_folio: manages_workspace?
     }
   end
+
+  defp app_registry(%{dashboard_path: dashboard_path}, capabilities) do
+    read_folio = Map.get(capabilities, :read_folio, false)
+    manage_folio = Map.get(capabilities, :manage_folio, false)
+
+    %{
+      "folio" => %{
+        key: "folio",
+        label: "Folio",
+        default_path: "#{dashboard_path}/apps/folio",
+        enabled: read_folio,
+        capabilities: %{read: read_folio, manage: manage_folio}
+      }
+    }
+  end
+
+  defp app_registry(_workspace, _capabilities), do: %{}
 
   defp empty_capabilities do
     %{

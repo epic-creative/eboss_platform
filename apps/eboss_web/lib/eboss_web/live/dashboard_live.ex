@@ -116,7 +116,8 @@ defmodule EBossWeb.DashboardLive do
       currentWorkspace: workspace_props(scope.current_workspace),
       owner: owner_props(scope.owner),
       capabilities: capability_props(scope.capabilities),
-      accessibleWorkspaces: Enum.map(scope.accessible_workspaces, &workspace_props/1)
+      accessibleWorkspaces: Enum.map(scope.accessible_workspaces, &workspace_props/1),
+      apps: app_registry_props(scope.apps)
     }
   end
 
@@ -155,6 +156,38 @@ defmodule EBossWeb.DashboardLive do
       manageFolio: Map.get(capabilities, :manage_folio, false)
     }
   end
+
+  defp app_registry_props(apps) when is_map(apps) do
+    apps
+    |> Enum.into(%{}, fn {app_key, app} ->
+      {to_string(app_key), app_props(app)}
+    end)
+  end
+
+  defp app_registry_props(_), do: %{}
+
+  defp app_props(app) do
+    capabilities = fetch_map_field(app, :capabilities, %{})
+
+    %{
+      key: fetch_map_field(app, :key),
+      label: fetch_map_field(app, :label),
+      defaultPath: fetch_map_field(app, :default_path),
+      enabled: fetch_map_field(app, :enabled, false),
+      capabilities: %{
+        read: fetch_map_field(capabilities, :read, false),
+        manage: fetch_map_field(capabilities, :manage, false)
+      }
+    }
+  end
+
+  defp fetch_map_field(map, key, default \\ nil)
+
+  defp fetch_map_field(map, key, default) when is_map(map) do
+    Map.get(map, key, Map.get(map, to_string(key), default))
+  end
+
+  defp fetch_map_field(_, _key, default), do: default
 
   defp owner_type_label(:user), do: "user"
   defp owner_type_label(:organization), do: "organization"

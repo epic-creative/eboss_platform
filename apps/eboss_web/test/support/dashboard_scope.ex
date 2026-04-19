@@ -25,6 +25,8 @@ defmodule EBossWeb.DashboardScope do
       dashboard_path: dashboard_path
     }
 
+    capabilities = Map.get(attrs, :capabilities, default_capabilities(owner_type))
+
     %AppScope{
       current_user: user,
       current_workspace: current_workspace,
@@ -34,13 +36,34 @@ defmodule EBossWeb.DashboardScope do
         slug: owner_slug,
         display_name: current_workspace.owner_display_name
       },
-      capabilities: Map.get(attrs, :capabilities, default_capabilities(owner_type)),
+      capabilities: capabilities,
+      apps: Map.get(attrs, :apps, default_apps(current_workspace, capabilities)),
       accessible_workspaces:
         Map.get(attrs, :accessible_workspaces, [Map.put(current_workspace, :current?, true)]),
       dashboard_path: dashboard_path,
       empty?: false
     }
   end
+
+  defp default_apps(%{dashboard_path: dashboard_path}, capabilities) do
+    read_folio = Map.get(capabilities, :read_folio, false)
+    manage_folio = Map.get(capabilities, :manage_folio, false)
+
+    %{
+      "folio" => %{
+        key: "folio",
+        label: "Folio",
+        default_path: "#{dashboard_path}/apps/folio",
+        enabled: read_folio,
+        capabilities: %{
+          read: read_folio,
+          manage: manage_folio
+        }
+      }
+    }
+  end
+
+  defp default_apps(_workspace, _capabilities), do: %{}
 
   defp full_path(owner_slug, workspace_slug), do: "#{owner_slug}/#{workspace_slug}"
 
