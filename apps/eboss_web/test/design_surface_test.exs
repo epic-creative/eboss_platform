@@ -3,13 +3,11 @@ defmodule EBossWeb.DesignSurfaceTest do
 
   @app_dir Path.expand("..", __DIR__)
   @tokens_css Path.join(@app_dir, "assets/css/system/tokens.css")
-  @themes_css Path.join(@app_dir, "assets/css/system/themes.css")
   @primitives_css Path.join(@app_dir, "assets/css/system/primitives.css")
   @patterns_css Path.join(@app_dir, "assets/css/system/patterns.css")
 
   test "the CSS foundation defines a systematic shell, panel, and card surface scale" do
     tokens_css = File.read!(@tokens_css)
-    themes_css = File.read!(@themes_css)
     primitives_css = File.read!(@primitives_css)
     patterns_css = File.read!(@patterns_css)
 
@@ -21,10 +19,10 @@ defmodule EBossWeb.DesignSurfaceTest do
     assert tokens_css =~ "--shadow-surface-floating"
     assert tokens_css =~ "--shadow-surface-solid"
 
-    assert themes_css =~ "--color-surface-default"
-    assert themes_css =~ "--color-surface-floating"
-    assert themes_css =~ "--color-surface-solid"
-    assert themes_css =~ "--color-surface-subtle"
+    assert tokens_css =~ "--color-surface-default"
+    assert tokens_css =~ "--color-surface-floating"
+    assert tokens_css =~ "--color-surface-solid"
+    assert tokens_css =~ "--color-surface-subtle"
 
     assert primitives_css =~ ~s(.ui-panel[data-surface="floating"])
     assert primitives_css =~ ~s(.ui-panel[data-surface="solid"])
@@ -440,9 +438,9 @@ defmodule EBossWeb.DesignSurfaceTest do
     assert auth_components =~ "def auth_page_footer(assigns)"
     assert auth_components =~ "authentication_routes_nav_label()"
     assert auth_components =~ "data-testid={BrowserTestContracts.auth_shell()}"
-    assert auth_components =~ "so-theme so-auth-shell flex min-h-screen flex-col"
-    assert auth_components =~ ~s(class={["so-auth-page", @class]})
-    assert auth_components =~ ~s(class="so-auth-card-muted text-center")
+    assert auth_components =~ "so-theme so-auth-shell so-auth-surface flex min-h-screen flex-col"
+    assert auth_components =~ ~s(class={["ui-auth-page so-auth-page", @class]})
+    assert auth_components =~ ~s(class="ui-auth-card-muted so-auth-card-muted text-center")
     assert auth_components =~ "def auth_form(assigns)"
     assert auth_components =~ "def auth_submit(assigns)"
 

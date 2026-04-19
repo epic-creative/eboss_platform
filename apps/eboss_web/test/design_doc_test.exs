@@ -8,7 +8,7 @@ defmodule EBossWeb.DesignDocTest do
 
     assert design_doc =~ "## Visual Thesis"
     assert design_doc =~ "## Shared Visual DNA"
-    assert design_doc =~ "operator console"
+    assert design_doc =~ "shell-operator system"
     assert design_doc =~ "## Off-Brand Rejections"
     assert design_doc =~ "startup pitch deck"
   end
