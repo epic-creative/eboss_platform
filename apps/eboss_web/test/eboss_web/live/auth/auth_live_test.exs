@@ -68,7 +68,7 @@ defmodule EBossWeb.AuthLiveTest do
     end
   end
 
-  test "auth routes share the public shell while home keeps the landing content surface", %{
+  test "auth routes use the dedicated auth shell while home keeps the landing content surface", %{
     conn: conn
   } do
     user = register_user(%{email: "public-shell@example.com", username: "public-shell-user"})
@@ -541,9 +541,9 @@ defmodule EBossWeb.AuthLiveTest do
   end
 
   defp assert_auth_shell(view) do
-    assert has_element?(view, ".ui-shell[data-shell-mode='public']")
+    assert has_element?(view, ".ui-shell[data-shell-mode='auth']")
     assert has_element?(view, ~s([data-testid="#{BrowserTestContracts.auth_shell()}"]))
-    assert has_element?(view, ".ui-public-auth-shell__frame")
+    assert has_element?(view, ".ui-auth-shell__frame")
     assert has_element?(view, ".so-auth-page")
 
     assert has_element?(
@@ -551,8 +551,8 @@ defmodule EBossWeb.AuthLiveTest do
              ~s(nav[aria-label="#{BrowserTestContracts.authentication_routes_nav_label()}"])
            )
 
-    assert has_element?(view, "[data-public-shell-nav]")
-    assert has_element?(view, "[data-public-shell-footer]")
+    refute has_element?(view, "[data-public-shell-nav]")
+    refute has_element?(view, "[data-public-shell-footer]")
   end
 
   defp form_target(html, form_id) do

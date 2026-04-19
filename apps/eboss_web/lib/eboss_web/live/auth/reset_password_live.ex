@@ -55,7 +55,7 @@ defmodule EBossWeb.Auth.ResetPasswordLive do
       flash={@flash}
       current_scope={assigns[:current_scope]}
       current_user={assigns[:current_user]}
-      shell_mode="public"
+      shell_mode="auth"
       current_path="/reset"
     >
       <.auth_shell current_path="/reset">

@@ -134,7 +134,7 @@ defmodule EBossWeb.DesignSurfaceTest do
     assert patterns_css =~ ".ui-shell-main"
     assert patterns_css =~ ".ui-preview-shell"
     assert patterns_css =~ ".ui-preview-shell__grid"
-    assert patterns_css =~ ".ui-public-auth-shell__frame"
+    assert patterns_css =~ ".ui-auth-shell__frame"
 
     assert layouts =~ "ui-shell-header__inner"
     assert layouts =~ "ui-shell-main"
@@ -192,7 +192,7 @@ defmodule EBossWeb.DesignSurfaceTest do
     assert patterns_css =~ ".ui-public-pattern-map"
 
     assert layouts =~
-             ~s|attr(:shell_mode, :string, values: ~w(product public workspace), default: "product")|
+             ~s|attr(:shell_mode, :string, values: ~w(product public auth workspace), default: "product")|
 
     assert layouts =~ ~s(data-shell-mode={@shell_mode_attr})
     assert layouts =~ "workspace_shell?"
@@ -241,9 +241,9 @@ defmodule EBossWeb.DesignSurfaceTest do
     assert browser_test_contracts =~ ~s(def public_footer_label)
     assert browser_test_contracts =~ ~s(def home_feature_row_tempo)
 
-    assert sign_in_live =~ ~s(shell_mode="public")
-    assert register_live =~ ~s(shell_mode="public")
-    assert forgot_password_live =~ ~s(shell_mode="public")
+    assert sign_in_live =~ ~s(shell_mode="auth")
+    assert register_live =~ ~s(shell_mode="auth")
+    assert forgot_password_live =~ ~s(shell_mode="auth")
   end
 
   test "dashboard shell pattern defines a reusable authenticated scaffold" do
@@ -442,14 +442,14 @@ defmodule EBossWeb.DesignSurfaceTest do
     assert patterns_css =~ ".ui-auth-form"
     assert patterns_css =~ ".ui-auth-form__fieldset"
     assert patterns_css =~ ".ui-auth-form.phx-submit-loading .ui-auth-submit::after"
-    assert patterns_css =~ ".ui-public-auth-shell__frame"
-    assert patterns_css =~ ".ui-public-auth-shell__route"
+    assert patterns_css =~ ".ui-auth-shell__frame"
+    assert patterns_css =~ ".ui-auth-shell__route"
 
     assert auth_components =~ "def auth_page(assigns)"
     assert auth_components =~ "def auth_page_footer(assigns)"
     assert auth_components =~ "authentication_routes_nav_label()"
     assert auth_components =~ "data-testid={BrowserTestContracts.auth_shell()}"
-    assert auth_components =~ "ui-public-auth-shell so-theme so-auth-surface"
+    assert auth_components =~ "ui-auth-shell so-theme text-[hsl(var(--so-foreground))]"
     assert auth_components =~ ~s(<.panel)
     assert auth_components =~ ~s(<.auth_nav current_path={@current_path} />)
     assert auth_components =~ ~s(class={["ui-auth-page so-auth-page", @class]})

@@ -39,15 +39,38 @@
   flex-wrap: wrap;
 }
 
+.ui-shell[data-shell-mode="auth"] {
+  background: var(--color-auth-bg);
+}
+
+.ui-shell-header--auth {
+  border-bottom: none;
+  background: transparent;
+}
+
+.ui-shell-header__inner--auth {
+  max-width: 64rem;
+}
+
 .ui-shell-main {
   flex: 1;
   padding-inline: var(--space-shell-inline);
   padding-block: var(--space-shell-main-block);
 }
 
+.ui-shell-main--auth {
+  display: grid;
+  align-items: start;
+  padding-block: clamp(2.5rem, 8vw, 5rem);
+}
+
 .ui-shell-main__inner {
   max-width: 80rem;
   margin-inline: auto;
+}
+
+.ui-shell-main__inner--auth {
+  width: min(100%, 34rem);
 }
 
 .ui-shell-support {
@@ -178,31 +201,43 @@
   color: var(--color-text);
 }
 
+.ui-auth-shell-header__controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-cluster);
+  margin-left: auto;
+}
+
+.ui-auth-shell-header__meta {
+  gap: 0.2rem;
+  justify-items: end;
+  text-align: right;
+}
+
 .ui-auth-grid {
   display: grid;
   gap: calc(var(--space-stack) * 2);
 }
 
-.ui-public-auth-shell {
+.ui-auth-shell {
   display: grid;
   width: 100%;
 }
 
-.ui-public-auth-shell__frame {
+.ui-auth-shell__frame {
   display: grid;
   gap: calc(var(--space-stack) * 1.5);
-  width: min(100%, 32rem);
-  margin-inline: auto;
+  width: 100%;
 }
 
-.ui-public-auth-shell__route {
+.ui-auth-shell__route {
   display: grid;
   gap: 0.35rem;
   justify-items: center;
   text-align: center;
 }
 
-.ui-public-auth-shell__route-path {
+.ui-auth-shell__route-path {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
@@ -210,7 +245,7 @@
   line-height: var(--type-body-sm-line-height);
 }
 
-.ui-public-auth-shell__content {
+.ui-auth-shell__content {
   display: grid;
   width: min(100%, 22.5rem);
   margin-inline: auto;

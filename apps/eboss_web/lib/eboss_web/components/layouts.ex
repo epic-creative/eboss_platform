@@ -21,7 +21,7 @@ defmodule EBossWeb.Layouts do
     doc: "the authenticated user when present"
   )
 
-  attr(:shell_mode, :string, values: ~w(product public workspace), default: "product")
+  attr(:shell_mode, :string, values: ~w(product public auth workspace), default: "product")
   attr(:current_path, :string, default: nil)
 
   slot(:inner_block, required: true)
@@ -31,11 +31,13 @@ defmodule EBossWeb.Layouts do
     assigns =
       assigns
       |> assign(:public_shell?, assigns.shell_mode == "public" && is_nil(assigns.current_user))
+      |> assign(:auth_shell?, assigns.shell_mode == "auth" && is_nil(assigns.current_user))
       |> assign(:workspace_shell?, assigns.shell_mode == "workspace")
       |> assign(
         :shell_mode_attr,
         case assigns.shell_mode do
           "public" -> "public"
+          "auth" -> "auth"
           "workspace" -> "workspace"
           _ -> "product"
         end
@@ -52,8 +54,12 @@ defmodule EBossWeb.Layouts do
       <% else %>
         <div class="ui-shell__topline" />
         <div class="ui-shell__inner">
-          <header class="ui-shell-header" data-public-shell-header={@public_shell?}>
-            <div class="ui-shell-header__inner">
+          <header
+            class={["ui-shell-header", @auth_shell? && "ui-shell-header--auth"]}
+            data-public-shell-header={@public_shell?}
+            data-auth-shell-header={@auth_shell?}
+          >
+            <div class={["ui-shell-header__inner", @auth_shell? && "ui-shell-header__inner--auth"]}>
               <%= if @public_shell? do %>
                 <div class="ui-public-shell__masthead">
                   <a href={~p"/"} class="ui-shell-brand">
@@ -120,62 +126,85 @@ defmodule EBossWeb.Layouts do
                   </.button>
                 </div>
               <% else %>
-                <a href={~p"/"} class="ui-shell-brand">
-                  <div class="ui-brand-mark">EB</div>
-                  <div class="ui-shell-brand__lockup">
-                    <p class="ui-kicker">EBoss Platform</p>
-                    <p class="ui-text-body" data-size="sm" data-tone="soft">
-                      Precision control for agent orchestration.
-                    </p>
+                <%= if @auth_shell? do %>
+                  <a href={~p"/"} class="ui-shell-brand">
+                    <div class="ui-brand-mark">EB</div>
+                    <div class="ui-shell-brand__lockup">
+                      <p class="ui-kicker">EBoss Platform</p>
+                      <p class="ui-text-body" data-size="sm" data-tone="soft">
+                        Focused authentication and recovery.
+                      </p>
+                    </div>
+                  </a>
+
+                  <div class="ui-auth-shell-header__controls">
+                    <div class="ui-auth-shell-header__meta hidden sm:grid">
+                      <p class="ui-text-meta" data-tone="soft">Authentication</p>
+                      <p class="ui-text-body" data-size="sm" data-tone="soft">
+                        Sign in, registration, and recovery stay compact.
+                      </p>
+                    </div>
+
+                    <.theme_toggle />
                   </div>
-                </a>
+                <% else %>
+                  <a href={~p"/"} class="ui-shell-brand">
+                    <div class="ui-brand-mark">EB</div>
+                    <div class="ui-shell-brand__lockup">
+                      <p class="ui-kicker">EBoss Platform</p>
+                      <p class="ui-text-body" data-size="sm" data-tone="soft">
+                        Precision control for agent orchestration.
+                      </p>
+                    </div>
+                  </a>
 
-                <nav class="ui-control-cluster">
-                  <.theme_toggle />
+                  <nav class="ui-control-cluster">
+                    <.theme_toggle />
 
-                  <%= if @current_user do %>
-                    <.button
-                      navigate={current_dashboard_path(@current_scope)}
-                      variant="outline"
-                      tone="neutral"
-                      size="sm"
-                    >
-                      Dashboard
-                    </.button>
-                    <.badge tone="neutral" class="hidden sm:inline-flex">
-                      @{Map.get(@current_user, :username)}
-                    </.badge>
-                    <form action={~p"/logout"} method="post">
-                      <input type="hidden" name="_method" value="delete" />
-                      <input
-                        type="hidden"
-                        name="_csrf_token"
-                        value={Plug.CSRFProtection.get_csrf_token()}
-                      />
+                    <%= if @current_user do %>
                       <.button
-                        type="submit"
+                        navigate={current_dashboard_path(@current_scope)}
+                        variant="outline"
                         tone="neutral"
                         size="sm"
-                        icon="hero-arrow-left-on-rectangle"
                       >
-                        Sign out
+                        Dashboard
                       </.button>
-                    </form>
-                  <% else %>
-                    <.button navigate={~p"/sign-in"} variant="outline" tone="neutral" size="sm">
-                      Sign in
-                    </.button>
-                    <.button navigate={~p"/register"} size="sm">
-                      Create account
-                    </.button>
-                  <% end %>
-                </nav>
+                      <.badge tone="neutral" class="hidden sm:inline-flex">
+                        @{Map.get(@current_user, :username)}
+                      </.badge>
+                      <form action={~p"/logout"} method="post">
+                        <input type="hidden" name="_method" value="delete" />
+                        <input
+                          type="hidden"
+                          name="_csrf_token"
+                          value={Plug.CSRFProtection.get_csrf_token()}
+                        />
+                        <.button
+                          type="submit"
+                          tone="neutral"
+                          size="sm"
+                          icon="hero-arrow-left-on-rectangle"
+                        >
+                          Sign out
+                        </.button>
+                      </form>
+                    <% else %>
+                      <.button navigate={~p"/sign-in"} variant="outline" tone="neutral" size="sm">
+                        Sign in
+                      </.button>
+                      <.button navigate={~p"/register"} size="sm">
+                        Create account
+                      </.button>
+                    <% end %>
+                  </nav>
+                <% end %>
               <% end %>
             </div>
           </header>
 
-          <main class="ui-shell-main">
-            <div class="ui-shell-main__inner">
+          <main class={["ui-shell-main", @auth_shell? && "ui-shell-main--auth"]}>
+            <div class={["ui-shell-main__inner", @auth_shell? && "ui-shell-main__inner--auth"]}>
               {render_slot(@inner_block)}
             </div>
           </main>

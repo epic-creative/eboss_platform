@@ -44,7 +44,7 @@ defmodule EBossWeb.Auth.RegisterLive do
       flash={@flash}
       current_scope={assigns[:current_scope]}
       current_user={assigns[:current_user]}
-      shell_mode="public"
+      shell_mode="auth"
       current_path="/register"
     >
       <.auth_shell current_path="/register">

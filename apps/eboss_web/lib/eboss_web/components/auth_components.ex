@@ -13,7 +13,7 @@ defmodule EBossWeb.AuthComponents do
     ~H"""
     <div
       class={[
-        "ui-public-auth-shell so-theme so-auth-surface text-[hsl(var(--so-foreground))]",
+        "ui-auth-shell so-theme text-[hsl(var(--so-foreground))]",
         @class
       ]}
       data-auth-shell
@@ -22,11 +22,11 @@ defmodule EBossWeb.AuthComponents do
       <.panel
         surface="floating"
         padding="lg"
-        class="ui-public-auth-shell__frame"
+        class="ui-auth-shell__frame"
       >
-        <div class="ui-public-auth-shell__route">
+        <div class="ui-auth-shell__route">
           <p class="ui-text-meta" data-tone="soft">Public auth route</p>
-          <div class="ui-public-auth-shell__route-path">
+          <div class="ui-auth-shell__route-path">
             <span class="text-[hsl(var(--so-muted-foreground))]">/</span>
             <span class="so-font-mono text-[hsl(var(--so-muted-foreground))]">
               {auth_route_label(@current_path)}
@@ -36,7 +36,7 @@ defmodule EBossWeb.AuthComponents do
 
         <.auth_nav current_path={@current_path} />
 
-        <div class="ui-public-auth-shell__content">
+        <div class="ui-auth-shell__content">
           {render_slot(@inner_block)}
         </div>
       </.panel>

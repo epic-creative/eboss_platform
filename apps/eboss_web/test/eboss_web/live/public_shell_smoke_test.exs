@@ -40,13 +40,13 @@ defmodule EBossWeb.PublicShellSmokeTest do
   test "auth routes mount the compact auth shell while home mounts the landing shell" do
     for route <- [~p"/sign-in", ~p"/register", ~p"/forgot-password"] do
       assert {:ok, view, _html} = live(build_conn(), route)
-      assert has_element?(view, ".ui-shell[data-shell-mode='public']")
+      assert has_element?(view, ".ui-shell[data-shell-mode='auth']")
       assert has_element?(view, ~s([data-testid="#{BrowserTestContracts.auth_shell()}"]))
       assert has_element?(view, ".so-auth-page")
-      assert has_element?(view, "[data-public-shell-nav]")
-      assert has_element?(view, "[data-public-shell-footer]")
+      refute has_element?(view, "[data-public-shell-nav]")
+      refute has_element?(view, "[data-public-shell-footer]")
 
-      assert has_element?(
+      refute has_element?(
                view,
                ~s([data-testid="#{BrowserTestContracts.public_shell_context_action()}"])
              )
