@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { computed, ref } from "vue"
-import { CheckCircle2, Search, Star } from "lucide-vue-next"
+import { AlertTriangle, CheckCircle2, LoaderCircle, Search, Star } from "lucide-vue-next"
 
 import InspectorField from "../InspectorField.vue"
 import InspectorPane from "../InspectorPane.vue"
 import InspectorSection from "../InspectorSection.vue"
+import WorkspaceEmptyState from "../WorkspaceEmptyState.vue"
 import WorkspacePageHeader from "../WorkspacePageHeader.vue"
 import type { Task } from "../types"
 import { formatFolioDate, statusLabel, taskStatusClass } from "../presenters"
@@ -13,6 +14,9 @@ const props = defineProps<{
   workspaceReference: string
   tasks: Task[]
   selectedTask: Task | null
+  loading: boolean
+  error: string | null
+  refresh: () => Promise<void>
 }>()
 
 const emit = defineEmits<{
@@ -59,6 +63,14 @@ const selectedTaskBucket = (task: Task) =>
 const toggleTask = (task: Task) => {
   emit("update:selectedTask", props.selectedTask?.id === task.id ? null : task)
 }
+
+const canInspectTask = computed(
+  () =>
+    !props.loading &&
+    props.error === null &&
+    !!props.selectedTask &&
+    taskQuery.value.some((task) => task.id === props.selectedTask?.id),
+)
 
 const sortTasks = computed(() =>
   [...taskQuery.value].sort((left, right) => {
@@ -126,7 +138,45 @@ const sortTasks = computed(() =>
           <span class="w-16 hidden text-center lg:block">Priority</span>
         </div>
 
-        <div v-if="sortTasks.length" class="divide-y divide-[hsl(var(--so-border))]">
+        <WorkspaceEmptyState
+          v-if="loading"
+          :icon="LoaderCircle"
+          title="Loading tasks"
+          copy="Updating the task list from Folio."
+          data-testid="tasks-state-loading"
+        />
+
+        <div
+          v-else-if="error"
+          class="so-alert-panel so-alert-panel-error m-4"
+          data-testid="tasks-state-error"
+        >
+          <div class="mb-2 flex items-center gap-2">
+            <AlertTriangle class="h-4 w-4 text-[hsl(var(--so-destructive))]" />
+            <h3 class="text-sm font-medium text-[hsl(var(--so-destructive))]">Unable to load tasks</h3>
+          </div>
+          <p class="mb-3 text-xs text-[hsl(var(--so-muted-foreground))]">{{ error }}</p>
+          <button type="button" class="so-button-secondary text-[hsl(var(--so-destructive))]" @click="refresh">
+            Retry
+          </button>
+        </div>
+
+        <WorkspaceEmptyState
+          v-else-if="!tasks.length"
+          title="No tasks yet"
+          copy="No Folio tasks have been created for this workspace yet."
+          data-testid="tasks-state-empty"
+        />
+
+        <div
+          v-else-if="!sortTasks.length"
+          class="so-font-mono px-4 py-8 text-center text-sm text-[hsl(var(--so-muted-foreground))]"
+          data-testid="tasks-state-empty-filtered"
+        >
+          No tasks match this view.
+        </div>
+
+        <div v-else class="divide-y divide-[hsl(var(--so-border))]">
           <button
             v-for="task in sortTasks"
             :key="task.id"
@@ -171,19 +221,15 @@ const sortTasks = computed(() =>
         </div>
 
         <div
-          v-else
-          class="so-font-mono px-4 py-8 text-center text-sm text-[hsl(var(--so-muted-foreground))]"
+          v-if="sortTasks.length"
+          class="so-font-mono border-t border-[hsl(var(--so-border))] px-4 py-2 text-[11px] text-[hsl(var(--so-muted-foreground))]"
         >
-          No tasks match this view.
-        </div>
-
-        <div class="so-font-mono border-t border-[hsl(var(--so-border))] px-4 py-2 text-[11px] text-[hsl(var(--so-muted-foreground))]">
           {{ sortTasks.length }} task<span v-if="sortTasks.length !== 1">s</span>
         </div>
       </div>
 
       <InspectorPane
-        :open="!!selectedTask"
+        :open="canInspectTask"
         :title="selectedTask?.title || ''"
         :subtitle="selectedTask?.id"
         data-testid="task-inspector"

@@ -5,10 +5,12 @@ import {
   ArrowUpRight,
   CheckCircle2,
   Clock,
+  LoaderCircle,
   Search,
 } from "lucide-vue-next"
 
 import InspectorPane from "../InspectorPane.vue"
+import WorkspaceEmptyState from "../WorkspaceEmptyState.vue"
 import WorkspacePageHeader from "../WorkspacePageHeader.vue"
 import type { FolioActivityEvent } from "../folio/types"
 
@@ -22,6 +24,9 @@ const props = defineProps<{
   workspaceReference: string
   activityEvents: FolioActivityEvent[]
   selectedActivity: FolioActivityEvent | null
+  loading: boolean
+  error: string | null
+  refresh: () => Promise<void>
 }>()
 
 const emit = defineEmits<{
@@ -31,6 +36,14 @@ const emit = defineEmits<{
 const toggleActivity = (event: FolioActivityEvent) => {
   emit("update:selectedActivity", props.selectedActivity?.id === event.id ? null : event)
 }
+
+const canInspectActivity = computed(
+  () =>
+    !props.loading &&
+    props.error === null &&
+    !!props.selectedActivity &&
+    props.activityEvents.some((event) => event.id === props.selectedActivity?.id),
+)
 
 const actorLabel = (activity: FolioActivityEvent) =>
   activity.actor.label ?? activity.actor.id ?? activity.actor.type ?? "system"
@@ -134,7 +147,40 @@ const selectedActivityChanges = computed(() => changesFor(props.selectedActivity
           <span class="w-24 text-right">Time</span>
         </div>
 
-        <div class="divide-y divide-[hsl(var(--so-border))]">
+        <WorkspaceEmptyState
+          v-if="loading"
+          :icon="LoaderCircle"
+          title="Loading activity"
+          copy="Updating the activity feed from Folio."
+          data-testid="activity-state-loading"
+        />
+
+        <div
+          v-else-if="error"
+          class="so-alert-panel so-alert-panel-error m-4"
+          data-testid="activity-state-error"
+        >
+          <div class="mb-2 flex items-center gap-2">
+            <AlertTriangle class="h-4 w-4 text-[hsl(var(--so-destructive))]" />
+            <h3 class="text-sm font-medium text-[hsl(var(--so-destructive))]">Unable to load activity</h3>
+          </div>
+          <p class="mb-3 text-xs text-[hsl(var(--so-muted-foreground))]">{{ error }}</p>
+          <button type="button" class="so-button-secondary text-[hsl(var(--so-destructive))]" @click="refresh">
+            Retry
+          </button>
+        </div>
+
+        <WorkspaceEmptyState
+          v-else-if="!activityEvents.length"
+          title="No activity yet"
+          copy="No Folio activity has been recorded for this workspace yet."
+          data-testid="activity-state-empty"
+        />
+
+        <div
+          v-else
+          class="divide-y divide-[hsl(var(--so-border))]"
+        >
           <button
             v-for="event in activityEvents"
             :key="event.id"
@@ -172,7 +218,7 @@ const selectedActivityChanges = computed(() => changesFor(props.selectedActivity
       </div>
 
       <InspectorPane
-        :open="!!selectedActivity"
+        :open="canInspectActivity"
         :title="selectedActivity?.summary || ''"
         :subtitle="selectedActivity?.provider_event_id"
         @close="emit('update:selectedActivity', null)"

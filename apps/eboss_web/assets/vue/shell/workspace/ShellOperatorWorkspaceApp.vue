@@ -356,6 +356,9 @@ watch(currentWorkspaceKey, () => {
               :project-filter="selectedProjectFilter"
               :projects="folioProjects"
               :selected-project="selectedProject"
+              :loading="folioProjectsQuery.loading.value"
+              :error="folioProjectsQuery.error.value"
+              :refresh="folioProjectsQuery.refresh"
               @update:project-filter="selectedProjectFilter = $event"
               @update:selected-project="selectedProject = $event"
             />
@@ -364,6 +367,9 @@ watch(currentWorkspaceKey, () => {
               :workspace-reference="workspaceReference"
               :tasks="folioTasks"
               :selected-task="selectedTask"
+              :loading="folioTasksQuery.loading.value"
+              :error="folioTasksQuery.error.value"
+              :refresh="folioTasksQuery.refresh"
               @update:selected-task="selectedTask = $event"
             />
             <ActivityPage
@@ -371,6 +377,9 @@ watch(currentWorkspaceKey, () => {
               :workspace-reference="workspaceReference"
               :activity-events="folioActivities"
               :selected-activity="selectedActivity"
+              :loading="folioActivityQuery.loading.value"
+              :error="folioActivityQuery.error.value"
+              :refresh="folioActivityQuery.refresh"
               @update:selected-activity="selectedActivity = $event"
             />
 

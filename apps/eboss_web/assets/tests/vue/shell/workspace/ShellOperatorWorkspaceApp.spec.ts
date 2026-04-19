@@ -552,4 +552,235 @@ describe("ShellOperatorWorkspaceApp", () => {
     expect(wrapper.get('[data-testid="workspace-page-activity"]').text()).toContain("Builder")
     expect(wrapper.get('[data-testid="workspace-page-activity"]').text()).toContain("View resource")
   })
+
+  it("shows loading and empty states on folio projects surface", async () => {
+    let resolveFetch: (response: Response) => void = () => {}
+    vi.spyOn(global, "fetch").mockImplementation(() =>
+      new Promise((resolve) => {
+        resolveFetch = resolve
+      }) as Promise<Response>,
+    )
+
+    const wrapper = mountComponent(ShellOperatorWorkspaceApp, {
+      props: {
+        currentUser: {
+          username: "operator",
+          email: "operator@example.com",
+        },
+        currentScope: scope({
+          apps: {
+            folio: {
+              key: "folio",
+              label: "Folio",
+              defaultPath: "/primary-owner/primary-workspace/apps/folio",
+              enabled: true,
+              capabilities: {
+                read: true,
+                manage: true,
+              },
+            },
+          },
+        }),
+        currentPage: appRoute("folio", "projects"),
+        currentPath: "/primary-owner/primary-workspace/apps/folio/projects",
+        signOutPath: "/sign-out",
+        csrfToken: "csrf-token",
+      },
+      global: {
+        stubs: {
+          ThemeToggleButton: {
+            template: "<button data-testid=\"theme-toggle-stub\" />",
+          },
+        },
+      },
+    })
+
+    await nextTick()
+    expect(wrapper.get('[data-testid="projects-state-loading"]').exists()).toBe(true)
+
+    resolveFetch({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        scope: {
+          app_key: "folio",
+          workspace: {
+            id: "workspace-1",
+            name: "Primary Workspace",
+            slug: "primary-workspace",
+            full_path: "/primary-owner/primary-workspace",
+            visibility: "private",
+            owner_type: "user",
+            owner_id: "owner-1",
+            owner_slug: "primary-owner",
+            owner_display_name: "Primary Owner",
+            dashboard_path: "/primary-owner/primary-workspace",
+            "current?": true,
+          },
+          owner: {
+            type: "user",
+            id: "owner-1",
+            slug: "primary-owner",
+            display_name: "Primary Owner",
+          },
+          app: {
+            key: "folio",
+            label: "Folio",
+            default_path: "/primary-owner/primary-workspace/apps/folio",
+            enabled: true,
+            capabilities: { read: true, manage: true },
+          },
+          capabilities: { read: true, manage: true },
+          workspace_path: "/primary-owner/primary-workspace",
+          app_path: "/primary-owner/primary-workspace/apps/folio",
+        },
+        projects: [],
+      }),
+    } as Response)
+
+    await nextMacrotask()
+    await nextTick()
+
+    expect(wrapper.get('[data-testid="projects-state-empty"]').exists()).toBe(true)
+    expect(wrapper.get('[data-testid="projects-state-empty"]').text()).toContain("No projects yet")
+  })
+
+  it("shows an actionable error state on folio tasks surface", async () => {
+    vi.spyOn(global, "fetch").mockResolvedValue({
+      ok: false,
+      status: 502,
+      statusText: "Bad Gateway",
+      json: async () => ({
+        error: { message: "Unable to load tasks from Folio" },
+      }),
+    } as Response)
+
+    const wrapper = mountComponent(ShellOperatorWorkspaceApp, {
+      props: {
+        currentUser: {
+          username: "operator",
+          email: "operator@example.com",
+        },
+        currentScope: scope({
+          apps: {
+            folio: {
+              key: "folio",
+              label: "Folio",
+              defaultPath: "/primary-owner/primary-workspace/apps/folio",
+              enabled: true,
+              capabilities: {
+                read: true,
+                manage: true,
+              },
+            },
+          },
+        }),
+        currentPage: appRoute("folio", "tasks"),
+        currentPath: "/primary-owner/primary-workspace/apps/folio/tasks",
+        signOutPath: "/sign-out",
+        csrfToken: "csrf-token",
+      },
+      global: {
+        stubs: {
+          ThemeToggleButton: {
+            template: "<button data-testid=\"theme-toggle-stub\" />",
+          },
+        },
+      },
+    })
+
+    await nextTick()
+    await nextMacrotask()
+
+    const errorState = wrapper.get('[data-testid="tasks-state-error"]')
+    expect(errorState.text()).toContain("Unable to load tasks")
+    expect(errorState.text()).toContain("Unable to load tasks from Folio")
+
+    await errorState.get("button").trigger("click")
+
+    expect(global.fetch).toHaveBeenCalledTimes(2)
+  })
+
+  it("shows an empty state on folio activity surface", async () => {
+    vi.spyOn(global, "fetch").mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        scope: {
+          app_key: "folio",
+          workspace: {
+            id: "workspace-1",
+            name: "Primary Workspace",
+            slug: "primary-workspace",
+            full_path: "/primary-owner/primary-workspace",
+            visibility: "private",
+            owner_type: "user",
+            owner_id: "owner-1",
+            owner_slug: "primary-owner",
+            owner_display_name: "Primary Owner",
+            dashboard_path: "/primary-owner/primary-workspace",
+            "current?": true,
+          },
+          owner: {
+            type: "user",
+            id: "owner-1",
+            slug: "primary-owner",
+            display_name: "Primary Owner",
+          },
+          app: {
+            key: "folio",
+            label: "Folio",
+            default_path: "/primary-owner/primary-workspace/apps/folio",
+            enabled: true,
+            capabilities: { read: true, manage: true },
+          },
+          capabilities: { read: true, manage: true },
+          workspace_path: "/primary-owner/primary-workspace",
+          app_path: "/primary-owner/primary-workspace/apps/folio",
+        },
+        events: [],
+      }),
+    } as Response)
+
+    const wrapper = mountComponent(ShellOperatorWorkspaceApp, {
+      props: {
+        currentUser: {
+          username: "operator",
+          email: "operator@example.com",
+        },
+        currentScope: scope({
+          apps: {
+            folio: {
+              key: "folio",
+              label: "Folio",
+              defaultPath: "/primary-owner/primary-workspace/apps/folio",
+              enabled: true,
+              capabilities: {
+                read: true,
+                manage: true,
+              },
+            },
+          },
+        }),
+        currentPage: appRoute("folio", "activity"),
+        currentPath: "/primary-owner/primary-workspace/apps/folio/activity",
+        signOutPath: "/sign-out",
+        csrfToken: "csrf-token",
+      },
+      global: {
+        stubs: {
+          ThemeToggleButton: {
+            template: "<button data-testid=\"theme-toggle-stub\" />",
+          },
+        },
+      },
+    })
+
+    await nextTick()
+    await nextMacrotask()
+
+    const emptyState = wrapper.get('[data-testid="activity-state-empty"]')
+    expect(emptyState.exists()).toBe(true)
+    expect(emptyState.text()).toContain("No activity yet")
+  })
 })

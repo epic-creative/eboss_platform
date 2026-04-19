@@ -1,10 +1,18 @@
 <script setup lang="ts">
 import { computed } from "vue"
-import { ExternalLink, FolderKanban, Plus, Search } from "lucide-vue-next"
+import {
+  AlertTriangle,
+  ExternalLink,
+  FolderKanban,
+  LoaderCircle,
+  Plus,
+  Search,
+} from "lucide-vue-next"
 
 import InspectorField from "../InspectorField.vue"
 import InspectorPane from "../InspectorPane.vue"
 import InspectorSection from "../InspectorSection.vue"
+import WorkspaceEmptyState from "../WorkspaceEmptyState.vue"
 import WorkspacePageHeader from "../WorkspacePageHeader.vue"
 import { formatFolioDate, projectStatusClass, statusLabel } from "../presenters"
 import type { Project, ProjectFilter } from "../types"
@@ -15,6 +23,9 @@ const props = defineProps<{
   projectFilter: ProjectFilter
   projects: Project[]
   selectedProject: Project | null
+  loading: boolean
+  error: string | null
+  refresh: () => Promise<void>
 }>()
 
 const emit = defineEmits<{
@@ -27,12 +38,20 @@ const filteredProjects = computed(() =>
     ? props.projects
     : props.projects.filter(project => project.status === props.projectFilter),
 )
+const hasProjects = computed(() => props.projects.length > 0)
+const canInspectProject = computed(
+  () =>
+    !props.loading &&
+    props.error === null &&
+    !!props.selectedProject &&
+    filteredProjects.value.some((project) => project.id === props.selectedProject?.id),
+)
+
+const priorityLabel = (value: number | null): string => (value === null ? "—" : String(value))
 
 const toggleProject = (project: Project) => {
   emit("update:selectedProject", props.selectedProject?.id === project.id ? null : project)
 }
-
-const priorityLabel = (value: number | null): string => (value === null ? "—" : String(value))
 </script>
 
 <template>
@@ -82,7 +101,45 @@ const priorityLabel = (value: number | null): string => (value === null ? "—" 
           <span class="hidden w-20 text-center lg:block">Priority</span>
         </div>
 
-        <div class="divide-y divide-[hsl(var(--so-border))]">
+        <WorkspaceEmptyState
+          v-if="loading"
+          :icon="LoaderCircle"
+          title="Loading projects"
+          copy="Updating the project list from Folio."
+          data-testid="projects-state-loading"
+        />
+
+        <div
+          v-else-if="error"
+          class="so-alert-panel so-alert-panel-error m-4"
+          data-testid="projects-state-error"
+        >
+          <div class="mb-2 flex items-center gap-2">
+            <AlertTriangle class="h-4 w-4 text-[hsl(var(--so-destructive))]" />
+            <h3 class="text-sm font-medium text-[hsl(var(--so-destructive))]">Unable to load projects</h3>
+          </div>
+          <p class="mb-3 text-xs text-[hsl(var(--so-muted-foreground))]">{{ error }}</p>
+          <button type="button" class="so-button-secondary text-[hsl(var(--so-destructive))]" @click="refresh">
+            Retry
+          </button>
+        </div>
+
+        <WorkspaceEmptyState
+          v-else-if="!hasProjects"
+          title="No projects yet"
+          copy="No Folio projects have been created for this workspace yet."
+          data-testid="projects-state-empty"
+        />
+
+        <div
+          v-else-if="!filteredProjects.length"
+          class="so-font-mono px-4 py-8 text-center text-sm text-[hsl(var(--so-muted-foreground))]"
+          data-testid="projects-state-empty-filtered"
+        >
+          No projects match this view.
+        </div>
+
+        <div v-else class="divide-y divide-[hsl(var(--so-border))]">
           <button
             v-for="project in filteredProjects"
             :key="project.id"
@@ -118,13 +175,16 @@ const priorityLabel = (value: number | null): string => (value === null ? "—" 
           </button>
         </div>
 
-        <div class="so-font-mono border-t border-[hsl(var(--so-border))] px-4 py-2 text-[11px] text-[hsl(var(--so-muted-foreground))]">
+        <div
+          v-if="filteredProjects.length"
+          class="so-font-mono border-t border-[hsl(var(--so-border))] px-4 py-2 text-[11px] text-[hsl(var(--so-muted-foreground))]"
+        >
           {{ filteredProjects.length }} project<span v-if="filteredProjects.length !== 1">s</span>
         </div>
       </div>
 
       <InspectorPane
-        :open="!!selectedProject"
+        :open="canInspectProject"
         :title="selectedProject?.name || ''"
         :subtitle="selectedProject?.id"
         data-testid="project-inspector"
