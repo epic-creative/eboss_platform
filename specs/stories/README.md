@@ -28,6 +28,10 @@ The loop works best when stories are:
   Dashboard and operator-surface work.
 - `ST-TST-*`
   Frontend testability and browser confidence work.
+- `ST-WAP-*`
+  Workspace app platform work.
+- `ST-FOL-*`
+  Folio app API, UI, and workflow work.
 
 ## Story card shape
 
@@ -55,8 +59,15 @@ The intended sequence for this backlog is:
 4. Dashboard convergence
 5. Dashboard and component confidence
 6. Cleanup and deprecation retirement
+7. Workspace app platform
+8. Folio API foundation
+9. Folio UI read surfaces
+10. Folio mutations and workflows
+11. Folio confidence and browser coverage
 
 That order reflects the current product need: stabilize the design layer first, harden auth and public surfaces, add the earliest browser protection where it already pays off, then converge the dashboard and add the deeper product-facing confidence work after that shell settles.
+
+The workspace-app and Folio milestone comes after that stabilization work. The shell and design system are now far enough along that the next step is to turn the workspace into a platform that can host multiple apps, then ship Folio as the first real app on that platform.
 
 ## Testing lane assumptions
 
