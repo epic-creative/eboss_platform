@@ -55,6 +55,9 @@ defmodule EBossWeb.JsonApiTest do
            ]) ==
              "#/components/schemas/FolioAppScope"
 
+    assert get_in(spec, ["components", "schemas", "FolioAppBootstrap", "required"]) ==
+             ["scope", "summary_counts"]
+
     assert get_in(spec, [
              "components",
              "schemas",
@@ -315,6 +318,21 @@ defmodule EBossWeb.JsonApiTest do
 
     assert payload["scope"]["app_path"] ==
              "/#{owner.owner_slug}/#{current_workspace.slug}/apps/folio"
+
+    assert payload["scope"]["workspace_path"] ==
+             "/#{owner.owner_slug}/#{current_workspace.slug}"
+
+    assert payload["scope"]["app"] == %{
+             "capabilities" => %{"manage" => true, "read" => true},
+             "default_path" => "/#{owner.owner_slug}/#{current_workspace.slug}/apps/folio",
+             "enabled" => true,
+             "key" => "folio",
+             "label" => "Folio"
+           }
+
+    refute Map.has_key?(payload, "current_user")
+    refute Map.has_key?(payload, "apps")
+    refute Map.has_key?(payload, "capabilities")
 
     assert payload["summary_counts"] == %{"projects" => 1, "tasks" => 1}
   end

@@ -317,10 +317,11 @@ defmodule EBossWeb.ApiSpec do
               "properties" => %{
                 "projects" => %{"type" => "integer"},
                 "tasks" => %{"type" => "integer"}
-              }
+              },
+              "required" => ["projects", "tasks"]
             }
           },
-          "required" => ["scope"]
+          "required" => ["scope", "summary_counts"]
         },
         "FolioProjectSummary" => %{
           "type" => "object",

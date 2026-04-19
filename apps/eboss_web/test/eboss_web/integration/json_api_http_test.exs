@@ -239,7 +239,14 @@ defmodule EBossWeb.JsonApiHttpTest do
     assert response.status == 200
     assert response.body["scope"]["app_key"] == "folio"
     assert response.body["scope"]["capabilities"] == %{"manage" => true, "read" => true}
+
+    assert response.body["scope"]["app_path"] ==
+             "/#{owner.owner_slug}/#{workspace.slug}/apps/folio"
+
     assert response.body["summary_counts"] == %{"projects" => 1, "tasks" => 1}
+    refute Map.has_key?(response.body, "current_user")
+    refute Map.has_key?(response.body, "apps")
+    refute Map.has_key?(response.body, "capabilities")
   end
 
   test "folio bootstrap endpoints return 401, 403, and 404 with distinct semantics", %{req: req} do
