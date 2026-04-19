@@ -66,6 +66,39 @@ defmodule EBossWeb.DashboardScopeRoutingTest do
     assert current_scope.dashboard_path == path
   end
 
+  test "workspace platform surfaces map to stable currentPage values", %{conn: conn} do
+    context =
+      register_and_log_in_user(%{conn: conn}, %{
+        email: "route-contract@example.com",
+        username: "route-contract-user"
+      })
+
+    workspace =
+      create_user_workspace(context.current_user, %{name: "Contract Workspace"})
+
+    base_path = dashboard_path(context.current_user.owner_slug, workspace.slug)
+
+    platform_routes = [
+      {"dashboard", base_path},
+      {"projects", "#{base_path}/projects"},
+      {"members", "#{base_path}/members"},
+      {"access", "#{base_path}/access"},
+      {"activity", "#{base_path}/activity"},
+      {"settings", "#{base_path}/settings"}
+    ]
+
+    for {expected_page, route_path} <- platform_routes do
+      assert {:ok, view, _html} = live(context.conn, route_path)
+
+      workspace_shell = get_vue(view, name: "ShellOperatorWorkspaceApp")
+
+      assert workspace_shell.props["currentPage"] == expected_page
+      assert workspace_shell.props["currentPath"] == route_path
+      assert workspace_shell.props["currentScope"]["dashboardPath"] == base_path
+      assert workspace_shell.props["currentScope"]["currentWorkspace"]["slug"] == workspace.slug
+    end
+  end
+
   test "invalid workspace routes redirect to the first accessible workspace", %{conn: conn} do
     context =
       register_and_log_in_user(%{conn: conn}, %{

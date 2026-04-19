@@ -32,6 +32,42 @@ Establish the architectural contract for workspaces that host multiple apps befo
 - Review the updated spec and implementation notes for route, scope, and app-model clarity.
 - Confirm the contract maps cleanly onto the existing workspace shell and scope code.
 
+#### ST-WAP-001 Contract Draft
+
+##### 1) Workspace model and ownership
+- A workspace is the tenant container and shell boundary.
+- App surfaces are mounted **inside** a workspace; they do not replace the workspace model.
+- Scope resolution must always resolve:
+  - `workspace` (identity, owner context, `dashboard_path`)
+  - `owner` (for owner/workspace switcher labels)
+  - `capabilities` (workspace-level permissions + app capability channel)
+  - `accessible_workspaces` (for owner/workspace switching)
+
+##### 2) Route shape (contract)
+- Workspace-level route family (canonical, stable today):
+  - `/:owner_slug/:workspace_slug`
+  - `/:owner_slug/:workspace_slug/:workspace_surface`
+- `workspace_surface` is a platform-owned surface for the current shell, initially:
+  - `dashboard`, `projects`, `members`, `access`, `activity`, `settings`
+- App-aware route family (contract target for this platform):
+  - `/:owner_slug/:workspace_slug/apps/:app_key`
+  - `/:owner_slug/:workspace_slug/apps/:app_key/:app_surface`
+- `Folio` is the first app (`app_key = "folio"`) and must be represented as a member of `app_key`, not as the workspace itself.
+
+##### 3) Capability and navigation representation
+- Navigation and permissions must be expressed as two layers:
+  1. **Workspace capabilities**: permissions required to access or manage the workspace shell.
+  2. **App capabilities**: permissions scoped to each app entry.
+- Temporary compatibility for legacy consumers is allowed only inside `workspace` scope shape while `app_key` registry is being introduced in ST-WAP-002.
+- The bootstrap payload should be readable as:
+  - `workspace` + `owner` + `capabilities` + `accessible_workspaces`
+  - with a future `apps` map keyed by `app_key` once ST-WAP-002 lands.
+
+##### 4) Implementation mapping for this story
+- Route contract source-of-truth: `apps/eboss_web/lib/eboss_web/router.ex` and `apps/eboss_web/lib/eboss_web/live/dashboard_live.ex`.
+- Scope contract source-of-truth: `apps/eboss_web/lib/eboss_web/app_scope.ex` and `apps/eboss_web/lib/eboss_web/controllers/workspace_bootstrap_controller.ex`.
+- Bootstrap serialization remains `AppScope.bootstrap_payload/1` while app ownership is generalized in later stories.
+
 #### Dependencies
 - `ST-DSH-002`
 - `ST-DSH-003`
