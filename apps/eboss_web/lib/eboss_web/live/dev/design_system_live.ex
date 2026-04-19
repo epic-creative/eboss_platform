@@ -570,7 +570,7 @@ defmodule EBossWeb.Dev.DesignSystemLive do
                 <.ShellOperatorWorkspaceApp
                   currentUser={runtime_preview_user()}
                   currentScope={runtime_preview_scope()}
-                  currentPage="dashboard"
+                  currentPage={%{type: "workspace", surface: "dashboard"}}
                   currentPath={runtime_preview_dashboard_path()}
                   signOutPath="#sign-out"
                   csrfToken="preview-token"

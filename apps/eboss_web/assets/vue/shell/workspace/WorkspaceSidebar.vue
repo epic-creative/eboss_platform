@@ -21,12 +21,19 @@ import {
   Zap,
 } from "lucide-vue-next"
 
-import type { CurrentUser, PageKey, WorkspaceScope, WorkspaceSummary } from "./types"
+import type {
+  CurrentUser,
+  WorkspaceApp,
+  WorkspaceNavigationContext,
+  WorkspaceScope,
+  WorkspaceSummary,
+  WorkspaceSurface,
+} from "./types"
 
 const props = defineProps<{
   currentUser: CurrentUser
   currentScope: WorkspaceScope
-  currentPage: PageKey
+  currentPage: WorkspaceNavigationContext
   basePath: string
 }>()
 
@@ -40,6 +47,7 @@ const groups = ref({
   teams: false,
   automation: false,
   more: false,
+  apps: false,
   switcher: false,
 })
 
@@ -52,10 +60,23 @@ const personalWorkspaces = computed(() =>
 const organizationWorkspaces = computed(() =>
   props.currentScope.accessibleWorkspaces.filter(workspace => workspace.ownerType === "organization"),
 )
+const availableApps = computed<{ key: string; app: WorkspaceApp }[]>(() =>
+  Object.entries(props.currentScope.apps || {})
+    .filter(([, app]) => app.enabled)
+    .map(([key, app]) => ({ key, app })),
+)
 
-const linkFor = (segment: PageKey) => (segment === "dashboard" ? props.basePath : `${props.basePath}/${segment}`)
-const isActive = (segment: PageKey) => props.currentPage === segment
+const linkFor = (segment: WorkspaceSurface | "dashboard") =>
+  segment === "dashboard" ? props.basePath : `${props.basePath}/${segment}`
+const isActive = (segment: WorkspaceSurface | "dashboard") =>
+  props.currentPage.type === "workspace" && props.currentPage.surface === segment
+const appHref = (entry: { key: string; app: WorkspaceApp }) =>
+  entry.app.defaultPath || `${props.basePath}/apps/${entry.key}`
 const onNavigate = () => emit("navigate")
+const isCurrentApp = (appKey: string) =>
+  props.currentPage.type === "app" && props.currentPage.app_key === appKey
+const currentAppLabel = (entry: { key: string; app: WorkspaceApp }) =>
+  entry.app.label || entry.key
 
 const roleLabel = computed(() => {
   if (!currentWorkspace.value) {
@@ -265,6 +286,36 @@ const workspaceRouteLabel = computed(() =>
       </div>
 
       <div class="mx-3 my-1 border-t border-[hsl(var(--so-border))]" />
+
+      <div v-if="availableApps.length" class="py-1">
+        <button
+          type="button"
+          class="group flex w-full items-center gap-1 px-3 py-1 text-[11px] font-medium uppercase tracking-wider text-[hsl(var(--so-muted-foreground))] transition-colors hover:text-[hsl(var(--so-foreground))]"
+          @click="toggle('apps')"
+        >
+          <ChevronRight class="h-3 w-3 shrink-0 transition-transform" :class="groups.apps ? 'rotate-90' : ''" />
+          <span class="flex-1 text-left">Apps</span>
+          <span class="so-font-mono text-[10px] text-[hsl(var(--so-muted-foreground))]">{{ availableApps.length }}</span>
+        </button>
+
+        <div v-if="groups.apps" class="mt-0.5">
+          <a
+            v-for="entry in availableApps"
+            :key="entry.key"
+            :href="appHref(entry)"
+            class="mx-1.5 flex items-center gap-2 rounded-md px-2 py-[5px] text-sm transition-colors"
+            :class="
+              isCurrentApp(entry.key)
+                ? 'bg-[hsl(var(--so-accent))] font-medium text-[hsl(var(--so-foreground))]'
+                : 'text-[hsl(var(--so-muted-foreground))] hover:bg-[hsl(var(--so-accent))/0.5] hover:text-[hsl(var(--so-foreground))]'
+            "
+            @click="onNavigate"
+          >
+            <Puzzle class="h-4 w-4 shrink-0" />
+            <span class="flex-1 truncate">{{ currentAppLabel(entry) }}</span>
+          </a>
+        </div>
+      </div>
 
       <div class="py-1">
         <button

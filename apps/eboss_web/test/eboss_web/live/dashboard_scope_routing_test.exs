@@ -49,7 +49,8 @@ defmodule EBossWeb.DashboardScopeRoutingTest do
 
     assert workspace_shell.component == "ShellOperatorWorkspaceApp"
     assert workspace_shell.ssr == false
-    assert workspace_shell.props["currentPage"] == "dashboard"
+    assert workspace_shell.props["currentPage"]["type"] == "workspace"
+    assert workspace_shell.props["currentPage"]["surface"] == "dashboard"
     assert workspace_shell.props["currentPath"] == path
     assert workspace_shell.props["currentUser"]["username"] == context.current_user.username
     assert workspace_shell.props["currentScope"]["currentWorkspace"]["slug"] == workspace.slug
@@ -92,7 +93,8 @@ defmodule EBossWeb.DashboardScopeRoutingTest do
 
       workspace_shell = get_vue(view, name: "ShellOperatorWorkspaceApp")
 
-      assert workspace_shell.props["currentPage"] == expected_page
+      assert workspace_shell.props["currentPage"]["type"] == "workspace"
+      assert workspace_shell.props["currentPage"]["surface"] == expected_page
       assert workspace_shell.props["currentPath"] == route_path
       assert workspace_shell.props["currentScope"]["dashboardPath"] == base_path
       assert workspace_shell.props["currentScope"]["currentWorkspace"]["slug"] == workspace.slug
@@ -117,7 +119,9 @@ defmodule EBossWeb.DashboardScopeRoutingTest do
 
     workspace_shell = get_vue(view, name: "ShellOperatorWorkspaceApp")
 
-    assert workspace_shell.props["currentPage"] == "app:folio"
+    assert workspace_shell.props["currentPage"]["type"] == "app"
+    assert workspace_shell.props["currentPage"]["app_key"] == "folio"
+    assert workspace_shell.props["currentPage"]["app_surface"] == nil
     assert workspace_shell.props["currentPath"] == app_base_path
     assert workspace_shell.props["currentScope"]["dashboardPath"] == base_path
     assert workspace_shell.props["currentScope"]["currentWorkspace"]["slug"] == workspace.slug
@@ -126,7 +130,9 @@ defmodule EBossWeb.DashboardScopeRoutingTest do
 
     workspace_shell_with_surface = get_vue(view_with_surface, name: "ShellOperatorWorkspaceApp")
 
-    assert workspace_shell_with_surface.props["currentPage"] == "app:folio:files"
+    assert workspace_shell_with_surface.props["currentPage"]["type"] == "app"
+    assert workspace_shell_with_surface.props["currentPage"]["app_key"] == "folio"
+    assert workspace_shell_with_surface.props["currentPage"]["app_surface"] == "files"
     assert workspace_shell_with_surface.props["currentPath"] == app_view_surface_path
   end
 
@@ -164,7 +170,8 @@ defmodule EBossWeb.DashboardScopeRoutingTest do
 
     workspace_shell = get_vue(view, name: "ShellOperatorWorkspaceApp")
 
-    assert workspace_shell.props["currentPage"] == "dashboard"
+    assert workspace_shell.props["currentPage"]["type"] == "workspace"
+    assert workspace_shell.props["currentPage"]["surface"] == "dashboard"
     assert workspace_shell.props["currentScope"]["empty"] == true
     assert workspace_shell.props["currentScope"]["currentWorkspace"] == nil
     assert workspace_shell.props["currentScope"]["accessibleWorkspaces"] == []

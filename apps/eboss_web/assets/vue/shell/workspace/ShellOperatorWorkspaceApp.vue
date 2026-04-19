@@ -29,18 +29,19 @@ import type {
   ApiKeyRecord,
   CurrentUser,
   Member,
-  PageKey,
   Project,
   ProjectFilter,
   RoleRecord,
   SettingsTab,
+  WorkspaceApp,
+  WorkspaceNavigationContext,
   WorkspaceScope,
 } from "./types"
 
 const props = defineProps<{
   currentUser: CurrentUser
   currentScope: WorkspaceScope
-  currentPage: PageKey
+  currentPage: WorkspaceNavigationContext
   currentPath: string
   signOutPath: string
   csrfToken: string
@@ -67,6 +68,31 @@ const currentWorkspaceKey = computed(() =>
 const basePath = computed(() => props.currentScope.dashboardPath || props.currentPath)
 const dashboardHref = computed(() => props.currentScope.dashboardPath || "/dashboard")
 const avatarInitials = computed(() => props.currentUser.username.slice(0, 2).toUpperCase())
+const isWorkspaceRoute = computed(() => props.currentPage.type === "workspace")
+const isAppRoute = computed(() => props.currentPage.type === "app")
+const activeWorkspaceSurface = computed(() =>
+  isWorkspaceRoute.value && props.currentPage.type === "workspace" ? props.currentPage.surface : "dashboard"
+)
+const currentWorkspaceApp = computed<WorkspaceApp | null>(() => {
+  if (!isAppRoute.value || props.currentPage.type !== "app") {
+    return null
+  }
+
+  return props.currentScope.apps?.[props.currentPage.app_key] || null
+})
+const appSurfaceLabel = computed(() =>
+  isAppRoute.value && props.currentPage.type === "app" && props.currentPage.app_surface
+    ? props.currentPage.app_surface
+    : "Home",
+)
+const appSurfaceTitle = computed(() =>
+  appSurfaceLabel.value
+    .split("-")
+    .map(segment => `${segment[0].toUpperCase()}${segment.slice(1)}`)
+    .join(" "),
+)
+
+const isWorkspacePage = (surface: string) => isWorkspaceRoute.value && activeWorkspaceSurface.value === surface
 
 const clearInspectors = () => {
   selectedProject.value = null
@@ -136,8 +162,8 @@ watch(projectFilter, nextFilter => {
             </div>
           </a>
 
-          <div class="max-w-md flex-1">
-            <div class="relative">
+        <div class="max-w-md flex-1">
+          <div class="relative">
               <Search
                 class="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[hsl(var(--so-muted-foreground))]"
               />
@@ -150,8 +176,22 @@ watch(projectFilter, nextFilter => {
             </div>
           </div>
 
-          <div class="ml-auto flex items-center gap-1">
-            <ThemeToggleButton />
+        <div class="ml-auto flex items-center gap-1">
+          <span
+            v-if="isAppRoute"
+            class="hidden items-center gap-2 rounded-md border border-[hsl(var(--so-border))] px-2 py-1 text-xs text-[hsl(var(--so-muted-foreground))] sm:flex"
+            data-testid="workspace-current-app"
+          >
+            <span class="so-font-mono">App</span>
+            <span class="font-medium text-[hsl(var(--so-foreground))]">
+              {{ currentWorkspaceApp?.label ?? currentPage.app_key }}
+            </span>
+            <span class="hidden text-[hsl(var(--so-muted-foreground))] lg:inline">
+              · {{ appSurfaceTitle }}
+            </span>
+          </span>
+
+          <ThemeToggleButton />
 
             <button type="button" class="so-icon-button relative">
               <Bell class="h-4 w-4" />
@@ -206,14 +246,14 @@ watch(projectFilter, nextFilter => {
         <div class="max-w-[1400px] p-5 lg:p-6">
           <div v-if="currentWorkspace" class="so-fade-in">
             <DashboardPage
-              v-if="currentPage === 'dashboard'"
+              v-if="isWorkspacePage('dashboard')"
               :workspace-reference="workspaceReference"
               :posture-items="postureItems"
               :overview-events="overviewEvents"
             />
 
             <ProjectsPage
-              v-else-if="currentPage === 'projects'"
+              v-else-if="isWorkspacePage('projects')"
               :workspace-reference="workspaceReference"
               :project-filters="projectFilters"
               :project-filter="projectFilter"
@@ -224,7 +264,7 @@ watch(projectFilter, nextFilter => {
             />
 
             <MembersPage
-              v-else-if="currentPage === 'members'"
+              v-else-if="isWorkspacePage('members')"
               :workspace-reference="workspaceReference"
               :members="members"
               :selected-member="selectedMember"
@@ -232,7 +272,7 @@ watch(projectFilter, nextFilter => {
             />
 
             <AccessPage
-              v-else-if="currentPage === 'access'"
+              v-else-if="isWorkspacePage('access')"
               :workspace-reference="workspaceReference"
               :active-access-tab="activeAccessTab"
               :roles="roles"
@@ -248,7 +288,7 @@ watch(projectFilter, nextFilter => {
             />
 
             <ActivityPage
-              v-else-if="currentPage === 'activity'"
+              v-else-if="isWorkspacePage('activity')"
               :workspace-reference="workspaceReference"
               :activity-events="activityEvents"
               :selected-activity="selectedActivity"
@@ -256,12 +296,27 @@ watch(projectFilter, nextFilter => {
             />
 
             <SettingsPage
-              v-else-if="currentPage === 'settings'"
+              v-else-if="isWorkspacePage('settings')"
               :workspace-reference="workspaceReference"
               :active-settings-tab="activeSettingsTab"
               :current-workspace="currentWorkspace"
               @update:active-settings-tab="activeSettingsTab = $event"
             />
+
+            <div
+              v-else-if="isAppRoute"
+              class="rounded-md border border-[hsl(var(--so-border))] bg-[hsl(var(--so-surface-2))] p-4"
+            >
+              <p class="so-font-mono text-[11px] uppercase tracking-wider text-[hsl(var(--so-muted-foreground))]">
+                App surface
+              </p>
+              <p class="mt-1 text-sm font-medium">
+                {{ currentWorkspaceApp?.label ?? currentPage.app_key }}
+              </p>
+              <p class="mt-2 text-sm text-[hsl(var(--so-muted-foreground))]">
+                Surface: {{ appSurfaceTitle }}
+              </p>
+            </div>
           </div>
 
           <EmptyWorkspacePage

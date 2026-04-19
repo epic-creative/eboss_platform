@@ -4,15 +4,14 @@ defmodule EBossWeb.DashboardLive do
   alias EBossWeb.AppScope
 
   @workspace_routes %{
-    "dashboard" => %{page: "dashboard", title: "Overview"},
-    "projects" => %{page: "projects", title: "Projects"},
-    "members" => %{page: "members", title: "Members"},
-    "access" => %{page: "access", title: "Access"},
-    "activity" => %{page: "activity", title: "Activity"},
-    "settings" => %{page: "settings", title: "Settings"}
+    "dashboard" => %{surface: "dashboard", title: "Overview"},
+    "projects" => %{surface: "projects", title: "Projects"},
+    "members" => %{surface: "members", title: "Members"},
+    "access" => %{surface: "access", title: "Access"},
+    "activity" => %{surface: "activity", title: "Activity"},
+    "settings" => %{surface: "settings", title: "Settings"}
   }
   @default_workspace_page "dashboard"
-  @app_page_prefix "app:"
 
   @impl true
   def mount(params, _session, socket) do
@@ -22,13 +21,12 @@ defmodule EBossWeb.DashboardLive do
 
       {:ok, current_scope} ->
         route = resolve_current_route(current_scope, socket.assigns.live_action, params)
-        current_page = route.page
         current_path = route.current_path
 
         {:ok,
          socket
          |> assign(:current_scope, current_scope)
-         |> assign(:current_page, current_page)
+         |> assign(:current_navigation, route)
          |> assign(:current_path, current_path)
          |> assign(:page_title, route.title)
          |> assign(:current_user_props, user_props(socket.assigns.current_user))
@@ -51,7 +49,7 @@ defmodule EBossWeb.DashboardLive do
       <.ShellOperatorWorkspaceApp
         currentUser={@current_user_props}
         currentScope={@current_scope_props}
-        currentPage={@current_page}
+        currentPage={@current_navigation}
         currentPath={@current_path}
         signOutPath={~p"/logout"}
         csrfToken={Plug.CSRFProtection.get_csrf_token()}
@@ -64,12 +62,21 @@ defmodule EBossWeb.DashboardLive do
     current_scope =
       Map.get(assigns, :current_scope) || AppScope.empty(Map.get(assigns, :current_user))
 
-    current_page = Map.get(assigns, :current_page, "dashboard")
-    current_path = Map.get(assigns, :current_path) || current_path(current_scope, current_page)
+    current_navigation =
+      Map.get(assigns, :current_navigation, %{
+        type: "workspace",
+        surface: @default_workspace_page,
+        app_key: nil,
+        app_surface: nil,
+        title: "Overview",
+        current_path: current_path(current_scope, @default_workspace_page)
+      })
+
+    current_path = Map.get(assigns, :current_path) || Map.get(current_navigation, :current_path)
 
     assigns
     |> assign(:current_scope, current_scope)
-    |> assign(:current_page, current_page)
+    |> assign(:current_navigation, current_navigation)
     |> assign(:current_path, current_path)
     |> assign(
       :current_user_props,
@@ -105,12 +112,12 @@ defmodule EBossWeb.DashboardLive do
     resolved = Map.get(@workspace_routes, page, @workspace_routes[@default_workspace_page])
 
     %{
-      route_type: :workspace,
-      page: resolved.page,
+      type: "workspace",
+      surface: resolved.surface,
       title: resolved.title,
       app_key: nil,
       app_surface: nil,
-      current_path: workspace_path(current_scope, resolved.page)
+      current_path: workspace_path(current_scope, resolved.surface)
     }
   end
 
@@ -124,11 +131,10 @@ defmodule EBossWeb.DashboardLive do
           app_key_string = to_string(app_key)
 
           %{
-            route_type: :app,
-            page: app_page(app_key_string, normalized_surface),
-            title: app_title(app_label, normalized_surface),
+            type: "app",
             app_key: app_key_string,
             app_surface: normalized_surface,
+            title: app_title(app_label, normalized_surface),
             current_path: app_path(current_scope, app, app_key_string, normalized_surface)
           }
         else
@@ -158,11 +164,7 @@ defmodule EBossWeb.DashboardLive do
   defp current_path(%AppScope{dashboard_path: dashboard_path}, "dashboard"), do: dashboard_path
 
   defp current_path(%AppScope{dashboard_path: dashboard_path}, page) when is_binary(page) do
-    if String.starts_with?(page, @app_page_prefix) do
-      dashboard_path
-    else
-      "#{dashboard_path}/#{page}"
-    end
+    "#{dashboard_path}/#{page}"
   end
 
   defp workspace_path(%AppScope{dashboard_path: dashboard_path}, "dashboard"), do: dashboard_path
@@ -180,14 +182,6 @@ defmodule EBossWeb.DashboardLive do
        when is_binary(app_surface) do
     base_path = fetch_map_field(app, :default_path, "#{dashboard_path}/apps/#{app_key}")
     "#{base_path}/#{app_surface}"
-  end
-
-  defp app_page(app_key, nil) do
-    "#{@app_page_prefix}#{app_key}"
-  end
-
-  defp app_page(app_key, app_surface) do
-    "#{@app_page_prefix}#{app_key}:#{app_surface}"
   end
 
   defp app_title(app_label, nil), do: app_label

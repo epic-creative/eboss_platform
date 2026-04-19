@@ -1,6 +1,18 @@
 import type { Component } from "vue"
 
-export type PageKey = "dashboard" | "projects" | "members" | "access" | "activity" | "settings"
+export type WorkspaceSurface = "dashboard" | "projects" | "members" | "access" | "activity" | "settings"
+export interface WorkspaceNavigation {
+  type: "workspace"
+  surface: WorkspaceSurface
+}
+
+export interface AppNavigation {
+  type: "app"
+  app_key: string
+  app_surface: string | null
+}
+
+export type WorkspaceNavigationContext = WorkspaceNavigation | AppNavigation
 export type ProjectStatus = "active" | "paused" | "archived"
 export type MemberRole = "owner" | "admin" | "member" | "viewer"
 export type MemberStatus = "active" | "invited" | "suspended"

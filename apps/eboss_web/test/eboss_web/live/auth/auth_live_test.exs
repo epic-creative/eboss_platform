@@ -204,7 +204,8 @@ defmodule EBossWeb.AuthLiveTest do
     dashboard_shell = get_vue(dashboard, name: "ShellOperatorWorkspaceApp")
 
     assert dashboard_shell.component == "ShellOperatorWorkspaceApp"
-    assert dashboard_shell.props["currentPage"] == "dashboard"
+    assert dashboard_shell.props["currentPage"]["type"] == "workspace"
+    assert dashboard_shell.props["currentPage"]["surface"] == "dashboard"
     assert dashboard_shell.props["currentUser"]["username"] == context.current_user.username
     assert dashboard_shell.props["currentScope"]["currentWorkspace"]["slug"] == workspace.slug
   end
