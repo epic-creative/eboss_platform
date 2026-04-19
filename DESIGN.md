@@ -6,6 +6,25 @@ It defines how the EBoss design layer is organized, where design code lives, and
 
 The goal is not to lock in a single visual treatment forever. The goal is to keep the system coherent while the product evolves.
 
+## Canonical Source
+
+The canonical visual source for EBoss is the Lovable shell-operator system:
+
+- published reference: `https://shell-operator-system.lovable.app`
+- local source clone: `/private/tmp/shell-operator-system`
+- porting blueprint: `docs/porting/shell_operator_system_port.md`
+
+This is the product design we are standardizing on.
+
+The layered EBoss CSS architecture remains the implementation mechanism:
+
+- `tokens.css` defines the shared semantic variables
+- `themes.css` maps the supported light/dark modes
+- `primitives.css` defines reusable control contracts
+- `patterns.css` defines page and shell composition rules
+
+Those layers should express the Lovable shell system. They should not compete with it or invent a parallel visual language.
+
 ## Intent
 
 The EBoss UI should feel like one product, not a collection of screens.
@@ -18,12 +37,11 @@ Design work in this repository should:
 - separate visual structure from business logic
 - prefer repeatable patterns over one-off hero implementations
 - make component states visible in development tooling before they spread through the app
+- keep the runtime product visually faithful to the Lovable shell reference while adapting it to Phoenix, HEEx, and Vue
 
 ## Visual Thesis
 
-EBoss should feel like an operator console that can stretch into auth and public pages without losing its center of gravity.
-
-The `jido_hub` dashboard reference is useful because it demonstrates the right kind of discipline:
+EBoss should feel like the shell-operator system across workspace, auth, and public surfaces:
 
 - operator-grade clarity over decorative novelty
 - restrained typography over loud marketing scale shifts
@@ -31,7 +49,7 @@ The `jido_hub` dashboard reference is useful because it demonstrates the right k
 - strong shell identity over floating page fragments
 - utility-led emphasis over ornament-first composition
 
-We are not copying `jido_hub` screen-for-screen. We are adopting its bias toward calm, high-trust control surfaces and translating that into EBoss.
+We are not using the in-repo `ui-*` layer as an independent art direction. It exists to encode and share the shell-operator system cleanly across HEEx and Vue.
 
 ## Shared Visual DNA
 
@@ -181,14 +199,15 @@ The CSS layer should stay intentional and layered.
 ### Preferred CSS approach
 
 - Prefer semantic custom properties over hardcoded raw values.
-- Prefer shared `ui-*` class contracts for reusable pieces.
+- Prefer shared `ui-*` class contracts for reusable pieces when they faithfully encode the shell-operator design.
 - Prefer Tailwind utilities for local layout composition when they do not create repeated visual contracts.
 - Promote repeated visual structures into shared CSS and components.
+- Keep shell-operator-derived classes and tokens as temporary adapters only when a shared `ui-*` contract is not ready yet.
 
 ### Avoid
 
 - page-specific color literals when a semantic token should exist
-- component-local design systems that bypass the shared `ui-*` vocabulary
+- component-local design systems that bypass the canonical shell-operator vocabulary
 - one-off spacing scales
 - arbitrary visual fixes duplicated across pages
 - mixing structural and stateful styles in a way that makes states hard to reason about
