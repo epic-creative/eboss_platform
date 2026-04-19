@@ -6,35 +6,29 @@ import ThemeToggleButton from "../shared/ThemeToggleButton.vue"
 import WorkspaceSidebar from "./WorkspaceSidebar.vue"
 import {
   accessAudit,
-  activityEvents,
   apiKeys,
-  members,
   overviewEvents,
-  postureItems,
-  projectFilters,
-  projects,
+  members,
   roles,
+  postureItems,
 } from "./mockData"
 import AccessPage from "./pages/AccessPage.vue"
-import ActivityPage from "./pages/ActivityPage.vue"
 import DashboardPage from "./pages/DashboardPage.vue"
 import EmptyWorkspacePage from "./pages/EmptyWorkspacePage.vue"
 import MembersPage from "./pages/MembersPage.vue"
-import ProjectsPage from "./pages/ProjectsPage.vue"
 import SettingsPage from "./pages/SettingsPage.vue"
 import type {
   AccessAuditRecord,
   AccessTab,
-  ActivityEvent,
   ApiKeyRecord,
   CurrentUser,
   Member,
-  Project,
-  ProjectFilter,
   RoleRecord,
   SettingsTab,
   WorkspaceApp,
+  WorkspaceSurface,
   WorkspaceNavigationContext,
+  AppNavigation,
   WorkspaceScope,
 } from "./types"
 
@@ -50,13 +44,10 @@ const props = defineProps<{
 const mobileNavOpen = ref(false)
 const activeAccessTab = ref<AccessTab>("roles")
 const activeSettingsTab = ref<SettingsTab>("general")
-const selectedProject = ref<Project | null>(null)
 const selectedMember = ref<Member | null>(null)
 const selectedRole = ref<RoleRecord | null>(null)
 const selectedKey = ref<ApiKeyRecord | null>(null)
 const selectedAccessAudit = ref<AccessAuditRecord | null>(null)
-const selectedActivity = ref<ActivityEvent | null>(null)
-const projectFilter = ref<ProjectFilter>("all")
 
 const currentWorkspace = computed(() => props.currentScope.currentWorkspace)
 const workspaceReference = computed(() =>
@@ -70,42 +61,45 @@ const dashboardHref = computed(() => props.currentScope.dashboardPath || "/dashb
 const avatarInitials = computed(() => props.currentUser.username.slice(0, 2).toUpperCase())
 const isWorkspaceRoute = computed(() => props.currentPage.type === "workspace")
 const isAppRoute = computed(() => props.currentPage.type === "app")
+const isAppNavigation = (page: WorkspaceNavigationContext): page is AppNavigation =>
+  page.type === "app"
+const currentAppPage = computed<AppNavigation | null>(() =>
+  isAppNavigation(props.currentPage) ? props.currentPage : null,
+)
 const activeWorkspaceSurface = computed(() =>
   isWorkspaceRoute.value && props.currentPage.type === "workspace" ? props.currentPage.surface : "dashboard"
 )
 const currentWorkspaceApp = computed<WorkspaceApp | null>(() => {
-  if (!isAppRoute.value || props.currentPage.type !== "app") {
+  if (!currentAppPage.value) {
     return null
   }
 
-  return props.currentScope.apps?.[props.currentPage.app_key] || null
+  return props.currentScope.apps?.[currentAppPage.value.app_key] || null
 })
 const appSurfaceLabel = computed(() =>
-  isAppRoute.value && props.currentPage.type === "app" && props.currentPage.app_surface
-    ? props.currentPage.app_surface
+  currentAppPage.value && currentAppPage.value.app_surface
+    ? currentAppPage.value.app_surface
     : "Home",
 )
 const appSurfaceTitle = computed(() =>
   appSurfaceLabel.value
     .split("-")
-    .map(segment => `${segment[0].toUpperCase()}${segment.slice(1)}`)
+    .map((segment: string) => `${segment[0].toUpperCase()}${segment.slice(1)}`)
     .join(" "),
 )
 
-const isWorkspacePage = (surface: string) => isWorkspaceRoute.value && activeWorkspaceSurface.value === surface
+const isWorkspacePage = (surface: WorkspaceSurface) =>
+  isWorkspaceRoute.value && activeWorkspaceSurface.value === surface
 
 const clearInspectors = () => {
-  selectedProject.value = null
   selectedMember.value = null
   selectedRole.value = null
   selectedKey.value = null
   selectedAccessAudit.value = null
-  selectedActivity.value = null
 }
 
 const resetWorkspaceState = () => {
   clearInspectors()
-  projectFilter.value = "all"
   activeAccessTab.value = "roles"
   activeSettingsTab.value = "general"
 }
@@ -120,15 +114,6 @@ watch(currentWorkspaceKey, () => {
   resetWorkspaceState()
 })
 
-watch(projectFilter, nextFilter => {
-  if (
-    selectedProject.value &&
-    nextFilter !== "all" &&
-    selectedProject.value.status !== nextFilter
-  ) {
-    selectedProject.value = null
-  }
-})
 </script>
 
 <template>
@@ -184,7 +169,7 @@ watch(projectFilter, nextFilter => {
           >
             <span class="so-font-mono">App</span>
             <span class="font-medium text-[hsl(var(--so-foreground))]">
-              {{ currentWorkspaceApp?.label ?? currentPage.app_key }}
+              {{ currentWorkspaceApp?.label ?? currentAppPage?.app_key }}
             </span>
             <span class="hidden text-[hsl(var(--so-muted-foreground))] lg:inline">
               · {{ appSurfaceTitle }}
@@ -252,17 +237,6 @@ watch(projectFilter, nextFilter => {
               :overview-events="overviewEvents"
             />
 
-            <ProjectsPage
-              v-else-if="isWorkspacePage('projects')"
-              :workspace-reference="workspaceReference"
-              :project-filters="projectFilters"
-              :project-filter="projectFilter"
-              :projects="projects"
-              :selected-project="selectedProject"
-              @update:project-filter="projectFilter = $event"
-              @update:selected-project="selectedProject = $event"
-            />
-
             <MembersPage
               v-else-if="isWorkspacePage('members')"
               :workspace-reference="workspaceReference"
@@ -287,14 +261,6 @@ watch(projectFilter, nextFilter => {
               @update:selected-access-audit="selectedAccessAudit = $event"
             />
 
-            <ActivityPage
-              v-else-if="isWorkspacePage('activity')"
-              :workspace-reference="workspaceReference"
-              :activity-events="activityEvents"
-              :selected-activity="selectedActivity"
-              @update:selected-activity="selectedActivity = $event"
-            />
-
             <SettingsPage
               v-else-if="isWorkspacePage('settings')"
               :workspace-reference="workspaceReference"
@@ -311,7 +277,7 @@ watch(projectFilter, nextFilter => {
                 App surface
               </p>
               <p class="mt-1 text-sm font-medium">
-                {{ currentWorkspaceApp?.label ?? currentPage.app_key }}
+                {{ currentWorkspaceApp?.label ?? currentAppPage?.app_key }}
               </p>
               <p class="mt-2 text-sm text-[hsl(var(--so-muted-foreground))]">
                 Surface: {{ appSurfaceTitle }}

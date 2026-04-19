@@ -5,10 +5,8 @@ defmodule EBossWeb.DashboardLive do
 
   @workspace_routes %{
     "dashboard" => %{surface: "dashboard", title: "Overview"},
-    "projects" => %{surface: "projects", title: "Projects"},
     "members" => %{surface: "members", title: "Members"},
     "access" => %{surface: "access", title: "Access"},
-    "activity" => %{surface: "activity", title: "Activity"},
     "settings" => %{surface: "settings", title: "Settings"}
   }
   @default_workspace_page "dashboard"

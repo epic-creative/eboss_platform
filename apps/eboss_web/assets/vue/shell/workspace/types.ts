@@ -1,6 +1,6 @@
 import type { Component } from "vue"
 
-export type WorkspaceSurface = "dashboard" | "projects" | "members" | "access" | "activity" | "settings"
+export type WorkspaceSurface = "dashboard" | "members" | "access" | "settings"
 export interface WorkspaceNavigation {
   type: "workspace"
   surface: WorkspaceSurface

@@ -92,9 +92,9 @@ defmodule EBossWeb.DesignSurfaceTest do
 
     assert shell_operator_workspace_vue =~ "WorkspaceSidebar"
     assert shell_operator_workspace_vue =~ "DashboardPage"
-    assert shell_operator_workspace_vue =~ "ProjectsPage"
+    assert shell_operator_workspace_vue =~ "MembersPage"
     assert shell_operator_workspace_vue =~ "EmptyWorkspacePage"
-    assert workspace_sidebar_vue =~ "Projects"
+    assert workspace_sidebar_vue =~ "Overview"
     assert workspace_sidebar_vue =~ "Members"
 
     assert ui_dialog_vue =~ ~s(<UiPanel as="div" surface="floating" class="sm:p-8">)

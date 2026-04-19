@@ -2,9 +2,9 @@ import { nextTick } from "vue"
 import { describe, expect, it } from "vitest"
 
 import { mountComponent } from "@/tests/vue/support/mount"
-import { projects } from "@/vue/shell/workspace/mockData"
+import { members } from "@/vue/shell/workspace/mockData"
+import MembersPage from "@/vue/shell/workspace/pages/MembersPage.vue"
 import ShellOperatorWorkspaceApp from "@/vue/shell/workspace/ShellOperatorWorkspaceApp.vue"
-import ProjectsPage from "@/vue/shell/workspace/pages/ProjectsPage.vue"
 import type { WorkspaceScope, WorkspaceSurface, WorkspaceSummary } from "@/vue/shell/workspace/types"
 
 const workspace = (overrides: Partial<WorkspaceSummary> = {}): WorkspaceSummary => ({
@@ -48,7 +48,7 @@ const appRoute = (appKey: string, appSurface: string | null = null) => ({
 })
 
 describe("ShellOperatorWorkspaceApp", () => {
-  it("clears the selected project when the route page changes", async () => {
+  it("clears the selected member when the route page changes", async () => {
     const wrapper = mountComponent(ShellOperatorWorkspaceApp, {
       props: {
         currentUser: {
@@ -56,8 +56,8 @@ describe("ShellOperatorWorkspaceApp", () => {
           email: "operator@example.com",
         },
         currentScope: scope(),
-        currentPage: workspaceRoute("projects"),
-        currentPath: "/primary-owner/primary-workspace/projects",
+        currentPage: workspaceRoute("members"),
+        currentPath: "/primary-owner/primary-workspace/members",
         signOutPath: "/sign-out",
         csrfToken: "csrf-token",
       },
@@ -70,12 +70,18 @@ describe("ShellOperatorWorkspaceApp", () => {
       },
     })
 
-    wrapper.getComponent(ProjectsPage).vm.$emit("update:selectedProject", projects[0])
+    wrapper.getComponent(MembersPage).vm.$emit("update:selected-member", members[0])
     await nextTick()
 
-    expect(wrapper.getComponent(ProjectsPage).props("selectedProject")).toMatchObject({
-      id: projects[0].id,
+    expect(wrapper.getComponent(MembersPage).props("selectedMember")).toMatchObject({
+      id: members[0].id,
     })
+
+    await wrapper.setProps({
+      currentPage: workspaceRoute("settings"),
+      currentPath: "/primary-owner/primary-workspace/settings",
+    })
+    await nextTick()
 
     await wrapper.setProps({
       currentPage: workspaceRoute("members"),
@@ -83,13 +89,7 @@ describe("ShellOperatorWorkspaceApp", () => {
     })
     await nextTick()
 
-    await wrapper.setProps({
-      currentPage: workspaceRoute("projects"),
-      currentPath: "/primary-owner/primary-workspace/projects",
-    })
-    await nextTick()
-
-    expect(wrapper.getComponent(ProjectsPage).props("selectedProject")).toBeNull()
+    expect(wrapper.getComponent(MembersPage).props("selectedMember")).toBeNull()
   })
 
   it("resets workspace-local state when the mounted workspace changes", async () => {
@@ -100,8 +100,8 @@ describe("ShellOperatorWorkspaceApp", () => {
           email: "operator@example.com",
         },
         currentScope: scope(),
-        currentPage: workspaceRoute("projects"),
-        currentPath: "/primary-owner/primary-workspace/projects",
+        currentPage: workspaceRoute("members"),
+        currentPath: "/primary-owner/primary-workspace/members",
         signOutPath: "/sign-out",
         csrfToken: "csrf-token",
       },
@@ -114,17 +114,15 @@ describe("ShellOperatorWorkspaceApp", () => {
       },
     })
 
-    wrapper.getComponent(ProjectsPage).vm.$emit("update:projectFilter", "archived")
-    wrapper.getComponent(ProjectsPage).vm.$emit("update:selectedProject", projects[4])
+    wrapper.getComponent(MembersPage).vm.$emit("update:selected-member", members[4])
     await nextTick()
 
-    expect(wrapper.getComponent(ProjectsPage).props("projectFilter")).toBe("archived")
-    expect(wrapper.getComponent(ProjectsPage).props("selectedProject")).toMatchObject({
-      id: projects[4].id,
+    expect(wrapper.getComponent(MembersPage).props("selectedMember")).toMatchObject({
+      id: members[4].id,
     })
 
     await wrapper.setProps({
-      currentPage: workspaceRoute("projects"),
+      currentPage: workspaceRoute("members"),
       currentScope: scope({
         dashboardPath: "/secondary-owner/secondary-workspace",
         currentWorkspace: workspace({
@@ -151,12 +149,11 @@ describe("ShellOperatorWorkspaceApp", () => {
           }),
         ],
       }),
-      currentPath: "/secondary-owner/secondary-workspace/projects",
+      currentPath: "/secondary-owner/secondary-workspace/members",
     })
     await nextTick()
 
-    expect(wrapper.getComponent(ProjectsPage).props("projectFilter")).toBe("all")
-    expect(wrapper.getComponent(ProjectsPage).props("selectedProject")).toBeNull()
+    expect(wrapper.getComponent(MembersPage).props("selectedMember")).toBeNull()
   })
 
   it("renders app chrome when on an app route", () => {

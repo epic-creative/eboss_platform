@@ -103,5 +103,8 @@ describe("WorkspaceSidebar", () => {
     const folioLink = wrapper.get('a[href="/primary-owner/primary-workspace/apps/folio"]')
     expect(folioLink.text()).toContain("Folio")
     expect(folioLink.classes()).toContain("bg-[hsl(var(--so-accent))]")
+
+    expect(wrapper.find('a[href="/primary-owner/primary-workspace/projects"]').exists()).toBe(false)
+    expect(wrapper.find('a[href="/primary-owner/primary-workspace/activity"]').exists()).toBe(false)
   })
 })

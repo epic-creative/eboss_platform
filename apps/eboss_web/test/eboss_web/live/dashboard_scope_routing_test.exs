@@ -81,10 +81,8 @@ defmodule EBossWeb.DashboardScopeRoutingTest do
 
     platform_routes = [
       {"dashboard", base_path},
-      {"projects", "#{base_path}/projects"},
       {"members", "#{base_path}/members"},
       {"access", "#{base_path}/access"},
-      {"activity", "#{base_path}/activity"},
       {"settings", "#{base_path}/settings"}
     ]
 
@@ -96,6 +94,17 @@ defmodule EBossWeb.DashboardScopeRoutingTest do
       assert workspace_shell.props["currentPage"]["type"] == "workspace"
       assert workspace_shell.props["currentPage"]["surface"] == expected_page
       assert workspace_shell.props["currentPath"] == route_path
+      assert workspace_shell.props["currentScope"]["dashboardPath"] == base_path
+      assert workspace_shell.props["currentScope"]["currentWorkspace"]["slug"] == workspace.slug
+    end
+
+    for removed_page <- ["projects", "activity"] do
+      assert {:ok, view, _html} = live(context.conn, "#{base_path}/#{removed_page}")
+      workspace_shell = get_vue(view, name: "ShellOperatorWorkspaceApp")
+
+      assert workspace_shell.props["currentPage"]["type"] == "workspace"
+      assert workspace_shell.props["currentPage"]["surface"] == "dashboard"
+      assert workspace_shell.props["currentPath"] == base_path
       assert workspace_shell.props["currentScope"]["dashboardPath"] == base_path
       assert workspace_shell.props["currentScope"]["currentWorkspace"]["slug"] == workspace.slug
     end

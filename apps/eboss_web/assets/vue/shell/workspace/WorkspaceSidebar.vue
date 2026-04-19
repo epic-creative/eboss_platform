@@ -1,24 +1,15 @@
 <script setup lang="ts">
 import { computed, ref } from "vue"
 import {
-  Activity,
   AlertTriangle,
-  Bot,
   Building2,
   ChevronDown,
   ChevronRight,
-  Clock,
-  CreditCard,
-  Database,
-  FolderKanban,
   LayoutDashboard,
-  MoreHorizontal,
   Puzzle,
   Settings,
   Shield,
-  Star,
   Users,
-  Zap,
 } from "lucide-vue-next"
 
 import type {
@@ -42,11 +33,6 @@ const emit = defineEmits<{
 }>()
 
 const groups = ref({
-  favorites: true,
-  views: false,
-  teams: false,
-  automation: false,
-  more: false,
   apps: false,
   switcher: false,
 })
@@ -228,20 +214,6 @@ const workspaceRouteLabel = computed(() =>
           <span class="flex-1 truncate">Overview</span>
         </a>
         <a
-          :href="linkFor('projects')"
-          class="mx-1.5 flex items-center gap-2 rounded-md px-2 py-[5px] text-sm transition-colors"
-          :class="
-            isActive('projects')
-              ? 'bg-[hsl(var(--so-accent))] font-medium text-[hsl(var(--so-foreground))]'
-              : 'text-[hsl(var(--so-muted-foreground))] hover:bg-[hsl(var(--so-accent))/0.5] hover:text-[hsl(var(--so-foreground))]'
-          "
-          @click="onNavigate"
-        >
-          <FolderKanban class="h-4 w-4 shrink-0" />
-          <span class="flex-1 truncate">Projects</span>
-          <span class="so-font-mono min-w-[1.25rem] text-right text-[11px] text-[hsl(var(--so-muted-foreground))]">12</span>
-        </a>
-        <a
           :href="linkFor('members')"
           class="mx-1.5 flex items-center gap-2 rounded-md px-2 py-[5px] text-sm transition-colors"
           :class="
@@ -270,18 +242,17 @@ const workspaceRouteLabel = computed(() =>
           <AlertTriangle class="h-3 w-3 shrink-0 text-[hsl(var(--so-warning))]" />
         </a>
         <a
-          :href="linkFor('activity')"
+          :href="linkFor('settings')"
           class="mx-1.5 flex items-center gap-2 rounded-md px-2 py-[5px] text-sm transition-colors"
           :class="
-            isActive('activity')
+            isActive('settings')
               ? 'bg-[hsl(var(--so-accent))] font-medium text-[hsl(var(--so-foreground))]'
               : 'text-[hsl(var(--so-muted-foreground))] hover:bg-[hsl(var(--so-accent))/0.5] hover:text-[hsl(var(--so-foreground))]'
           "
           @click="onNavigate"
         >
-          <Activity class="h-4 w-4 shrink-0" />
-          <span class="flex-1 truncate">Activity</span>
-          <span class="h-2 w-2 shrink-0 rounded-full bg-[hsl(var(--so-success))]" />
+          <Settings class="h-4 w-4 shrink-0" />
+          <span class="flex-1 truncate">Settings</span>
         </a>
       </div>
 
@@ -316,212 +287,6 @@ const workspaceRouteLabel = computed(() =>
           </a>
         </div>
       </div>
-
-      <div class="py-1">
-        <button
-          type="button"
-          class="group flex w-full items-center gap-1 px-3 py-1 text-[11px] font-medium uppercase tracking-wider text-[hsl(var(--so-muted-foreground))] transition-colors hover:text-[hsl(var(--so-foreground))]"
-          @click="toggle('favorites')"
-        >
-          <ChevronRight class="h-3 w-3 shrink-0 transition-transform" :class="groups.favorites ? 'rotate-90' : ''" />
-          <span class="flex-1 text-left">Favorites</span>
-          <span class="so-font-mono text-[10px] text-[hsl(var(--so-muted-foreground))]">3</span>
-        </button>
-        <div v-if="groups.favorites" class="mt-0.5">
-          <a
-            :href="linkFor('projects')"
-            class="mx-1.5 flex items-center gap-2 rounded-md py-[4px] pl-7 pr-2 text-[13px] text-[hsl(var(--so-muted-foreground))] transition-colors hover:bg-[hsl(var(--so-accent))/0.5] hover:text-[hsl(var(--so-foreground))]"
-            @click="onNavigate"
-          >
-            <span class="flex-1 truncate">api-gateway</span>
-            <span class="so-font-mono text-[10px]">4</span>
-          </a>
-          <a
-            :href="linkFor('projects')"
-            class="mx-1.5 flex items-center gap-2 rounded-md py-[4px] pl-7 pr-2 text-[13px] text-[hsl(var(--so-muted-foreground))] transition-colors hover:bg-[hsl(var(--so-accent))/0.5] hover:text-[hsl(var(--so-foreground))]"
-            @click="onNavigate"
-          >
-            <span class="flex-1 truncate">auth-service</span>
-            <span class="so-font-mono text-[10px]">2</span>
-          </a>
-          <a
-            :href="linkFor('members')"
-            class="mx-1.5 flex items-center gap-2 rounded-md py-[4px] pl-7 pr-2 text-[13px] text-[hsl(var(--so-muted-foreground))] transition-colors hover:bg-[hsl(var(--so-accent))/0.5] hover:text-[hsl(var(--so-foreground))]"
-            @click="onNavigate"
-          >
-            <span class="flex-1 truncate">Platform team</span>
-          </a>
-        </div>
-      </div>
-
-      <div class="py-1">
-        <button
-          type="button"
-          class="group flex w-full items-center gap-1 px-3 py-1 text-[11px] font-medium uppercase tracking-wider text-[hsl(var(--so-muted-foreground))] transition-colors hover:text-[hsl(var(--so-foreground))]"
-          @click="toggle('views')"
-        >
-          <ChevronRight class="h-3 w-3 shrink-0 transition-transform" :class="groups.views ? 'rotate-90' : ''" />
-          <span class="flex-1 text-left">Views</span>
-        </button>
-        <div v-if="groups.views" class="mt-0.5">
-          <a
-            :href="linkFor('projects')"
-            class="mx-1.5 flex items-center gap-2 rounded-md py-[4px] pl-7 pr-2 text-[13px] text-[hsl(var(--so-muted-foreground))] transition-colors hover:bg-[hsl(var(--so-accent))/0.5] hover:text-[hsl(var(--so-foreground))]"
-            @click="onNavigate"
-          >
-            <span class="flex-1 truncate">Active deployments</span>
-            <span class="so-font-mono text-[10px]">6</span>
-          </a>
-          <a
-            :href="linkFor('activity')"
-            class="mx-1.5 flex items-center gap-2 rounded-md py-[4px] pl-7 pr-2 text-[13px] text-[hsl(var(--so-muted-foreground))] transition-colors hover:bg-[hsl(var(--so-accent))/0.5] hover:text-[hsl(var(--so-foreground))]"
-            @click="onNavigate"
-          >
-            <span class="flex-1 truncate">My recent activity</span>
-          </a>
-          <a
-            :href="linkFor('members')"
-            class="mx-1.5 flex items-center gap-2 rounded-md py-[4px] pl-7 pr-2 text-[13px] text-[hsl(var(--so-muted-foreground))] transition-colors hover:bg-[hsl(var(--so-accent))/0.5] hover:text-[hsl(var(--so-foreground))]"
-            @click="onNavigate"
-          >
-            <span class="flex-1 truncate">Pending invites</span>
-            <span class="so-font-mono text-[10px]">1</span>
-          </a>
-          <a
-            :href="linkFor('access')"
-            class="mx-1.5 flex items-center gap-2 rounded-md py-[4px] pl-7 pr-2 text-[13px] text-[hsl(var(--so-muted-foreground))] transition-colors hover:bg-[hsl(var(--so-accent))/0.5] hover:text-[hsl(var(--so-foreground))]"
-            @click="onNavigate"
-          >
-            <span class="flex-1 truncate">Expiring keys</span>
-            <span class="so-font-mono text-[10px]">2</span>
-          </a>
-        </div>
-      </div>
-
-      <div v-if="currentOwner?.type === 'organization'" class="py-1">
-        <button
-          type="button"
-          class="group flex w-full items-center gap-1 px-3 py-1 text-[11px] font-medium uppercase tracking-wider text-[hsl(var(--so-muted-foreground))] transition-colors hover:text-[hsl(var(--so-foreground))]"
-          @click="toggle('teams')"
-        >
-          <ChevronRight class="h-3 w-3 shrink-0 transition-transform" :class="groups.teams ? 'rotate-90' : ''" />
-          <span class="flex-1 text-left">Teams</span>
-          <span class="so-font-mono text-[10px] text-[hsl(var(--so-muted-foreground))]">3</span>
-        </button>
-        <div v-if="groups.teams" class="mt-0.5">
-          <a
-            :href="linkFor('members')"
-            class="mx-1.5 flex items-center gap-2 rounded-md py-[4px] pl-7 pr-2 text-[13px] text-[hsl(var(--so-muted-foreground))] transition-colors hover:bg-[hsl(var(--so-accent))/0.5] hover:text-[hsl(var(--so-foreground))]"
-            @click="onNavigate"
-          >
-            <span class="flex-1 truncate">Engineering</span>
-            <span class="so-font-mono text-[10px]">5</span>
-          </a>
-          <a
-            :href="linkFor('members')"
-            class="mx-1.5 flex items-center gap-2 rounded-md py-[4px] pl-7 pr-2 text-[13px] text-[hsl(var(--so-muted-foreground))] transition-colors hover:bg-[hsl(var(--so-accent))/0.5] hover:text-[hsl(var(--so-foreground))]"
-            @click="onNavigate"
-          >
-            <span class="flex-1 truncate">Platform</span>
-            <span class="so-font-mono text-[10px]">3</span>
-          </a>
-          <a
-            :href="linkFor('members')"
-            class="mx-1.5 flex items-center gap-2 rounded-md py-[4px] pl-7 pr-2 text-[13px] text-[hsl(var(--so-muted-foreground))] transition-colors hover:bg-[hsl(var(--so-accent))/0.5] hover:text-[hsl(var(--so-foreground))]"
-            @click="onNavigate"
-          >
-            <span class="flex-1 truncate">Security</span>
-            <span class="so-font-mono text-[10px]">2</span>
-          </a>
-        </div>
-      </div>
-
-      <div class="mx-3 my-1 border-t border-[hsl(var(--so-border))]" />
-
-      <div class="py-1">
-        <button
-          type="button"
-          class="group flex w-full items-center gap-1 px-3 py-1 text-[11px] font-medium uppercase tracking-wider text-[hsl(var(--so-muted-foreground))] transition-colors hover:text-[hsl(var(--so-foreground))]"
-          @click="toggle('automation')"
-        >
-          <ChevronRight class="h-3 w-3 shrink-0 transition-transform" :class="groups.automation ? 'rotate-90' : ''" />
-          <span class="flex-1 text-left">Automation</span>
-        </button>
-        <div v-if="groups.automation" class="mt-0.5">
-          <a
-            :href="linkFor('dashboard')"
-            class="mx-1.5 flex items-center gap-2 rounded-md px-2 py-[5px] text-sm text-[hsl(var(--so-muted-foreground))] transition-colors hover:bg-[hsl(var(--so-accent))/0.5] hover:text-[hsl(var(--so-foreground))]"
-            @click="onNavigate"
-          >
-            <Bot class="h-4 w-4 shrink-0" />
-            <span class="flex-1 truncate">Agents</span>
-          </a>
-          <a
-            :href="linkFor('dashboard')"
-            class="mx-1.5 flex items-center gap-2 rounded-md px-2 py-[5px] text-sm text-[hsl(var(--so-muted-foreground))] transition-colors hover:bg-[hsl(var(--so-accent))/0.5] hover:text-[hsl(var(--so-foreground))]"
-            @click="onNavigate"
-          >
-            <Zap class="h-4 w-4 shrink-0" />
-            <span class="flex-1 truncate">Workflows</span>
-          </a>
-          <a
-            :href="linkFor('dashboard')"
-            class="mx-1.5 flex items-center gap-2 rounded-md px-2 py-[5px] text-sm text-[hsl(var(--so-muted-foreground))] transition-colors hover:bg-[hsl(var(--so-accent))/0.5] hover:text-[hsl(var(--so-foreground))]"
-            @click="onNavigate"
-          >
-            <Database class="h-4 w-4 shrink-0" />
-            <span class="flex-1 truncate">Datasets</span>
-          </a>
-        </div>
-      </div>
-
-      <details class="px-1.5 py-0.5" :open="groups.more" @toggle="groups.more = !groups.more">
-        <summary
-          class="mx-0 flex w-full cursor-pointer list-none items-center gap-2 rounded-md px-2 py-[5px] text-sm text-[hsl(var(--so-muted-foreground))] transition-colors hover:bg-[hsl(var(--so-accent))/0.5] hover:text-[hsl(var(--so-foreground))]"
-        >
-          <MoreHorizontal class="h-4 w-4 shrink-0" />
-          <span>More</span>
-        </summary>
-        <div class="space-y-0.5 px-1 pb-1 pt-1">
-          <button
-            type="button"
-            class="flex w-full items-center gap-2 rounded-md px-2 py-[5px] text-left text-sm text-[hsl(var(--so-muted-foreground))] transition-colors hover:bg-[hsl(var(--so-accent))/0.5] hover:text-[hsl(var(--so-foreground))]"
-          >
-            <Puzzle class="h-3.5 w-3.5" />
-            Integrations
-          </button>
-          <button
-            type="button"
-            class="flex w-full items-center gap-2 rounded-md px-2 py-[5px] text-left text-sm text-[hsl(var(--so-muted-foreground))] transition-colors hover:bg-[hsl(var(--so-accent))/0.5] hover:text-[hsl(var(--so-foreground))]"
-          >
-            <CreditCard class="h-3.5 w-3.5" />
-            Billing
-          </button>
-          <button
-            type="button"
-            class="flex w-full items-center gap-2 rounded-md px-2 py-[5px] text-left text-sm text-[hsl(var(--so-muted-foreground))] transition-colors hover:bg-[hsl(var(--so-accent))/0.5] hover:text-[hsl(var(--so-foreground))]"
-          >
-            <Star class="h-3.5 w-3.5" />
-            Customize sidebar
-          </button>
-        </div>
-      </details>
-
-      <div class="px-0 py-0.5">
-        <a
-          :href="linkFor('settings')"
-          class="mx-1.5 flex items-center gap-2 rounded-md px-2 py-[5px] text-sm transition-colors"
-          :class="
-            isActive('settings')
-              ? 'bg-[hsl(var(--so-accent))] font-medium text-[hsl(var(--so-foreground))]'
-              : 'text-[hsl(var(--so-muted-foreground))] hover:bg-[hsl(var(--so-accent))/0.5] hover:text-[hsl(var(--so-foreground))]'
-          "
-          @click="onNavigate"
-        >
-          <Settings class="h-4 w-4 shrink-0" />
-          <span class="flex-1 truncate">Settings</span>
-        </a>
-      </div>
     </nav>
 
     <div class="space-y-2 border-t border-[hsl(var(--so-border))] px-3 py-2.5">
@@ -540,10 +305,7 @@ const workspaceRouteLabel = computed(() =>
           <span>·</span>
           <span>us-east-1</span>
           <span>·</span>
-          <span class="flex items-center gap-1">
-            <Clock class="h-2.5 w-2.5" />
-            3ms
-          </span>
+          <span>3ms</span>
         </div>
       </div>
     </div>
