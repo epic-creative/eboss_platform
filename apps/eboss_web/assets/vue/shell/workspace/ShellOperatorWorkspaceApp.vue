@@ -16,11 +16,19 @@ import AccessPage from "./pages/AccessPage.vue"
 import DashboardPage from "./pages/DashboardPage.vue"
 import EmptyWorkspacePage from "./pages/EmptyWorkspacePage.vue"
 import MembersPage from "./pages/MembersPage.vue"
+import ProjectsPage from "./pages/ProjectsPage.vue"
 import SettingsPage from "./pages/SettingsPage.vue"
+import {
+  useFolioProjects,
+  useFolioWorkspaceScope,
+} from "./folio"
+import type { FolioProjectSummary } from "./folio/types"
 import type {
   AccessAuditRecord,
   AccessTab,
   ApiKeyRecord,
+  Project,
+  ProjectFilter,
   CurrentUser,
   Member,
   RoleRecord,
@@ -48,6 +56,40 @@ const selectedMember = ref<Member | null>(null)
 const selectedRole = ref<RoleRecord | null>(null)
 const selectedKey = ref<ApiKeyRecord | null>(null)
 const selectedAccessAudit = ref<AccessAuditRecord | null>(null)
+const selectedProject = ref<Project | null>(null)
+const selectedProjectFilter = ref<ProjectFilter>("all")
+const projectFilters = ["all", "active", "paused", "archived"] satisfies ProjectFilter[]
+const folioWorkspaceScope = useFolioWorkspaceScope(props.currentScope)
+const isFolioAppRoute = computed(() => isAppRoute.value && currentAppPage.value?.app_key === "folio")
+const folioProjectsQuery = useFolioProjects(folioWorkspaceScope, {
+  autoFetch: true,
+  enabled: isFolioAppRoute,
+})
+const folioProjects = computed(() => folioProjectsQuery.projects.value.map(mapFolioProject))
+
+const formatFolioDate = (value: string | null): string => value ?? "—"
+const mapFolioProjectStatus = (status: string): Project["status"] =>
+  status === "active"
+    ? "active"
+    : status === "archived" || status === "completed" || status === "canceled"
+      ? "archived"
+      : "paused"
+
+const mapFolioProject = (project: FolioProjectSummary): Project => ({
+  id: project.id,
+  name: project.title,
+  slug: project.id,
+  status: mapFolioProjectStatus(project.status),
+  lastDeploy: formatFolioDate(project.due_at),
+  members: 0,
+  branches: 0,
+  description: `Project ${project.title}`,
+  region: "—",
+  created: formatFolioDate(project.review_at),
+  environment: "—",
+  lastCommit: formatFolioDate(project.review_at ?? project.due_at),
+  uptime: "—",
+})
 
 const currentWorkspace = computed(() => props.currentScope.currentWorkspace)
 const workspaceReference = computed(() =>
@@ -96,12 +138,14 @@ const clearInspectors = () => {
   selectedRole.value = null
   selectedKey.value = null
   selectedAccessAudit.value = null
+  selectedProject.value = null
 }
 
 const resetWorkspaceState = () => {
   clearInspectors()
   activeAccessTab.value = "roles"
   activeSettingsTab.value = "general"
+  selectedProjectFilter.value = "all"
 }
 
 watch(() => props.currentPage, () => {
@@ -267,6 +311,17 @@ watch(currentWorkspaceKey, () => {
               :active-settings-tab="activeSettingsTab"
               :current-workspace="currentWorkspace"
               @update:active-settings-tab="activeSettingsTab = $event"
+            />
+
+            <ProjectsPage
+              v-else-if="isFolioAppRoute"
+              :workspace-reference="workspaceReference"
+              :project-filters="projectFilters"
+              :project-filter="selectedProjectFilter"
+              :projects="folioProjects"
+              :selected-project="selectedProject"
+              @update:project-filter="selectedProjectFilter = $event"
+              @update:selected-project="selectedProject = $event"
             />
 
             <div

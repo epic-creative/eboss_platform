@@ -1,5 +1,5 @@
 import { nextTick } from "vue"
-import { describe, expect, it } from "vitest"
+import { afterEach, describe, expect, it, vi } from "vitest"
 
 import { mountComponent } from "@/tests/vue/support/mount"
 import { members } from "@/vue/shell/workspace/mockData"
@@ -48,6 +48,10 @@ const appRoute = (appKey: string, appSurface: string | null = null) => ({
 })
 
 describe("ShellOperatorWorkspaceApp", () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
   it("clears the selected member when the route page changes", async () => {
     const wrapper = mountComponent(ShellOperatorWorkspaceApp, {
       props: {
@@ -196,5 +200,108 @@ describe("ShellOperatorWorkspaceApp", () => {
     expect(currentAppChip.text()).toContain("App")
     expect(currentAppChip.text()).toContain("Folio")
     expect(currentAppChip.text()).toContain("Files")
+  })
+
+  it("renders real folio projects on folio app routes", async () => {
+    vi.spyOn(global, "fetch").mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        scope: {
+          app_key: "folio",
+          workspace: {
+            id: "workspace-1",
+            name: "Primary Workspace",
+            slug: "primary-workspace",
+            full_path: "/primary-owner/primary-workspace",
+            visibility: "private",
+            owner_type: "user",
+            owner_id: "owner-1",
+            owner_slug: "primary-owner",
+            owner_display_name: "Primary Owner",
+            dashboard_path: "/primary-owner/primary-workspace",
+            "current?": true,
+          },
+          owner: {
+            type: "user",
+            id: "owner-1",
+            slug: "primary-owner",
+            display_name: "Primary Owner",
+          },
+          app: {
+            key: "folio",
+            label: "Folio",
+            default_path: "/primary-owner/primary-workspace/apps/folio",
+            enabled: true,
+            capabilities: { read: true, manage: true },
+          },
+          capabilities: { read: true, manage: true },
+          workspace_path: "/primary-owner/primary-workspace",
+          app_path: "/primary-owner/primary-workspace/apps/folio",
+        },
+        projects: [
+          {
+            id: "project-1",
+            title: "Atlas Service",
+            status: "active",
+            priority_position: 1,
+            due_at: "2026-04-01T00:00:00Z",
+            review_at: "2026-04-02T00:00:00Z",
+          },
+          {
+            id: "project-2",
+            title: "Nimbus Engine",
+            status: "on_hold",
+            priority_position: 2,
+            due_at: null,
+            review_at: null,
+          },
+        ],
+      }),
+    } as Response)
+
+    const wrapper = mountComponent(ShellOperatorWorkspaceApp, {
+      props: {
+        currentUser: {
+          username: "operator",
+          email: "operator@example.com",
+        },
+        currentScope: scope({
+          apps: {
+            folio: {
+              key: "folio",
+              label: "Folio",
+              defaultPath: "/primary-owner/primary-workspace/apps/folio",
+              enabled: true,
+              capabilities: {
+                read: true,
+                manage: true,
+              },
+            },
+          },
+        }),
+        currentPage: appRoute("folio", "projects"),
+        currentPath: "/primary-owner/primary-workspace/apps/folio/projects",
+        signOutPath: "/sign-out",
+        csrfToken: "csrf-token",
+      },
+      global: {
+        stubs: {
+          ThemeToggleButton: {
+            template: "<button data-testid=\"theme-toggle-stub\" />",
+          },
+        },
+      },
+    })
+
+    await nextTick()
+
+    expect(global.fetch).toHaveBeenCalledWith(
+      "/api/v1/primary-owner/workspaces/primary-workspace/apps/folio/projects",
+      expect.any(Object),
+    )
+    expect(wrapper.get('[data-testid="workspace-page-projects"]').text()).toContain("Atlas Service")
+    expect(wrapper.get('[data-testid="workspace-page-projects"]').text()).toContain("Nimbus Engine")
+    expect(wrapper.get('[data-testid="workspace-page-projects"]').text()).not.toContain("API Gateway")
   })
 })
