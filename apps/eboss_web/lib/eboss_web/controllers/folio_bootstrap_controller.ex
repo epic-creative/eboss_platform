@@ -29,6 +29,30 @@ defmodule EBossWeb.FolioBootstrapController do
     end
   end
 
+  def projects(conn, %{"owner_slug" => owner_slug, "slug" => slug}) do
+    current_user = conn.assigns[:current_user] || PlugHelpers.get_actor(conn)
+
+    case AppScope.fetch_workspace_scope(current_user, owner_slug, slug) do
+      {:ok, %AppScope{} = scope} ->
+        case authorize_folio_read(scope) do
+          :ok ->
+            handle_authorized_projects_scope(conn, scope, current_user)
+
+          {:error, :forbidden} ->
+            error_json(conn, :forbidden, "workspace_forbidden", "Workspace access is forbidden")
+        end
+
+      {:error, :unauthorized} ->
+        error_json(conn, :unauthorized, "authentication_required", "Authentication is required")
+
+      {:error, :forbidden} ->
+        error_json(conn, :forbidden, "workspace_forbidden", "Workspace access is forbidden")
+
+      {:error, :not_found} ->
+        error_json(conn, :not_found, "workspace_not_found", "Workspace not found")
+    end
+  end
+
   defp authorize_folio_read(%AppScope{} = scope) do
     if Map.get(scope.capabilities, :read_folio, false) do
       :ok
@@ -42,6 +66,19 @@ defmodule EBossWeb.FolioBootstrapController do
       json(conn, %{
         scope: folio_scope_payload(scope),
         summary_counts: summary_counts
+      })
+    else
+      {:error, _reason} ->
+        error_json(conn, :forbidden, "workspace_forbidden", "Workspace access is forbidden")
+    end
+  end
+
+  defp handle_authorized_projects_scope(conn, %AppScope{} = scope, current_user) do
+    with {:ok, projects} <-
+           EBossFolio.list_projects_in_workspace(scope.current_workspace.id, actor: current_user) do
+      json(conn, %{
+        scope: folio_scope_payload(scope),
+        projects: Enum.map(projects, &project_summary_payload/1)
       })
     else
       {:error, _reason} ->
@@ -80,6 +117,17 @@ defmodule EBossWeb.FolioBootstrapController do
   end
 
   defp normalize_payload_map(value), do: value
+
+  defp project_summary_payload(%EBossFolio.Project{} = project) do
+    %{
+      id: project.id,
+      title: project.title,
+      status: project.status,
+      priority_position: project.priority_position,
+      due_at: project.due_at,
+      review_at: project.review_at
+    }
+  end
 
   defp error_json(conn, status, code, message) do
     conn

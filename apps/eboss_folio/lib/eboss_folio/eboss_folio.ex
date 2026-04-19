@@ -78,6 +78,45 @@ defmodule EBossFolio do
     end
   end
 
+  def list_projects_in_workspace(workspace_id, opts \\ []) when is_binary(workspace_id) do
+    workspace_id
+    |> projects_query()
+    |> Ash.read(opts)
+  end
+
+  def list_projects_in_workspace!(workspace_id, opts \\ []) when is_binary(workspace_id) do
+    case list_projects_in_workspace(workspace_id, opts) do
+      {:ok, projects} -> projects
+      {:error, reason} -> raise reason
+    end
+  end
+
+  def get_project_in_workspace(project_id, workspace_id, opts \\ [])
+      when is_binary(project_id) and is_binary(workspace_id) do
+    case Project
+         |> Ash.Query.for_read(:read)
+         |> Ash.Query.filter(expr(id == ^project_id and workspace_id == ^workspace_id))
+         |> Ash.read_one(opts) do
+      {:ok, nil} -> {:error, :not_found}
+      result -> result
+    end
+  end
+
+  def get_project_in_workspace!(project_id, workspace_id, opts \\ [])
+      when is_binary(project_id) and is_binary(workspace_id) do
+    case get_project_in_workspace(project_id, workspace_id, opts) do
+      {:ok, project} -> project
+      {:error, reason} -> raise reason
+    end
+  end
+
+  defp projects_query(workspace_id) do
+    Project
+    |> Ash.Query.for_read(:read)
+    |> Ash.Query.filter(expr(workspace_id == ^workspace_id))
+    |> Ash.Query.sort(inserted_at: :asc)
+  end
+
   defp count_records(resource, workspace_id_value, opts) do
     query =
       resource

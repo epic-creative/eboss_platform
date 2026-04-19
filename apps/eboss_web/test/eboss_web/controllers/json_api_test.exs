@@ -337,6 +337,109 @@ defmodule EBossWeb.JsonApiTest do
     assert payload["summary_counts"] == %{"projects" => 1, "tasks" => 1}
   end
 
+  test "authenticated clients can list workspace projects through the folio projects endpoint", %{
+    conn: conn
+  } do
+    owner = register_user()
+    api_key = create_api_key(owner)
+
+    workspace =
+      Workspaces.create_workspace!(
+        %{
+          name: "Folio Projects Workspace",
+          owner_type: :user,
+          owner_id: owner.id
+        },
+        actor: owner
+      )
+
+    second_workspace =
+      Workspaces.create_workspace!(
+        %{
+          name: "External Projects Workspace",
+          owner_type: :user,
+          owner_id: owner.id
+        },
+        actor: owner
+      )
+
+    active_project =
+      EBossFolio.create_project!(
+        %{workspace_id: workspace.id, title: "Active project", status: :active},
+        actor: owner
+      )
+
+    archived_project =
+      EBossFolio.create_project!(
+        %{workspace_id: workspace.id, title: "Archived project", status: :archived},
+        actor: owner
+      )
+
+    _foreign_project =
+      EBossFolio.create_project!(
+        %{workspace_id: second_workspace.id, title: "Foreign project"},
+        actor: owner
+      )
+
+    conn =
+      conn
+      |> put_req_header("authorization", "Bearer #{api_key}")
+      |> put_req_header("accept", "application/json")
+      |> get("/api/v1/#{owner.owner_slug}/workspaces/#{workspace.slug}/apps/folio/projects")
+
+    payload = json_response(conn, 200)
+    project_ids = Enum.map(payload["projects"], & &1["id"])
+
+    assert payload["scope"]["app_key"] == "folio"
+    assert payload["scope"]["workspace"]["id"] == workspace.id
+    assert length(payload["projects"]) == 2
+    assert active_project.id in project_ids
+    assert archived_project.id in project_ids
+    refute _foreign_project.id in project_ids
+
+    assert Enum.any?(payload["projects"], fn project ->
+             project["id"] == active_project.id and project["title"] == "Active project" and
+               project["status"] == "active"
+           end)
+  end
+
+  test "folio projects endpoint forbids users without folio read access", %{conn: conn} do
+    owner = register_user()
+    member = register_user()
+
+    organization =
+      Organizations.create_organization!(%{name: "Folio Read-Locked Org Workspace"}, actor: owner)
+
+    create_org_membership(owner, organization, member, :member)
+
+    api_key = create_api_key(member)
+
+    workspace =
+      Workspaces.create_workspace!(
+        %{
+          name: "Folio Read-Locked Org Workspace",
+          owner_type: :organization,
+          owner_id: organization.id
+        },
+        actor: owner
+      )
+
+    conn =
+      conn
+      |> put_req_header("authorization", "Bearer #{api_key}")
+      |> put_req_header("accept", "application/json")
+      |> get(
+        "/api/v1/#{organization.owner_slug}/workspaces/#{workspace.slug}/apps/folio/projects"
+      )
+
+    assert %{
+             "error" => %{
+               "code" => "workspace_forbidden",
+               "message" => "Workspace access is forbidden"
+             }
+           } = json_response(conn, 403)
+  end
+
   test "folio bootstrap endpoints forbid users without folio read access", %{conn: conn} do
     owner = register_user()
     member = register_user()

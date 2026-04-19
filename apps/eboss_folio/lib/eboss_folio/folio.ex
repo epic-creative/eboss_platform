@@ -47,6 +47,10 @@ defmodule EBoss.Folio do
   defdelegate archive_project!(record, opts \\ []), to: EBossFolio
   defdelegate reposition_project(record, attrs, opts \\ []), to: EBossFolio
   defdelegate reposition_project!(record, attrs, opts \\ []), to: EBossFolio
+  defdelegate list_projects_in_workspace(workspace_id, opts \\ []), to: EBossFolio
+  defdelegate list_projects_in_workspace!(workspace_id, opts \\ []), to: EBossFolio
+  defdelegate get_project_in_workspace(project_id, workspace_id, opts \\ []), to: EBossFolio
+  defdelegate get_project_in_workspace!(project_id, workspace_id, opts \\ []), to: EBossFolio
 
   defdelegate create_task(attrs, opts \\ []), to: EBossFolio
   defdelegate create_task!(attrs, opts \\ []), to: EBossFolio

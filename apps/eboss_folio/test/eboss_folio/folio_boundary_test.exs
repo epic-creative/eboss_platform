@@ -165,6 +165,47 @@ defmodule EBossFolio.FolioBoundaryTest do
     assert update_event.after["description"] == "Core operations"
   end
 
+  test "workspace-scoped project reads are available through the folio boundary" do
+    owner = TestSupport.register_user()
+    workspace = TestSupport.create_user_workspace(owner)
+    other_workspace = TestSupport.create_user_workspace(owner)
+
+    active_project =
+      Folio.create_project!(
+        %{workspace_id: workspace.id, title: "Active project", status: :active},
+        actor: owner
+      )
+
+    archived_project =
+      Folio.create_project!(
+        %{workspace_id: workspace.id, title: "Archived project", status: :archived},
+        actor: owner
+      )
+
+    _other_workspace_project =
+      Folio.create_project!(
+        %{workspace_id: other_workspace.id, title: "Different workspace"},
+        actor: owner
+      )
+
+    assert {:ok, projects} = Folio.list_projects_in_workspace(workspace.id, actor: owner)
+    assert length(projects) == 2
+
+    assert Enum.any?(projects, &(&1.id == active_project.id))
+    assert Enum.any?(projects, &(&1.id == archived_project.id))
+    assert Enum.all?(projects, &(&1.workspace_id == workspace.id))
+
+    assert {:ok, fetched_project} =
+             Folio.get_project_in_workspace(active_project.id, workspace.id, actor: owner)
+
+    assert fetched_project.id == active_project.id
+    assert fetched_project.title == "Active project"
+    assert fetched_project.status == :active
+
+    assert {:error, _} =
+             Folio.get_project_in_workspace(active_project.id, other_workspace.id, actor: owner)
+  end
+
   test "non-bang folio boundary functions return expected tuples" do
     owner = TestSupport.register_user()
     workspace = TestSupport.create_user_workspace(owner)
