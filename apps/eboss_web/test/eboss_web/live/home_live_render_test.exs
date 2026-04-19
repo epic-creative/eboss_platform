@@ -21,14 +21,15 @@ defmodule EBossWeb.HomeLiveRenderTest do
     :ok
   end
 
-  test "home live mounts the landing shell inside the workspace frame" do
+  test "home live mounts the landing shell inside the public frame" do
     html =
       %{flash: %{}, current_scope: nil, current_user: nil}
       |> EBossWeb.HomeLive.render()
       |> Phoenix.LiveViewTest.rendered_to_string()
 
-    assert html =~ ~s(data-shell-mode="workspace")
-    assert html =~ ~s(class="ui-shell__workspace")
+    assert html =~ ~s(data-shell-mode="public")
+    assert html =~ ~s(data-public-shell-nav)
+    assert html =~ ~s(data-public-shell-footer)
     assert html =~ ~s(data-name="ShellOperatorLanding")
     assert html =~ ~s(data-props="{}")
     assert html =~ ~s(data-ssr="false")

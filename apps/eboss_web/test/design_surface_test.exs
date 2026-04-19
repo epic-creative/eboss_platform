@@ -66,7 +66,7 @@ defmodule EBossWeb.DesignSurfaceTest do
     assert ui_panel_story =~ "Floating surface"
     assert ui_panel_story =~ "Solid surface"
 
-    assert home_live =~ ~s(shell_mode="workspace")
+    assert home_live =~ ~s(shell_mode="public")
     assert home_live =~ ~s(current_path="/")
     assert home_live =~ ~s(<.ShellOperatorLanding />)
 
@@ -85,10 +85,10 @@ defmodule EBossWeb.DesignSurfaceTest do
     assert dashboard_launchpad_vue =~
              ~s(<UiPanel class="ui-dashboard-launchpad__tile" surface="solid" padding="sm">)
 
-    assert shell_operator_landing_vue =~ ~s(data-testid="home-hero")
-    assert shell_operator_landing_vue =~ ~s(aria-label="Public routes")
-    assert shell_operator_landing_vue =~ ~s(aria-label="Public shell footer")
-    assert shell_operator_landing_vue =~ "Workspace infrastructure"
+    assert shell_operator_landing_vue =~ ~s(<HomeHeroSection />)
+    assert shell_operator_landing_vue =~ ~s(<HomeProofStrip />)
+    assert shell_operator_landing_vue =~ ~s(<HomeClosingSection />)
+    assert shell_operator_landing_vue =~ ~s(v-for="story in storySections")
 
     assert shell_operator_workspace_vue =~ "WorkspaceSidebar"
     assert shell_operator_workspace_vue =~ "InspectorPane"
@@ -114,8 +114,12 @@ defmodule EBossWeb.DesignSurfaceTest do
     story_controls = read_file("assets/vue/stories/StoryControls.vue")
     story_surface = read_file("assets/vue/stories/StorySurface.vue")
     layouts = read_file("lib/eboss_web/components/layouts.ex")
+    root_layout = read_file("lib/eboss_web/components/layouts/root.html.heex")
     ui_components = read_file("lib/eboss_web/components/ui_components.ex")
     ui_panel_vue = read_file("assets/vue/components/ui/UiPanel.vue")
+    theme_toggle_vue = read_file("assets/vue/shell/shared/ThemeToggleButton.vue")
+    use_theme = read_file("assets/vue/shell/shared/useTheme.ts")
+    workspace_shell_vue = read_file("assets/vue/shell/workspace/ShellOperatorWorkspaceApp.vue")
 
     assert tokens_css =~ "--space-shell-inline"
     assert tokens_css =~ "--space-preview-gap"
@@ -130,11 +134,16 @@ defmodule EBossWeb.DesignSurfaceTest do
     assert patterns_css =~ ".ui-shell-main"
     assert patterns_css =~ ".ui-preview-shell"
     assert patterns_css =~ ".ui-preview-shell__grid"
+    assert patterns_css =~ ".ui-public-auth-shell__frame"
 
     assert layouts =~ "ui-shell-header__inner"
     assert layouts =~ "ui-shell-main"
     assert ui_components =~ ~s("ui-panel-padding-md")
     assert ui_panel_vue =~ ~s(return "ui-panel-padding-md")
+    assert root_layout =~ "window.EBossTheme ="
+    assert theme_toggle_vue =~ ~s(class="ui-theme-toggle")
+    assert use_theme =~ "export type ThemeMode"
+    assert workspace_shell_vue =~ ~s(../shared/ThemeToggleButton.vue)
 
     assert story_controls =~ "update:density"
     assert story_surface =~ ~s(:data-density="density === 'compact' ? 'compact' : undefined")
@@ -196,14 +205,14 @@ defmodule EBossWeb.DesignSurfaceTest do
     assert layouts =~ "def public_cta_frame(assigns)"
     assert layouts =~ ~s(data-public-section-pattern={@section_pattern})
 
-    assert home_live =~ ~s(shell_mode="workspace")
+    assert home_live =~ ~s(shell_mode="public")
     assert home_live =~ ~s(current_path="/")
     assert home_live =~ ~s(<.ShellOperatorLanding />)
 
-    assert shell_operator_landing_vue =~ ~s(data-testid="home-hero")
-    assert shell_operator_landing_vue =~ ~s(aria-label="Public routes")
-    assert shell_operator_landing_vue =~ ~s(aria-label="Public shell footer")
-    assert shell_operator_landing_vue =~ "Workspace infrastructure"
+    assert shell_operator_landing_vue =~ ~s(<HomeHeroSection />)
+    assert shell_operator_landing_vue =~ ~s(<HomeProofStrip />)
+    assert shell_operator_landing_vue =~ ~s(<HomeClosingSection />)
+    assert shell_operator_landing_vue =~ ~s(v-for="story in storySections")
 
     assert public_page_patterns =~ "defmodule EBossWeb.PublicPagePatterns"
     assert public_page_patterns =~ ~s(id: :hero)
@@ -232,9 +241,9 @@ defmodule EBossWeb.DesignSurfaceTest do
     assert browser_test_contracts =~ ~s(def public_footer_label)
     assert browser_test_contracts =~ ~s(def home_feature_row_tempo)
 
-    assert sign_in_live =~ ~s(shell_mode="workspace")
-    assert register_live =~ ~s(shell_mode="workspace")
-    assert forgot_password_live =~ ~s(shell_mode="workspace")
+    assert sign_in_live =~ ~s(shell_mode="public")
+    assert register_live =~ ~s(shell_mode="public")
+    assert forgot_password_live =~ ~s(shell_mode="public")
   end
 
   test "dashboard shell pattern defines a reusable authenticated scaffold" do
@@ -433,12 +442,16 @@ defmodule EBossWeb.DesignSurfaceTest do
     assert patterns_css =~ ".ui-auth-form"
     assert patterns_css =~ ".ui-auth-form__fieldset"
     assert patterns_css =~ ".ui-auth-form.phx-submit-loading .ui-auth-submit::after"
+    assert patterns_css =~ ".ui-public-auth-shell__frame"
+    assert patterns_css =~ ".ui-public-auth-shell__route"
 
     assert auth_components =~ "def auth_page(assigns)"
     assert auth_components =~ "def auth_page_footer(assigns)"
     assert auth_components =~ "authentication_routes_nav_label()"
     assert auth_components =~ "data-testid={BrowserTestContracts.auth_shell()}"
-    assert auth_components =~ "so-theme so-auth-shell so-auth-surface flex min-h-screen flex-col"
+    assert auth_components =~ "ui-public-auth-shell so-theme so-auth-surface"
+    assert auth_components =~ ~s(<.panel)
+    assert auth_components =~ ~s(<.auth_nav current_path={@current_path} />)
     assert auth_components =~ ~s(class={["ui-auth-page so-auth-page", @class]})
     assert auth_components =~ ~s(class="ui-auth-card-muted so-auth-card-muted text-center")
     assert auth_components =~ "def auth_form(assigns)"

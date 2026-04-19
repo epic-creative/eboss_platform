@@ -12,7 +12,7 @@ test.describe("auth and public smoke", () => {
     await expect(page.getByTestId("home-hero")).toBeVisible();
     await expect(
       page.getByRole("heading", {
-        name: "A calmer launch page for teams that need the shell to stay precise.",
+        name: "Infrastructure for teams that ship with precision",
       }),
     ).toBeVisible();
 
