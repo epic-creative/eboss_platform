@@ -43,7 +43,7 @@ const toggleProject = (project: Project) => {
 </script>
 
 <template>
-  <div class="ui-workspace-page">
+  <div class="ui-workspace-page" data-testid="workspace-page-projects">
     <WorkspacePageHeader title="Projects" :subtitle="workspaceReference">
       <template #actions>
         <button type="button" class="so-button-primary">

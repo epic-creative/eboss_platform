@@ -22,7 +22,7 @@ defineProps<{
 </script>
 
 <template>
-  <div class="ui-workspace-page">
+  <div class="ui-workspace-page" data-testid="workspace-page-dashboard">
     <WorkspacePageHeader title="Overview" :subtitle="workspaceReference">
       <template #actions>
         <button type="button" class="so-button-primary">

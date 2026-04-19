@@ -27,7 +27,7 @@ const toggleActivity = (event: ActivityEvent) => {
 </script>
 
 <template>
-  <div class="ui-workspace-page">
+  <div class="ui-workspace-page" data-testid="workspace-page-activity">
     <WorkspacePageHeader title="Activity" :subtitle="workspaceReference" />
 
     <div class="relative max-w-xs flex-1">

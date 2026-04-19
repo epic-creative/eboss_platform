@@ -33,7 +33,7 @@ const toggleMember = (member: Member) => {
 </script>
 
 <template>
-  <div class="ui-workspace-page">
+  <div class="ui-workspace-page" data-testid="workspace-page-members">
     <WorkspacePageHeader
       title="Members"
       :subtitle="`${workspaceReference} · ${members.length} members`"

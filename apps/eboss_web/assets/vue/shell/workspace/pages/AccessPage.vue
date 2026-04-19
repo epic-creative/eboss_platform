@@ -69,7 +69,7 @@ const toggleAudit = (entry: AccessAuditRecord) => {
 </script>
 
 <template>
-  <div class="ui-workspace-page">
+  <div class="ui-workspace-page" data-testid="workspace-page-access">
     <WorkspacePageHeader title="Access Control" :subtitle="workspaceReference" />
 
     <div class="border-b border-[hsl(var(--so-border))]">

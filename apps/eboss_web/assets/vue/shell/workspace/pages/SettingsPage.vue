@@ -26,7 +26,7 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <div class="ui-workspace-page">
+  <div class="ui-workspace-page" data-testid="workspace-page-settings">
     <WorkspacePageHeader title="Settings" :subtitle="workspaceReference" />
 
     <div class="flex gap-6">

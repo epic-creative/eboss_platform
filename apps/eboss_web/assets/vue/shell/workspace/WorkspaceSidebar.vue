@@ -45,6 +45,7 @@ const groups = ref({
 
 const currentWorkspace = computed(() => props.currentScope.currentWorkspace)
 const currentOwner = computed(() => props.currentScope.owner)
+const hasAccessibleWorkspaces = computed(() => props.currentScope.accessibleWorkspaces.length > 0)
 const personalWorkspaces = computed(() =>
   props.currentScope.accessibleWorkspaces.filter(workspace => workspace.ownerType === "user"),
 )
@@ -57,7 +58,9 @@ const isActive = (segment: PageKey) => props.currentPage === segment
 const onNavigate = () => emit("navigate")
 
 const roleLabel = computed(() => {
-  if (!currentWorkspace.value) return "member"
+  if (!currentWorkspace.value) {
+    return hasAccessibleWorkspaces.value ? "select" : "empty"
+  }
 
   if (currentWorkspace.value.ownerType === "user" && props.currentScope.capabilities.manageWorkspace) {
     return "owner"
@@ -67,9 +70,13 @@ const roleLabel = computed(() => {
 })
 
 const workspaceLabel = computed(() =>
-  currentOwner.value?.type === "organization"
-    ? currentOwner.value?.displayName || currentWorkspace.value?.ownerDisplayName || "Organization"
-    : "Personal",
+  !currentWorkspace.value
+    ? hasAccessibleWorkspaces.value
+      ? "Available workspaces"
+      : "No workspace"
+    : currentOwner.value?.type === "organization"
+      ? currentOwner.value?.displayName || currentWorkspace.value?.ownerDisplayName || "Organization"
+      : "Personal",
 )
 
 const toggle = (key: keyof typeof groups.value) => {
@@ -77,10 +84,17 @@ const toggle = (key: keyof typeof groups.value) => {
 }
 
 const workspaceKey = (workspace: WorkspaceSummary) => `${workspace.ownerSlug}/${workspace.slug}`
+const workspaceRouteLabel = computed(() =>
+  currentWorkspace.value
+    ? `${currentOwner.value?.slug || currentWorkspace.value.ownerSlug}/${currentWorkspace.value.slug}`
+    : hasAccessibleWorkspaces.value
+      ? "Select a workspace"
+      : "No workspace selected",
+)
 </script>
 
 <template>
-  <div class="flex h-full flex-col">
+  <div class="flex h-full flex-col" data-testid="workspace-sidebar">
     <details class="border-b border-[hsl(var(--so-border))]" :open="groups.switcher" @toggle="groups.switcher = !groups.switcher">
       <summary
         class="flex w-full cursor-pointer list-none items-center gap-2.5 px-3 py-2.5 text-left transition-colors hover:bg-[hsl(var(--so-accent))/0.5]"
@@ -114,7 +128,7 @@ const workspaceKey = (workspace: WorkspaceSummary) => `${workspace.ownerSlug}/${
             </span>
           </div>
           <p class="truncate text-[11px] text-[hsl(var(--so-muted-foreground))]">
-            {{ currentOwner?.slug || currentWorkspace?.ownerSlug }}/{{ currentWorkspace?.slug }}
+            {{ workspaceRouteLabel }}
           </p>
         </div>
 
@@ -124,7 +138,7 @@ const workspaceKey = (workspace: WorkspaceSummary) => `${workspace.ownerSlug}/${
       <div class="space-y-2 border-t border-[hsl(var(--so-border))] px-2 py-2">
         <input placeholder="Find workspace..." class="so-input-field h-7 text-xs" />
 
-        <div class="space-y-1">
+        <div v-if="personalWorkspaces.length" class="space-y-1">
           <p class="so-font-mono px-1 text-[11px] uppercase tracking-wider text-[hsl(var(--so-muted-foreground))]">
             Personal
           </p>
@@ -145,7 +159,7 @@ const workspaceKey = (workspace: WorkspaceSummary) => `${workspace.ownerSlug}/${
           </a>
         </div>
 
-        <div class="space-y-1">
+        <div v-if="organizationWorkspaces.length" class="space-y-1">
           <p class="so-font-mono px-1 text-[11px] uppercase tracking-wider text-[hsl(var(--so-muted-foreground))]">
             Organizations
           </p>
@@ -167,6 +181,13 @@ const workspaceKey = (workspace: WorkspaceSummary) => `${workspace.ownerSlug}/${
             </span>
           </a>
         </div>
+
+        <p
+          v-if="!personalWorkspaces.length && !organizationWorkspaces.length"
+          class="px-1 text-xs text-[hsl(var(--so-muted-foreground))]"
+        >
+          No workspaces available yet.
+        </p>
       </div>
     </details>
 

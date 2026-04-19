@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from "vue"
+import { computed, ref, watch } from "vue"
 import { Bell, Menu, Search } from "lucide-vue-next"
 
 import ThemeToggleButton from "../shared/ThemeToggleButton.vue"
@@ -61,12 +61,55 @@ const currentWorkspace = computed(() => props.currentScope.currentWorkspace)
 const workspaceReference = computed(() =>
   currentWorkspace.value ? `${currentWorkspace.value.ownerSlug}/${currentWorkspace.value.slug}` : "No workspace",
 )
+const currentWorkspaceKey = computed(() =>
+  currentWorkspace.value ? `${currentWorkspace.value.ownerSlug}/${currentWorkspace.value.slug}` : "empty",
+)
 const basePath = computed(() => props.currentScope.dashboardPath || props.currentPath)
+const dashboardHref = computed(() => props.currentScope.dashboardPath || "/dashboard")
 const avatarInitials = computed(() => props.currentUser.username.slice(0, 2).toUpperCase())
+
+const clearInspectors = () => {
+  selectedProject.value = null
+  selectedMember.value = null
+  selectedRole.value = null
+  selectedKey.value = null
+  selectedAccessAudit.value = null
+  selectedActivity.value = null
+}
+
+const resetWorkspaceState = () => {
+  clearInspectors()
+  projectFilter.value = "all"
+  activeAccessTab.value = "roles"
+  activeSettingsTab.value = "general"
+}
+
+watch(() => props.currentPage, () => {
+  mobileNavOpen.value = false
+  clearInspectors()
+})
+
+watch(currentWorkspaceKey, () => {
+  mobileNavOpen.value = false
+  resetWorkspaceState()
+})
+
+watch(projectFilter, nextFilter => {
+  if (
+    selectedProject.value &&
+    nextFilter !== "all" &&
+    selectedProject.value.status !== nextFilter
+  ) {
+    selectedProject.value = null
+  }
+})
 </script>
 
 <template>
-  <div class="so-theme flex min-h-screen bg-[hsl(var(--so-background))] text-[hsl(var(--so-foreground))]">
+  <div
+    class="so-theme flex min-h-screen bg-[hsl(var(--so-background))] text-[hsl(var(--so-foreground))]"
+    data-testid="workspace-shell"
+  >
     <aside
       class="hidden h-screen w-[208px] shrink-0 overflow-y-auto border-r border-[hsl(var(--so-border))] bg-[hsl(var(--so-surface-1))] md:flex md:sticky md:top-0"
     >
@@ -116,7 +159,11 @@ const avatarInitials = computed(() => props.currentUser.username.slice(0, 2).toU
             </button>
 
             <details class="so-avatar-menu relative">
-              <summary class="flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border border-[hsl(var(--so-border))] bg-[hsl(var(--so-surface-2))] text-[10px] font-medium">
+              <summary
+                class="flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border border-[hsl(var(--so-border))] bg-[hsl(var(--so-surface-2))] text-[10px] font-medium"
+                aria-label="Account menu"
+                data-testid="workspace-avatar-menu-trigger"
+              >
                 {{ avatarInitials }}
               </summary>
 
@@ -130,7 +177,8 @@ const avatarInitials = computed(() => props.currentUser.username.slice(0, 2).toU
 
                 <div class="space-y-1 px-1 py-2">
                   <a
-                    :href="currentScope.dashboardPath"
+                    :href="dashboardHref"
+                    data-testid="workspace-avatar-dashboard-link"
                     class="block rounded-md px-2 py-1.5 text-sm text-[hsl(var(--so-muted-foreground))] transition-colors hover:bg-[hsl(var(--so-accent))/0.5] hover:text-[hsl(var(--so-foreground))]"
                   >
                     Dashboard
@@ -140,7 +188,13 @@ const avatarInitials = computed(() => props.currentUser.username.slice(0, 2).toU
                 <form :action="signOutPath" method="post" class="border-t border-[hsl(var(--so-border))] pt-2">
                   <input type="hidden" name="_method" value="delete" />
                   <input type="hidden" name="_csrf_token" :value="csrfToken" />
-                  <button type="submit" class="so-button-secondary w-full justify-start">Sign out</button>
+                  <button
+                    type="submit"
+                    class="so-button-secondary w-full justify-start"
+                    data-testid="workspace-sign-out"
+                  >
+                    Sign out
+                  </button>
                 </form>
               </div>
             </details>
