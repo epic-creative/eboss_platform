@@ -16,6 +16,7 @@ export {
   fetchFolioBootstrap,
   fetchFolioProjects,
   fetchFolioTasks,
+  transitionFolioProject,
   transitionFolioTask,
   updateFolioProject,
 } from "./queries"
@@ -38,6 +39,8 @@ export type {
   FolioTaskCreateResponse,
   FolioTaskTransitionPayload,
   FolioTaskTransitionResponse,
+  FolioProjectTransitionPayload,
+  FolioProjectTransitionResponse,
   FolioProjectUpdatePayload,
   FolioProjectUpdateResponse,
   FolioProjectsResponse,

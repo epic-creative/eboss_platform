@@ -12,6 +12,8 @@ import type {
   FolioBootstrapResponse,
   FolioProjectCreatePayload,
   FolioProjectCreateResponse,
+  FolioProjectTransitionPayload,
+  FolioProjectTransitionResponse,
   FolioProjectUpdatePayload,
   FolioProjectUpdateResponse,
   FolioProjectsResponse,
@@ -72,6 +74,17 @@ export const updateFolioProject = (
   payload: FolioProjectUpdatePayload,
 ): Promise<FolioProjectUpdateResponse> =>
   requestJson<FolioProjectUpdateResponse>(folioProjectPath(scope, projectId), {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  })
+
+export const transitionFolioProject = (
+  scope: FolioWorkspaceRef,
+  projectId: string,
+  payload: FolioProjectTransitionPayload,
+): Promise<FolioProjectTransitionResponse> =>
+  requestJson<FolioProjectTransitionResponse>(folioProjectPath(scope, projectId), {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),

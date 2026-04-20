@@ -23,6 +23,7 @@ import SettingsPage from "./pages/SettingsPage.vue"
 import {
   createFolioTask,
   createFolioProject,
+  transitionFolioProject,
   transitionFolioTask,
   updateFolioProject,
   useFolioActivity,
@@ -32,6 +33,7 @@ import {
 } from "./folio"
 import type {
   FolioActivityEvent,
+  FolioProjectStatus,
   FolioProjectSummary,
   FolioProjectUpdatePayload,
   FolioTaskStatus,
@@ -77,6 +79,7 @@ const selectedActivity = ref<FolioActivityEvent | null>(null)
 const selectedProjectFilter = ref<ProjectFilter>("all")
 const creatingProject = ref(false)
 const updatingProject = ref(false)
+const transitioningProject = ref(false)
 const creatingTask = ref(false)
 const transitioningTask = ref(false)
 const projectFilters = ["all", "active", "on_hold", "completed", "canceled", "archived"] satisfies ProjectFilter[]
@@ -201,6 +204,34 @@ const updateWorkspaceProject = async (
     await folioProjectsQuery.refresh()
   } finally {
     updatingProject.value = false
+  }
+}
+
+const transitionWorkspaceProject = async (
+  projectId: string,
+  status: FolioProjectStatus,
+): Promise<void> => {
+  const scope = folioWorkspaceScope.value
+
+  if (!scope) {
+    throw new Error("Workspace scope is unavailable.")
+  }
+
+  if (!props.currentScope.capabilities.manageFolio) {
+    throw new Error("You do not have permission to transition projects in this workspace.")
+  }
+
+  if (transitioningProject.value) return
+
+  transitioningProject.value = true
+
+  try {
+    const response = await transitionFolioProject(scope, projectId, { status })
+
+    selectedProject.value = mapFolioProject(response.project)
+    await folioProjectsQuery.refresh()
+  } finally {
+    transitioningProject.value = false
   }
 }
 
@@ -496,9 +527,12 @@ watch(currentWorkspaceKey, () => {
               :can-update-project="currentScope.capabilities.manageFolio"
               :creating-project="creatingProject"
               :updating-project="updatingProject"
+              :can-transition-project="currentScope.capabilities.manageFolio"
+              :transitioning-project="transitioningProject"
               :refresh="folioProjectsQuery.refresh"
               :create-project="createWorkspaceProject"
               :update-project="updateWorkspaceProject"
+              :transition-project="transitionWorkspaceProject"
               @update:project-filter="selectedProjectFilter = $event"
               @update:selected-project="selectedProject = $event"
             />

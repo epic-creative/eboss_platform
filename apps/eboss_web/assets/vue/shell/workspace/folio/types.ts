@@ -103,6 +103,15 @@ export interface FolioProjectUpdateResponse {
   project: FolioProjectSummary
 }
 
+export interface FolioProjectTransitionPayload {
+  status: FolioProjectStatus
+}
+
+export interface FolioProjectTransitionResponse {
+  scope: FolioScope
+  project: FolioProjectSummary
+}
+
 export interface FolioTaskSummary {
   id: string
   title: string

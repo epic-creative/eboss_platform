@@ -274,6 +274,29 @@ defmodule EBossWeb.FolioBootstrapController do
          current_user,
          project_id
        ) do
+    case parse_project_update_intent(conn.body_params) do
+      {:ok, :details} ->
+        handle_authorized_project_details_update(conn, scope, current_user, project_id)
+
+      {:ok, {:transition, target_status}} ->
+        handle_authorized_project_transition(conn, scope, current_user, project_id, target_status)
+
+      {:error, :invalid_payload} ->
+        error_json(
+          conn,
+          :bad_request,
+          "invalid_project_payload",
+          "Project payload could not be processed"
+        )
+    end
+  end
+
+  defp handle_authorized_project_details_update(
+         conn,
+         %AppScope{} = scope,
+         current_user,
+         project_id
+       ) do
     with {:ok, params} <- parse_project_update_params(conn.body_params),
          {:ok, project} <-
            EBossFolio.get_project_in_workspace(project_id, scope.current_workspace.id,
@@ -302,6 +325,44 @@ defmodule EBossWeb.FolioBootstrapController do
           :bad_request,
           "invalid_project_payload",
           "Project payload could not be processed"
+        )
+    end
+  end
+
+  defp handle_authorized_project_transition(
+         conn,
+         %AppScope{} = scope,
+         current_user,
+         project_id,
+         target_status
+       ) do
+    with {:ok, project} <-
+           EBossFolio.get_project_in_workspace(project_id, scope.current_workspace.id,
+             actor: current_user
+           ),
+         {:ok, project} <- transition_project(project, target_status, current_user) do
+      json(conn, %{
+        scope: folio_scope_payload(scope),
+        project: project_summary_payload(project)
+      })
+    else
+      {:error, :not_found} ->
+        error_json(conn, :not_found, "project_not_found", "Project not found")
+
+      {:error, %Ash.Error.Invalid{} = error} ->
+        error_json(
+          conn,
+          :bad_request,
+          "invalid_project_transition",
+          Exception.message(error)
+        )
+
+      {:error, _reason} ->
+        error_json(
+          conn,
+          :bad_request,
+          "invalid_project_transition",
+          "Project transition could not be processed"
         )
     end
   end
@@ -465,6 +526,21 @@ defmodule EBossWeb.FolioBootstrapController do
     {:error, :invalid_payload}
   end
 
+  defp parse_project_update_intent(payload) when is_map(payload) do
+    case fetch_payload_field(payload, :status) do
+      :missing ->
+        {:ok, :details}
+
+      {:present, value} ->
+        with {:ok, status} <- normalize_project_transition_status(value),
+             :ok <- validate_project_transition_payload(payload) do
+          {:ok, {:transition, status}}
+        end
+    end
+  end
+
+  defp parse_project_update_intent(_payload), do: {:error, :invalid_payload}
+
   defp parse_task_create_params(payload) when is_map(payload) do
     with {:ok, title} <- required_task_title(payload),
          {:ok, project_id} <- optional_task_project_id(payload) do
@@ -574,6 +650,33 @@ defmodule EBossWeb.FolioBootstrapController do
 
   defp normalize_task_transition_status(_value), do: {:error, :invalid_payload}
 
+  defp normalize_project_transition_status(value) when is_binary(value) do
+    case value |> String.trim() do
+      "active" -> {:ok, :active}
+      "on_hold" -> {:ok, :on_hold}
+      "completed" -> {:ok, :completed}
+      "canceled" -> {:ok, :canceled}
+      "archived" -> {:ok, :archived}
+      _ -> {:error, :invalid_payload}
+    end
+  end
+
+  defp normalize_project_transition_status(value) when is_atom(value) do
+    value
+    |> to_string()
+    |> normalize_project_transition_status()
+  end
+
+  defp normalize_project_transition_status(_value), do: {:error, :invalid_payload}
+
+  defp validate_project_transition_payload(payload) when is_map(payload) do
+    if Enum.all?(Map.keys(payload), &(&1 in [:status, "status"])) do
+      :ok
+    else
+      {:error, :invalid_payload}
+    end
+  end
+
   defp transition_task(task, :inbox, actor), do: EBossFolio.move_task_to_inbox(task, actor: actor)
 
   defp transition_task(task, :next_action, actor),
@@ -590,6 +693,21 @@ defmodule EBossWeb.FolioBootstrapController do
   defp transition_task(task, :done, actor), do: EBossFolio.complete_task(task, actor: actor)
   defp transition_task(task, :canceled, actor), do: EBossFolio.cancel_task(task, actor: actor)
   defp transition_task(task, :archived, actor), do: EBossFolio.archive_task(task, actor: actor)
+
+  defp transition_project(project, :active, actor),
+    do: EBossFolio.activate_project(project, actor: actor)
+
+  defp transition_project(project, :on_hold, actor),
+    do: EBossFolio.put_project_on_hold(project, actor: actor)
+
+  defp transition_project(project, :completed, actor),
+    do: EBossFolio.complete_project(project, actor: actor)
+
+  defp transition_project(project, :canceled, actor),
+    do: EBossFolio.cancel_project(project, actor: actor)
+
+  defp transition_project(project, :archived, actor),
+    do: EBossFolio.archive_project(project, actor: actor)
 
   defp parse_project_update_params(payload) when is_map(payload) do
     with {:ok, title} <- optional_project_title(payload),

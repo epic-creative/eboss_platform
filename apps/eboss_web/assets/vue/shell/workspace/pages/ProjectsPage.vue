@@ -30,11 +30,14 @@ const props = defineProps<{
   error: string | null
   canCreateProject: boolean
   canUpdateProject: boolean
+  canTransitionProject: boolean
   creatingProject: boolean
   updatingProject: boolean
+  transitioningProject: boolean
   refresh: () => Promise<void>
   createProject: (title: string) => Promise<void>
   updateProject: (projectId: string, payload: FolioProjectUpdatePayload) => Promise<void>
+  transitionProject: (projectId: string, status: Project["status"]) => Promise<void>
 }>()
 
 const emit = defineEmits<{
@@ -68,6 +71,8 @@ const editProjectNotes = ref("")
 const editProjectDueAt = ref("")
 const editProjectReviewAt = ref("")
 const editProjectMetadata = ref("{}")
+const transitionStatus = ref<Project["status"]>("active")
+const transitionError = ref<string | null>(null)
 
 const toggleProject = (project: Project) => {
   emit("update:selectedProject", props.selectedProject?.id === project.id ? null : project)
@@ -114,10 +119,12 @@ const populateEditForm = (project: Project | null) => {
 }
 
 watch(
-  () => props.selectedProject?.id,
+  () => [props.selectedProject?.id, props.selectedProject?.status] as const,
   () => {
     editFormOpen.value = false
     updateProjectError.value = null
+    transitionError.value = null
+    transitionStatus.value = props.selectedProject?.status ?? "active"
     populateEditForm(props.selectedProject)
   },
   { immediate: true },
@@ -240,6 +247,19 @@ const submitProjectUpdate = async () => {
       cause instanceof Error ? cause.message : "Project details could not be saved."
   }
 }
+
+const submitProjectTransition = async () => {
+  if (!props.selectedProject || !props.canTransitionProject || props.transitioningProject) return
+
+  transitionError.value = null
+
+  try {
+    await props.transitionProject(props.selectedProject.id, transitionStatus.value)
+  } catch (cause) {
+    transitionError.value =
+      cause instanceof Error ? cause.message : "Project transition failed."
+  }
+}
 </script>
 
 <template>
@@ -270,6 +290,7 @@ const submitProjectUpdate = async () => {
           v-for="filter in projectFilters"
           :key="filter"
           type="button"
+          :data-testid="`projects-filter-${filter}`"
           class="rounded px-2.5 py-1 text-xs capitalize transition-colors"
           :class="
             projectFilter === filter
@@ -458,6 +479,48 @@ const submitProjectUpdate = async () => {
                 {{ statusLabel(selectedProject.status) }}
               </span>
             </InspectorField>
+
+            <div v-if="canTransitionProject" class="space-y-2">
+              <label
+                for="folio-project-transition-status"
+                class="so-font-mono text-[11px] uppercase tracking-[0.06em] text-[hsl(var(--so-muted-foreground))]"
+              >
+                Move to
+              </label>
+              <div class="flex items-center gap-2">
+                <select
+                  id="folio-project-transition-status"
+                  v-model="transitionStatus"
+                  class="so-input-field h-8"
+                  data-testid="projects-transition-status-select"
+                  :disabled="transitioningProject"
+                  @change="transitionError = null"
+                >
+                  <option value="active">Active</option>
+                  <option value="on_hold">On Hold</option>
+                  <option value="completed">Completed</option>
+                  <option value="canceled">Canceled</option>
+                  <option value="archived">Archived</option>
+                </select>
+                <button
+                  type="button"
+                  class="so-button-primary h-8"
+                  data-testid="projects-transition-submit"
+                  :disabled="transitioningProject"
+                  @click="submitProjectTransition"
+                >
+                  <LoaderCircle v-if="transitioningProject" class="h-3 w-3 animate-spin" />
+                  <span>{{ transitioningProject ? "Updating..." : "Apply" }}</span>
+                </button>
+              </div>
+              <div
+                v-if="transitionError"
+                class="so-alert-panel so-alert-panel-error"
+                data-testid="projects-transition-error"
+              >
+                <p class="text-xs text-[hsl(var(--so-destructive))]">{{ transitionError }}</p>
+              </div>
+            </div>
 
             <InspectorField label="Project ID" :value="selectedProject.id" mono />
             <InspectorField label="Priority position" :value="priorityLabel(selectedProject.priorityPosition)" mono />

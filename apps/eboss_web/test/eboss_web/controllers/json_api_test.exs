@@ -116,6 +116,15 @@ defmodule EBossWeb.JsonApiTest do
            ]
 
     assert get_in(spec, [
+             "components",
+             "schemas",
+             "FolioProjectUpdateRequest",
+             "properties",
+             "status",
+             "enum"
+           ]) == ["active", "on_hold", "completed", "canceled", "archived"]
+
+    assert get_in(spec, [
              "paths",
              "/api/v1/{owner_slug}/workspaces/{slug}/apps/folio/tasks/{task_id}",
              "patch",
@@ -632,6 +641,122 @@ defmodule EBossWeb.JsonApiTest do
                get_in(event, ["changes", "title", "after"]) == "Launch orchestration console" and
                get_in(event, ["changes", "description", "after"]) == "Drive launch readiness"
            end)
+  end
+
+  test "authenticated clients can transition workspace projects through the folio project endpoint",
+       %{
+         conn: conn
+       } do
+    owner = register_user()
+    api_key = create_api_key(owner)
+
+    workspace =
+      Workspaces.create_workspace!(
+        %{
+          name: "Folio Project Transition Workspace",
+          owner_type: :user,
+          owner_id: owner.id
+        },
+        actor: owner
+      )
+
+    project =
+      EBossFolio.create_project!(%{workspace_id: workspace.id, title: "Advance project status"},
+        actor: owner
+      )
+
+    transition_conn =
+      conn
+      |> put_req_header("authorization", "Bearer #{api_key}")
+      |> put_req_header("accept", "application/json")
+      |> put_req_header("content-type", "application/json")
+      |> patch(
+        "/api/v1/#{owner.owner_slug}/workspaces/#{workspace.slug}/apps/folio/projects/#{project.id}",
+        Jason.encode!(%{status: "on_hold"})
+      )
+
+    transition_payload = json_response(transition_conn, 200)
+
+    assert transition_payload["scope"]["app_key"] == "folio"
+    assert transition_payload["project"]["id"] == project.id
+    assert transition_payload["project"]["status"] == "on_hold"
+
+    assert {:ok, transitioned_project} =
+             EBossFolio.get_project_in_workspace(project.id, workspace.id, actor: owner)
+
+    assert transitioned_project.status == :on_hold
+
+    projects_conn =
+      build_conn()
+      |> put_req_header("authorization", "Bearer #{api_key}")
+      |> put_req_header("accept", "application/json")
+      |> get("/api/v1/#{owner.owner_slug}/workspaces/#{workspace.slug}/apps/folio/projects")
+
+    projects_payload = json_response(projects_conn, 200)
+
+    assert Enum.any?(projects_payload["projects"], fn listed_project ->
+             listed_project["id"] == project.id and listed_project["status"] == "on_hold"
+           end)
+
+    activity_conn =
+      build_conn()
+      |> put_req_header("authorization", "Bearer #{api_key}")
+      |> put_req_header("accept", "application/json")
+      |> get("/api/v1/#{owner.owner_slug}/workspaces/#{workspace.slug}/apps/folio/activity")
+
+    activity_payload = json_response(activity_conn, 200)
+
+    assert Enum.any?(activity_payload["events"], fn event ->
+             event["action"] == "transition" and
+               event["subject"]["type"] == "project" and
+               event["subject"]["id"] == project.id and
+               get_in(event, ["changes", "status", "after"]) == "on_hold"
+           end)
+  end
+
+  test "folio project transition endpoint reports invalid transitions clearly", %{conn: conn} do
+    owner = register_user()
+    api_key = create_api_key(owner)
+
+    workspace =
+      Workspaces.create_workspace!(
+        %{
+          name: "Folio Project Transition Validation Workspace",
+          owner_type: :user,
+          owner_id: owner.id
+        },
+        actor: owner
+      )
+
+    project =
+      EBossFolio.create_project!(
+        %{workspace_id: workspace.id, title: "Closed rollout", status: :completed},
+        actor: owner
+      )
+
+    transition_conn =
+      conn
+      |> put_req_header("authorization", "Bearer #{api_key}")
+      |> put_req_header("accept", "application/json")
+      |> put_req_header("content-type", "application/json")
+      |> patch(
+        "/api/v1/#{owner.owner_slug}/workspaces/#{workspace.slug}/apps/folio/projects/#{project.id}",
+        Jason.encode!(%{status: "active"})
+      )
+
+    assert %{
+             "error" => %{
+               "code" => "invalid_project_transition",
+               "message" => message
+             }
+           } = json_response(transition_conn, 400)
+
+    assert message =~ "cannot transition project from completed to active"
+
+    assert {:ok, unchanged_project} =
+             EBossFolio.get_project_in_workspace(project.id, workspace.id, actor: owner)
+
+    assert unchanged_project.status == :completed
   end
 
   test "folio project update endpoint rejects invalid project payloads", %{conn: conn} do

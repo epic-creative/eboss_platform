@@ -280,9 +280,9 @@ defmodule EBossWeb.ApiSpec do
   defp folio_project_path_item do
     %{
       "patch" => %{
-        "summary" => "Update workspace-scoped Folio project details",
+        "summary" => "Update or transition a workspace-scoped Folio project",
         "description" =>
-          "Updates editable project detail fields for a workspace-scoped Folio project.",
+          "Updates editable project detail fields or applies a supported project status transition for a workspace-scoped Folio project.",
         "parameters" => workspace_project_path_parameters(),
         "requestBody" => %{
           "required" => true,
@@ -550,6 +550,12 @@ defmodule EBossWeb.ApiSpec do
               "type" => "string",
               "minLength" => 1,
               "description" => "Project title"
+            },
+            "status" => %{
+              "type" => "string",
+              "enum" => ["active", "on_hold", "completed", "canceled", "archived"],
+              "description" =>
+                "Target project status transition. When provided, it must be the only field in the request body."
             },
             "description" => %{
               "type" => "string",

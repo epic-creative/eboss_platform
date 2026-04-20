@@ -604,6 +604,216 @@ describe("ShellOperatorWorkspaceApp", () => {
     )
   })
 
+  it("transitions a folio project from the inspector and keeps project filtering coherent", async () => {
+    const fetchMock = vi
+      .spyOn(global, "fetch")
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          scope: {},
+          projects: [
+            {
+              id: "project-1",
+              title: "Atlas Service",
+              status: "active",
+              priority_position: 1,
+              due_at: null,
+              review_at: null,
+              metadata: {},
+            },
+          ],
+        }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          scope: {},
+          project: {
+            id: "project-1",
+            title: "Atlas Service",
+            status: "completed",
+            priority_position: 1,
+            due_at: null,
+            review_at: null,
+            metadata: {},
+          },
+        }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          scope: {},
+          projects: [
+            {
+              id: "project-1",
+              title: "Atlas Service",
+              status: "completed",
+              priority_position: 1,
+              due_at: null,
+              review_at: null,
+              metadata: {},
+            },
+          ],
+        }),
+      } as Response)
+
+    const wrapper = mountComponent(ShellOperatorWorkspaceApp, {
+      props: {
+        currentUser: {
+          username: "operator",
+          email: "operator@example.com",
+        },
+        currentScope: scope({
+          apps: {
+            folio: {
+              key: "folio",
+              label: "Folio",
+              defaultPath: "/primary-owner/primary-workspace/apps/folio",
+              enabled: true,
+              capabilities: {
+                read: true,
+                manage: true,
+              },
+            },
+          },
+        }),
+        currentPage: appRoute("folio", "projects"),
+        currentPath: "/primary-owner/primary-workspace/apps/folio/projects",
+        signOutPath: "/sign-out",
+        csrfToken: "csrf-token",
+      },
+      global: {
+        stubs: {
+          ThemeToggleButton: {
+            template: "<button data-testid=\"theme-toggle-stub\" />",
+          },
+        },
+      },
+    })
+
+    await nextTick()
+    await nextMacrotask()
+
+    const projectsView = wrapper.get('[data-testid="workspace-page-projects"]')
+    await projectsView.get('[data-testid="projects-filter-active"]').trigger("click")
+    await projectsView.get('[data-testid="project-row-project-1"]').trigger("click")
+    await nextTick()
+
+    await projectsView.get('[data-testid="projects-transition-status-select"]').setValue("completed")
+    await projectsView.get('[data-testid="projects-transition-submit"]').trigger("click")
+
+    await nextTick()
+    await nextMacrotask()
+    await nextTick()
+    await nextMacrotask()
+
+    expect(fetchMock).toHaveBeenCalledTimes(3)
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      "/api/v1/primary-owner/workspaces/primary-workspace/apps/folio/projects/project-1",
+      expect.objectContaining({
+        method: "PATCH",
+        body: JSON.stringify({ status: "completed" }),
+        headers: expect.objectContaining({
+          "Content-Type": "application/json",
+        }),
+      }),
+    )
+
+    expect(projectsView.find('[data-testid="projects-state-empty-filtered"]').exists()).toBe(true)
+    expect(projectsView.find('[data-testid="projects-transition-error"]').exists()).toBe(false)
+  })
+
+  it("shows transition validation errors from the folio project endpoint", async () => {
+    const fetchMock = vi
+      .spyOn(global, "fetch")
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          scope: {},
+          projects: [
+            {
+              id: "project-1",
+              title: "Completed rollout",
+              status: "completed",
+              priority_position: 1,
+              due_at: null,
+              review_at: null,
+              metadata: {},
+            },
+          ],
+        }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 400,
+        statusText: "Bad Request",
+        json: async () => ({
+          error: {
+            code: "invalid_project_transition",
+            message: "cannot transition project from completed to active",
+          },
+        }),
+      } as Response)
+
+    const wrapper = mountComponent(ShellOperatorWorkspaceApp, {
+      props: {
+        currentUser: {
+          username: "operator",
+          email: "operator@example.com",
+        },
+        currentScope: scope({
+          apps: {
+            folio: {
+              key: "folio",
+              label: "Folio",
+              defaultPath: "/primary-owner/primary-workspace/apps/folio",
+              enabled: true,
+              capabilities: {
+                read: true,
+                manage: true,
+              },
+            },
+          },
+        }),
+        currentPage: appRoute("folio", "projects"),
+        currentPath: "/primary-owner/primary-workspace/apps/folio/projects",
+        signOutPath: "/sign-out",
+        csrfToken: "csrf-token",
+      },
+      global: {
+        stubs: {
+          ThemeToggleButton: {
+            template: "<button data-testid=\"theme-toggle-stub\" />",
+          },
+        },
+      },
+    })
+
+    await nextTick()
+    await nextMacrotask()
+
+    const projectsView = wrapper.get('[data-testid="workspace-page-projects"]')
+    await projectsView.get('[data-testid="project-row-project-1"]').trigger("click")
+    await nextTick()
+
+    await projectsView.get('[data-testid="projects-transition-status-select"]').setValue("active")
+    await projectsView.get('[data-testid="projects-transition-submit"]').trigger("click")
+
+    await nextTick()
+    await nextMacrotask()
+    await nextTick()
+
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(projectsView.get('[data-testid="projects-transition-error"]').text()).toContain(
+      "cannot transition project from completed to active",
+    )
+  })
+
   it("hides project creation controls when folio manage access is not granted", async () => {
     vi.spyOn(global, "fetch").mockResolvedValue({
       ok: true,
