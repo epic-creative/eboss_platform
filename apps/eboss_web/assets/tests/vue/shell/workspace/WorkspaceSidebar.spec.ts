@@ -118,4 +118,77 @@ describe("WorkspaceSidebar", () => {
     expect(wrapper.find('a[href="/primary-owner/primary-workspace/projects"]').exists()).toBe(false)
     expect(wrapper.find('a[href="/primary-owner/primary-workspace/activity"]').exists()).toBe(false)
   })
+
+  it("uses app-aware fallback links and hides disabled apps in the sidebar", async () => {
+    const wrapper = mountComponent(WorkspaceSidebar, {
+      props: {
+        currentUser: {
+          username: "operator",
+          email: "operator@example.com",
+        },
+        currentScope: {
+          empty: false,
+          dashboardPath: "/primary-owner/primary-workspace",
+          currentWorkspace: {
+            id: "workspace-1",
+            name: "Primary Workspace",
+            slug: "primary-workspace",
+            fullPath: "/primary-owner/primary-workspace",
+            visibility: "private",
+            ownerType: "user",
+            ownerSlug: "primary-owner",
+            ownerDisplayName: "Primary Owner",
+            dashboardPath: "/primary-owner/primary-workspace",
+            current: true,
+          },
+          owner: {
+            type: "user",
+            slug: "primary-owner",
+            displayName: "Primary Owner",
+          },
+          capabilities: {
+            readWorkspace: true,
+            manageWorkspace: true,
+            readFolio: true,
+            manageFolio: true,
+          },
+          apps: {
+            folio: {
+              key: "folio",
+              label: "Folio",
+              defaultPath: "",
+              enabled: true,
+              capabilities: {
+                read: true,
+                manage: true,
+              },
+            },
+            reports: {
+              key: "reports",
+              label: "Reports",
+              defaultPath: "/primary-owner/primary-workspace/apps/reports",
+              enabled: false,
+              capabilities: {
+                read: true,
+                manage: false,
+              },
+            },
+          },
+          accessibleWorkspaces: [],
+        },
+        currentPage: appRoute("folio"),
+        basePath: "/primary-owner/primary-workspace",
+      },
+    })
+
+    const appsToggle = wrapper.findAll("button").find((button) => button.text().includes("Apps"))
+    expect(appsToggle).toBeDefined()
+
+    await appsToggle!.trigger("click")
+
+    expect(wrapper.find('a[href="/primary-owner/primary-workspace/apps/folio"]').exists()).toBe(true)
+    expect(wrapper.find('a[href="/primary-owner/primary-workspace/apps/reports"]').exists()).toBe(
+      false,
+    )
+  })
 })

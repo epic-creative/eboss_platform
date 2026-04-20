@@ -206,6 +206,106 @@ describe("ShellOperatorWorkspaceApp", () => {
     expect(currentAppChip.text()).toContain("Files")
   })
 
+  it("defaults folio app routes without an explicit surface to tasks", async () => {
+    const fetchMock = vi.spyOn(global, "fetch").mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input)
+
+      if (url.endsWith("/tasks")) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({
+            scope: {},
+            tasks: [
+              {
+                id: "task-1",
+                title: "Draft rollout notes",
+                status: "inbox",
+                project_id: "project-1",
+                priority_position: 1,
+                due_at: null,
+                review_at: null,
+                active_delegation: null,
+              },
+            ],
+          }),
+        } as Response)
+      }
+
+      if (url.endsWith("/projects")) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({
+            scope: {},
+            projects: [
+              {
+                id: "project-1",
+                title: "Atlas Service",
+                status: "active",
+                priority_position: 1,
+                due_at: null,
+                review_at: null,
+              },
+            ],
+          }),
+        } as Response)
+      }
+
+      throw new Error(`Unexpected fetch URL: ${url}`)
+    })
+
+    const wrapper = mountComponent(ShellOperatorWorkspaceApp, {
+      props: {
+        currentUser: {
+          username: "operator",
+          email: "operator@example.com",
+        },
+        currentScope: scope({
+          apps: {
+            folio: {
+              key: "folio",
+              label: "Folio",
+              defaultPath: "/primary-owner/primary-workspace/apps/folio",
+              enabled: true,
+              capabilities: {
+                read: true,
+                manage: true,
+              },
+            },
+          },
+        }),
+        currentPage: appRoute("folio"),
+        currentPath: "/primary-owner/primary-workspace/apps/folio",
+        signOutPath: "/sign-out",
+        csrfToken: "csrf-token",
+      },
+      global: {
+        stubs: {
+          ThemeToggleButton: {
+            template: "<button data-testid=\"theme-toggle-stub\" />",
+          },
+        },
+      },
+    })
+
+    await nextTick()
+    await nextMacrotask()
+
+    const currentAppChip = wrapper.get(`[data-testid="${workspaceAppTestContracts.currentAppTestId}"]`)
+    expect(currentAppChip.text()).toContain("Tasks")
+    expect(wrapper.find('[data-testid="workspace-page-tasks"]').exists()).toBe(true)
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/v1/primary-owner/workspaces/primary-workspace/apps/folio/tasks",
+      expect.any(Object),
+    )
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/v1/primary-owner/workspaces/primary-workspace/apps/folio/projects",
+      expect.any(Object),
+    )
+  })
+
   it("renders real folio projects on folio app routes", async () => {
     vi.spyOn(global, "fetch").mockResolvedValue({
       ok: true,
