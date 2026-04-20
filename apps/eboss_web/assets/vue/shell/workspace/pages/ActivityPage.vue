@@ -13,6 +13,7 @@ import InspectorPane from "../InspectorPane.vue"
 import WorkspaceEmptyState from "../WorkspaceEmptyState.vue"
 import WorkspacePageHeader from "../WorkspacePageHeader.vue"
 import type { FolioActivityEvent } from "../folio/types"
+import { folioActivityRowTestId, folioSurfaceTestContracts } from "../testContracts"
 
 interface ActivityChangeEntry {
   field: string
@@ -127,7 +128,12 @@ const selectedActivityChanges = computed(() => changesFor(props.selectedActivity
 </script>
 
 <template>
-  <div class="ui-workspace-page" data-testid="workspace-page-activity">
+  <section
+    class="ui-workspace-page"
+    role="region"
+    :aria-label="folioSurfaceTestContracts.activity.pageRegionLabel"
+    :data-testid="folioSurfaceTestContracts.activity.pageTestId"
+  >
     <WorkspacePageHeader title="Activity" :subtitle="workspaceReference" />
 
     <div class="relative max-w-xs flex-1">
@@ -139,6 +145,8 @@ const selectedActivityChanges = computed(() => changesFor(props.selectedActivity
       <div
         class="min-w-0 flex-1 rounded-md border border-[hsl(var(--so-border))] bg-[hsl(var(--so-card))]"
         :class="selectedActivity ? 'rounded-r-none border-r-0' : ''"
+        role="region"
+        :aria-label="folioSurfaceTestContracts.activity.feedRegionLabel"
       >
         <div class="so-font-mono flex items-center gap-4 border-b border-[hsl(var(--so-border))] px-4 py-2 text-[11px] text-[hsl(var(--so-muted-foreground))]">
           <span class="w-20">Hash</span>
@@ -152,13 +160,13 @@ const selectedActivityChanges = computed(() => changesFor(props.selectedActivity
           :icon="LoaderCircle"
           title="Loading activity"
           copy="Updating the activity feed from Folio."
-          data-testid="activity-state-loading"
+          :data-testid="folioSurfaceTestContracts.activity.loadingStateTestId"
         />
 
         <div
           v-else-if="error"
           class="so-alert-panel so-alert-panel-error m-4"
-          data-testid="activity-state-error"
+          :data-testid="folioSurfaceTestContracts.activity.errorStateTestId"
         >
           <div class="mb-2 flex items-center gap-2">
             <AlertTriangle class="h-4 w-4 text-[hsl(var(--so-destructive))]" />
@@ -174,12 +182,14 @@ const selectedActivityChanges = computed(() => changesFor(props.selectedActivity
           v-else-if="!activityEvents.length"
           title="No activity yet"
           copy="No Folio activity has been recorded for this workspace yet."
-          data-testid="activity-state-empty"
+          :data-testid="folioSurfaceTestContracts.activity.emptyStateTestId"
         />
 
         <div
           v-else
           class="divide-y divide-[hsl(var(--so-border))]"
+          role="feed"
+          :aria-label="folioSurfaceTestContracts.activity.feedRegionLabel"
         >
           <button
             v-for="event in activityEvents"
@@ -187,7 +197,7 @@ const selectedActivityChanges = computed(() => changesFor(props.selectedActivity
             type="button"
             class="flex w-full items-start gap-4 px-4 py-3 text-left transition-colors"
             :class="selectedActivity?.id === event.id ? 'so-row-selected' : 'hover:bg-[hsl(var(--so-accent))/0.3]'"
-            :data-testid="`activity-row-${event.id}`"
+            :data-testid="folioActivityRowTestId(event.id)"
             @click="toggleActivity(event)"
           >
             <span class="so-font-mono w-20 shrink-0 pt-0.5 text-[11px] text-[hsl(var(--so-primary))]">{{ event.provider_event_id }}</span>
@@ -221,6 +231,7 @@ const selectedActivityChanges = computed(() => changesFor(props.selectedActivity
         :open="canInspectActivity"
         :title="selectedActivity?.summary || ''"
         :subtitle="selectedActivity?.provider_event_id"
+        :data-testid="folioSurfaceTestContracts.activity.inspectorTestId"
         @close="emit('update:selectedActivity', null)"
       >
         <template #actions>
@@ -304,5 +315,5 @@ const selectedActivityChanges = computed(() => changesFor(props.selectedActivity
         </div>
       </InspectorPane>
     </div>
-  </div>
+  </section>
 </template>

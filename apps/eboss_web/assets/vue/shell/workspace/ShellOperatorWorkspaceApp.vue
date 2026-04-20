@@ -20,6 +20,7 @@ import ActivityPage from "./pages/ActivityPage.vue"
 import ProjectsPage from "./pages/ProjectsPage.vue"
 import TasksPage from "./pages/TasksPage.vue"
 import SettingsPage from "./pages/SettingsPage.vue"
+import { workspaceAppTestContracts } from "./testContracts"
 import {
   createFolioTask,
   createFolioProject,
@@ -418,7 +419,9 @@ watch(currentWorkspaceKey, () => {
 <template>
   <div
     class="so-theme flex min-h-screen bg-[hsl(var(--so-background))] text-[hsl(var(--so-foreground))]"
-    data-testid="workspace-shell"
+    role="region"
+    :aria-label="workspaceAppTestContracts.shellRegionLabel"
+    :data-testid="workspaceAppTestContracts.shellTestId"
   >
     <aside
       class="hidden h-screen w-[208px] shrink-0 overflow-y-auto border-r border-[hsl(var(--so-border))] bg-[hsl(var(--so-surface-1))] md:flex md:sticky md:top-0"
@@ -464,7 +467,9 @@ watch(currentWorkspaceKey, () => {
           <span
             v-if="isAppRoute"
             class="hidden items-center gap-2 rounded-md border border-[hsl(var(--so-border))] px-2 py-1 text-xs text-[hsl(var(--so-muted-foreground))] sm:flex"
-            data-testid="workspace-current-app"
+            role="status"
+            :aria-label="workspaceAppTestContracts.currentAppStatusLabel"
+            :data-testid="workspaceAppTestContracts.currentAppTestId"
           >
             <span class="so-font-mono">App</span>
             <span class="font-medium text-[hsl(var(--so-foreground))]">

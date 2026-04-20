@@ -5,6 +5,7 @@ import { mountComponent } from "@/tests/vue/support/mount"
 import { members } from "@/vue/shell/workspace/mockData"
 import MembersPage from "@/vue/shell/workspace/pages/MembersPage.vue"
 import ShellOperatorWorkspaceApp from "@/vue/shell/workspace/ShellOperatorWorkspaceApp.vue"
+import { workspaceAppTestContracts } from "@/vue/shell/workspace/testContracts"
 import type { WorkspaceScope, WorkspaceSurface, WorkspaceSummary } from "@/vue/shell/workspace/types"
 
 const workspace = (overrides: Partial<WorkspaceSummary> = {}): WorkspaceSummary => ({
@@ -196,7 +197,9 @@ describe("ShellOperatorWorkspaceApp", () => {
       },
     })
 
-    const currentAppChip = wrapper.find('[data-testid="workspace-current-app"]')
+    const currentAppChip = wrapper.find(
+      `[role="status"][aria-label="${workspaceAppTestContracts.currentAppStatusLabel}"]`,
+    )
     expect(currentAppChip.exists()).toBe(true)
     expect(currentAppChip.text()).toContain("App")
     expect(currentAppChip.text()).toContain("Folio")

@@ -18,6 +18,7 @@ import WorkspacePageHeader from "../WorkspacePageHeader.vue"
 import WorkspacePanel from "../WorkspacePanel.vue"
 import type { FolioProjectUpdatePayload } from "../folio/types"
 import { formatFolioDate, projectStatusClass, statusLabel } from "../presenters"
+import { folioProjectRowTestId, folioSurfaceTestContracts } from "../testContracts"
 import type { Project, ProjectFilter } from "../types"
 
 const props = defineProps<{
@@ -263,7 +264,12 @@ const submitProjectTransition = async () => {
 </script>
 
 <template>
-  <div class="ui-workspace-page" data-testid="workspace-page-projects">
+  <section
+    class="ui-workspace-page"
+    role="region"
+    :aria-label="folioSurfaceTestContracts.projects.pageRegionLabel"
+    :data-testid="folioSurfaceTestContracts.projects.pageTestId"
+  >
     <WorkspacePageHeader title="Projects" :subtitle="workspaceReference">
       <template #actions>
         <button
@@ -368,6 +374,8 @@ const submitProjectTransition = async () => {
       <div
         class="min-w-0 flex-1 rounded-md border border-[hsl(var(--so-border))] bg-[hsl(var(--so-card))]"
         :class="selectedProject ? 'rounded-r-none border-r-0' : ''"
+        role="region"
+        :aria-label="folioSurfaceTestContracts.projects.listRegionLabel"
       >
         <div class="so-font-mono flex items-center gap-4 border-b border-[hsl(var(--so-border))] px-4 py-2 text-[11px] text-[hsl(var(--so-muted-foreground))]">
           <span class="flex-1">Name</span>
@@ -381,13 +389,13 @@ const submitProjectTransition = async () => {
           :icon="LoaderCircle"
           title="Loading projects"
           copy="Updating the project list from Folio."
-          data-testid="projects-state-loading"
+          :data-testid="folioSurfaceTestContracts.projects.loadingStateTestId"
         />
 
         <div
           v-else-if="error"
           class="so-alert-panel so-alert-panel-error m-4"
-          data-testid="projects-state-error"
+          :data-testid="folioSurfaceTestContracts.projects.errorStateTestId"
         >
           <div class="mb-2 flex items-center gap-2">
             <AlertTriangle class="h-4 w-4 text-[hsl(var(--so-destructive))]" />
@@ -403,13 +411,13 @@ const submitProjectTransition = async () => {
           v-else-if="!hasProjects"
           title="No projects yet"
           copy="No Folio projects have been created for this workspace yet."
-          data-testid="projects-state-empty"
+          :data-testid="folioSurfaceTestContracts.projects.emptyStateTestId"
         />
 
         <div
           v-else-if="!filteredProjects.length"
           class="so-font-mono px-4 py-8 text-center text-sm text-[hsl(var(--so-muted-foreground))]"
-          data-testid="projects-state-empty-filtered"
+          :data-testid="folioSurfaceTestContracts.projects.emptyFilteredStateTestId"
         >
           No projects match this view.
         </div>
@@ -421,7 +429,7 @@ const submitProjectTransition = async () => {
             type="button"
             class="flex w-full items-center gap-4 px-4 py-3 text-left transition-colors"
             :class="selectedProject?.id === project.id ? 'so-row-selected' : 'hover:bg-[hsl(var(--so-accent))/0.3]'"
-            :data-testid="`project-row-${project.id}`"
+            :data-testid="folioProjectRowTestId(project.id)"
             @click="toggleProject(project)"
           >
             <div class="min-w-0 flex-1">
@@ -462,7 +470,7 @@ const submitProjectTransition = async () => {
         :open="canInspectProject"
         :title="selectedProject?.name || ''"
         :subtitle="selectedProject?.id"
-        data-testid="project-inspector"
+        :data-testid="folioSurfaceTestContracts.projects.inspectorTestId"
         @close="emit('update:selectedProject', null)"
       >
         <template #actions>
@@ -734,5 +742,5 @@ const submitProjectTransition = async () => {
         </div>
       </InspectorPane>
     </div>
-  </div>
+  </section>
 </template>

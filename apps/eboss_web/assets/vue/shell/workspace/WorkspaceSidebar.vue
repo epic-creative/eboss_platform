@@ -20,6 +20,7 @@ import type {
   WorkspaceSummary,
   WorkspaceSurface,
 } from "./types"
+import { workspaceAppTestContracts } from "./testContracts"
 
 const props = defineProps<{
   currentUser: CurrentUser
@@ -101,7 +102,7 @@ const workspaceRouteLabel = computed(() =>
 </script>
 
 <template>
-  <div class="flex h-full flex-col" data-testid="workspace-sidebar">
+  <div class="flex h-full flex-col" :data-testid="workspaceAppTestContracts.sidebarTestId">
     <details class="border-b border-[hsl(var(--so-border))]" :open="groups.switcher" @toggle="groups.switcher = !groups.switcher">
       <summary
         class="flex w-full cursor-pointer list-none items-center gap-2.5 px-3 py-2.5 text-left transition-colors hover:bg-[hsl(var(--so-accent))/0.5]"
@@ -198,7 +199,7 @@ const workspaceRouteLabel = computed(() =>
       </div>
     </details>
 
-    <nav class="flex-1 overflow-y-auto py-1.5">
+    <nav class="flex-1 overflow-y-auto py-1.5" :aria-label="workspaceAppTestContracts.sidebarNavigationLabel">
       <div class="py-0.5">
         <a
           :href="linkFor('dashboard')"
@@ -258,7 +259,12 @@ const workspaceRouteLabel = computed(() =>
 
       <div class="mx-3 my-1 border-t border-[hsl(var(--so-border))]" />
 
-      <div v-if="availableApps.length" class="py-1">
+      <div
+        v-if="availableApps.length"
+        class="py-1"
+        role="region"
+        :aria-label="workspaceAppTestContracts.sidebarAppsRegionLabel"
+      >
         <button
           type="button"
           class="group flex w-full items-center gap-1 px-3 py-1 text-[11px] font-medium uppercase tracking-wider text-[hsl(var(--so-muted-foreground))] transition-colors hover:text-[hsl(var(--so-foreground))]"

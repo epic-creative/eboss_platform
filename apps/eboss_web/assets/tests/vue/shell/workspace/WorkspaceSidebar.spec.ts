@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest"
 
 import { mountComponent } from "@/tests/vue/support/mount"
 import WorkspaceSidebar from "@/vue/shell/workspace/WorkspaceSidebar.vue"
+import { workspaceAppTestContracts } from "@/vue/shell/workspace/testContracts"
 import type { WorkspaceScope } from "@/vue/shell/workspace/types"
 
 const emptyScope = (): WorkspaceScope => ({
@@ -35,10 +36,15 @@ describe("WorkspaceSidebar", () => {
       },
     })
 
-    expect(wrapper.get('[data-testid="workspace-sidebar"]').text()).toContain("No workspace")
+    expect(
+      wrapper.get(`[data-testid="${workspaceAppTestContracts.sidebarTestId}"]`).text(),
+    ).toContain("No workspace")
     expect(wrapper.text()).toContain("No workspace selected")
     expect(wrapper.text()).toContain("No workspaces available yet.")
     expect(wrapper.text().includes("undefined/undefined")).toBe(false)
+    expect(
+      wrapper.find(`nav[aria-label="${workspaceAppTestContracts.sidebarNavigationLabel}"]`).exists(),
+    ).toBe(true)
   })
 
   it("renders app navigation when apps are available", async () => {
@@ -103,6 +109,11 @@ describe("WorkspaceSidebar", () => {
     const folioLink = wrapper.get('a[href="/primary-owner/primary-workspace/apps/folio"]')
     expect(folioLink.text()).toContain("Folio")
     expect(folioLink.classes()).toContain("bg-[hsl(var(--so-accent))]")
+    expect(
+      wrapper.find(
+        `[role="region"][aria-label="${workspaceAppTestContracts.sidebarAppsRegionLabel}"]`,
+      ).exists(),
+    ).toBe(true)
 
     expect(wrapper.find('a[href="/primary-owner/primary-workspace/projects"]').exists()).toBe(false)
     expect(wrapper.find('a[href="/primary-owner/primary-workspace/activity"]').exists()).toBe(false)

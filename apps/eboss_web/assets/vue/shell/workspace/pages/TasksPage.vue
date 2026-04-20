@@ -8,6 +8,7 @@ import InspectorSection from "../InspectorSection.vue"
 import WorkspaceEmptyState from "../WorkspaceEmptyState.vue"
 import WorkspacePageHeader from "../WorkspacePageHeader.vue"
 import WorkspacePanel from "../WorkspacePanel.vue"
+import { folioSurfaceTestContracts, folioTaskRowTestId } from "../testContracts"
 import type { Task } from "../types"
 import { formatFolioDate, statusLabel, taskStatusClass } from "../presenters"
 
@@ -261,7 +262,12 @@ const submitDelegateTask = async () => {
 </script>
 
 <template>
-  <div class="ui-workspace-page" data-testid="workspace-page-tasks">
+  <section
+    class="ui-workspace-page"
+    role="region"
+    :aria-label="folioSurfaceTestContracts.tasks.pageRegionLabel"
+    :data-testid="folioSurfaceTestContracts.tasks.pageTestId"
+  >
     <WorkspacePageHeader title="Tasks" :subtitle="workspaceReference">
       <template #actions>
         <button
@@ -394,6 +400,8 @@ const submitDelegateTask = async () => {
       <div
         class="min-w-0 flex-1 rounded-md border border-[hsl(var(--so-border))] bg-[hsl(var(--so-card))]"
         :class="selectedTask ? 'rounded-r-none border-r-0' : ''"
+        role="region"
+        :aria-label="folioSurfaceTestContracts.tasks.listRegionLabel"
       >
         <div class="so-font-mono flex items-center gap-4 border-b border-[hsl(var(--so-border))] px-4 py-2 text-[11px] text-[hsl(var(--so-muted-foreground))]">
           <span class="flex-1">Task</span>
@@ -408,13 +416,13 @@ const submitDelegateTask = async () => {
           :icon="LoaderCircle"
           title="Loading tasks"
           copy="Updating the task list from Folio."
-          data-testid="tasks-state-loading"
+          :data-testid="folioSurfaceTestContracts.tasks.loadingStateTestId"
         />
 
         <div
           v-else-if="error"
           class="so-alert-panel so-alert-panel-error m-4"
-          data-testid="tasks-state-error"
+          :data-testid="folioSurfaceTestContracts.tasks.errorStateTestId"
         >
           <div class="mb-2 flex items-center gap-2">
             <AlertTriangle class="h-4 w-4 text-[hsl(var(--so-destructive))]" />
@@ -430,13 +438,13 @@ const submitDelegateTask = async () => {
           v-else-if="!tasks.length"
           title="No tasks yet"
           copy="No Folio tasks have been created for this workspace yet."
-          data-testid="tasks-state-empty"
+          :data-testid="folioSurfaceTestContracts.tasks.emptyStateTestId"
         />
 
         <div
           v-else-if="!sortTasks.length"
           class="so-font-mono px-4 py-8 text-center text-sm text-[hsl(var(--so-muted-foreground))]"
-          data-testid="tasks-state-empty-filtered"
+          :data-testid="folioSurfaceTestContracts.tasks.emptyFilteredStateTestId"
         >
           No tasks match this view.
         </div>
@@ -448,7 +456,7 @@ const submitDelegateTask = async () => {
             type="button"
             class="flex w-full items-center gap-4 px-4 py-3 text-left transition-colors"
             :class="selectedTask?.id === task.id ? 'so-row-selected' : 'hover:bg-[hsl(var(--so-accent))/0.3]'"
-            :data-testid="`task-row-${task.id}`"
+            :data-testid="folioTaskRowTestId(task.id)"
             @click="toggleTask(task)"
           >
             <div class="min-w-0 flex-1">
@@ -503,7 +511,7 @@ const submitDelegateTask = async () => {
         :open="canInspectTask"
         :title="selectedTask?.title || ''"
         :subtitle="selectedTask?.id"
-        data-testid="task-inspector"
+        :data-testid="folioSurfaceTestContracts.tasks.inspectorTestId"
         @close="emit('update:selectedTask', null)"
       >
         <template #actions>
@@ -728,5 +736,5 @@ const submitDelegateTask = async () => {
         </div>
       </InspectorPane>
     </div>
-  </div>
+  </section>
 </template>
