@@ -45,6 +45,7 @@ After `mix setup`, prepare deterministic browser state and run the Playwright au
 cd apps/eboss_web/assets
 npm run playwright:setup
 npm run playwright:smoke
+npm run playwright:smoke:folio-mutation
 ```
 
 The smoke lane keeps the checked-in bootstrap fixture as a runner sanity check and adds app-backed coverage for the anonymous home shell, the dashboard-to-sign-in auth boundary, and the authenticated dashboard handoff. Smoke specs live in `apps/eboss_web/assets/tests/playwright/smoke`, future regression coverage lives in `apps/eboss_web/assets/tests/playwright/regression`, and generated traces, screenshots, and reports stay under `apps/eboss_web/assets/test-results/playwright/`.
@@ -65,6 +66,6 @@ Run the lean repo gate from the umbrella root:
 mix frontend.gate
 ```
 
-That command runs `npm run vue:test`, `npm run playwright:setup`, and `npm run playwright:smoke` from `apps/eboss_web/assets`.
+That command runs `npm run vue:test`, `npm run playwright:setup`, `npm run playwright:smoke`, and `npm run playwright:smoke:folio-mutation` from `apps/eboss_web/assets`.
 
 GitHub Actions runs the same gate in the `Frontend Confidence` workflow on pushes and pull requests. Local and CI runs default to `PLAYWRIGHT_BROWSER_CHANNEL=chromium`, so failures in either the Vitest lane or the Playwright smoke lane fail the workflow directly. Override the channel only when a different installed browser is required for debugging.

@@ -6,6 +6,7 @@
     "playwright:server:test": "cd .. && PHX_SERVER=true EBOSS_ENV=test PHX_HOST=localhost MIX_ENV=test mix phx.server",
     "playwright:setup": "cd .. && EBOSS_ENV=test PHX_HOST=localhost MIX_ENV=test mix eboss.playwright.setup",
     "playwright:smoke": "playwright test tests/playwright/smoke",
+    "playwright:smoke:folio-mutation": "playwright test tests/playwright/smoke/folio-mutation-smoke.spec.ts",
     "playwright:smoke:dashboard": "playwright test tests/playwright/smoke/dashboard-shell.spec.ts",
     "playwright:verify-setup": "playwright test tests/playwright/setup",
     "playwright:test": "playwright test",

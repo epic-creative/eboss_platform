@@ -71,7 +71,8 @@ defmodule EBoss.Umbrella.MixProject do
       "frontend.gate": [
         &run_frontend_gate_vitest/1,
         &run_frontend_gate_playwright_setup/1,
-        &run_frontend_gate_playwright_smoke/1
+        &run_frontend_gate_playwright_smoke/1,
+        &run_frontend_gate_playwright_folio_mutation/1
       ],
       precommit: [
         "cmd env MIX_ENV=test mix compile --warnings-as-errors",
@@ -100,6 +101,10 @@ defmodule EBoss.Umbrella.MixProject do
 
   defp run_frontend_gate_playwright_smoke(_args) do
     run_frontend_npm(["run", "playwright:smoke"])
+  end
+
+  defp run_frontend_gate_playwright_folio_mutation(_args) do
+    run_frontend_npm(["run", "playwright:smoke:folio-mutation"])
   end
 
   defp run_root_mix(env, args) do

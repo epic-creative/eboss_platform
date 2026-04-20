@@ -19,9 +19,11 @@ defmodule EBossWeb.FrontendGateTest do
     assert mix_exs =~ ~s(run_frontend_gate_vitest)
     assert mix_exs =~ ~s(run_frontend_gate_playwright_setup)
     assert mix_exs =~ ~s(run_frontend_gate_playwright_smoke)
+    assert mix_exs =~ ~s(run_frontend_gate_playwright_folio_mutation)
     assert mix_exs =~ ~s|run_frontend_npm(["run", "vue:test"])|
     assert mix_exs =~ ~s|run_frontend_npm(["run", "playwright:setup"])|
     assert mix_exs =~ ~s|run_frontend_npm(["run", "playwright:smoke"])|
+    assert mix_exs =~ ~s|run_frontend_npm(["run", "playwright:smoke:folio-mutation"])|
     assert mix_exs =~ ~s|Path.expand("apps/eboss_web/assets", __DIR__)|
 
     assert workflow =~ "name: Frontend Confidence"
@@ -40,12 +42,14 @@ defmodule EBossWeb.FrontendGateTest do
     assert readme =~ "`npm run vue:test`"
     assert readme =~ "`npm run playwright:setup`"
     assert readme =~ "`npm run playwright:smoke`"
+    assert readme =~ "`npm run playwright:smoke:folio-mutation`"
     assert readme =~ "pushes and pull requests"
 
     assert playwright_readme =~ "mix frontend.gate"
     assert playwright_readme =~ "Frontend Confidence"
     assert playwright_readme =~ "pushes and pull requests"
     assert playwright_readme =~ "`npm run playwright:smoke`"
+    assert playwright_readme =~ "`npm run playwright:smoke:folio-mutation`"
 
     assert vue_readme =~ "mix frontend.gate"
     assert vue_readme =~ "Frontend Confidence"
