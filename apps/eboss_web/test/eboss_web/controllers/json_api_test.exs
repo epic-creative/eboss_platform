@@ -382,6 +382,46 @@ defmodule EBossWeb.JsonApiTest do
            end)
   end
 
+  test "workspace and folio bootstrap payloads keep app routes aligned", %{conn: conn} do
+    owner = register_user(email: "bootstrap-routing-owner@example.com")
+    api_key = create_api_key(owner)
+
+    workspace =
+      Workspaces.create_workspace!(
+        %{
+          name: "Bootstrap Routing Workspace",
+          owner_type: :user,
+          owner_id: owner.id
+        },
+        actor: owner
+      )
+
+    workspace_payload =
+      conn
+      |> put_req_header("authorization", "Bearer #{api_key}")
+      |> put_req_header("accept", "application/json")
+      |> get("/api/v1/#{owner.owner_slug}/workspaces/#{workspace.slug}/bootstrap")
+      |> json_response(200)
+
+    folio_payload =
+      conn
+      |> put_req_header("authorization", "Bearer #{api_key}")
+      |> put_req_header("accept", "application/json")
+      |> get("/api/v1/#{owner.owner_slug}/workspaces/#{workspace.slug}/apps/folio/bootstrap")
+      |> json_response(200)
+
+    assert workspace_payload["apps"]["folio"]["key"] == "folio"
+
+    assert workspace_payload["apps"]["folio"]["default_path"] ==
+             folio_payload["scope"]["app_path"]
+
+    assert workspace_payload["apps"]["folio"]["default_path"] ==
+             folio_payload["scope"]["app"]["default_path"]
+
+    assert workspace_payload["apps"]["folio"]["capabilities"] ==
+             folio_payload["scope"]["app"]["capabilities"]
+  end
+
   test "authenticated clients can fetch a folio bootstrap payload", %{conn: conn} do
     owner = register_user()
     api_key = create_api_key(owner)

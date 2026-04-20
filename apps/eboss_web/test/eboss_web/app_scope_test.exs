@@ -1,5 +1,5 @@
 defmodule EBossWeb.AppScopeTest do
-  use ExUnit.Case, async: true
+  use EBossWeb.ConnCase, async: false
 
   alias EBossWeb.AppScope
 
@@ -63,5 +63,29 @@ defmodule EBossWeb.AppScopeTest do
     assert payload.apps["insights"]["label"] == "Workspace Insights"
     assert map_size(payload.apps) == 2
     assert payload.apps["folio"]["capabilities"]["read"] == true
+  end
+
+  test "workspace bootstrap payload disables folio app when org members lack folio capability" do
+    owner = register_user()
+    member = register_user()
+
+    {organization, workspace} =
+      create_org_workspace(owner, %{
+        name: "App Scope Test Org",
+        workspace_name: "App Scope Test Workspace"
+      })
+
+    create_org_membership(owner, organization, member, :member)
+
+    assert {:ok, scope} =
+             AppScope.fetch_workspace_scope(member, organization.owner_slug, workspace.slug)
+
+    payload = AppScope.bootstrap_payload(scope)
+
+    assert payload.apps["folio"]["enabled"] == false
+    assert payload.apps["folio"]["capabilities"] == %{"read" => false, "manage" => false}
+
+    assert payload.apps["folio"]["default_path"] ==
+             "#{dashboard_path(organization.owner_slug, workspace.slug)}/apps/folio"
   end
 end

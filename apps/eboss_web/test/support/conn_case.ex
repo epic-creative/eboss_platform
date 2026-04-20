@@ -43,6 +43,8 @@ defmodule EBossWeb.ConnCase do
   end
 
   def register_user(overrides \\ %{}) do
+    overrides = Map.new(overrides)
+
     params =
       Map.merge(
         %{
@@ -73,6 +75,8 @@ defmodule EBossWeb.ConnCase do
   end
 
   def register_and_log_in_user(context, overrides \\ %{}) do
+    overrides = Map.new(overrides)
+
     strategy = AshAuthentication.Info.strategy!(EBoss.Accounts.User, :password)
 
     params =

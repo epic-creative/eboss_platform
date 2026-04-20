@@ -155,6 +155,69 @@ defmodule EBossWeb.DashboardScopeRoutingTest do
     assert workspace_shell_with_surface.props["currentPath"] == app_files_surface_path
   end
 
+  test "app routes without read capability fall back to workspace routing", %{conn: conn} do
+    owner = register_user()
+
+    {organization, workspace} =
+      create_org_workspace(owner, %{
+        name: "App-Aware Fallback Org",
+        workspace_name: "App-Aware Fallback Workspace"
+      })
+
+    member_context = register_and_log_in_user(%{conn: conn})
+    member = member_context.current_user
+    create_org_membership(owner, organization, member, :member)
+
+    base_path = dashboard_path(organization.owner_slug, workspace.slug)
+    app_base_path = "#{base_path}/apps/folio"
+    app_surface_path = "#{app_base_path}/files"
+
+    assert {:ok, view, _html} = live(member_context.conn, app_base_path)
+
+    workspace_shell = get_vue(view, name: "ShellOperatorWorkspaceApp")
+
+    assert workspace_shell.props["currentPage"]["type"] == "workspace"
+    assert workspace_shell.props["currentPage"]["surface"] == "dashboard"
+    assert workspace_shell.props["currentPath"] == base_path
+    assert workspace_shell.props["currentScope"]["dashboardPath"] == base_path
+    assert workspace_shell.props["currentScope"]["apps"]["folio"]["enabled"] == false
+    assert workspace_shell.props["currentScope"]["apps"]["folio"]["capabilities"]["read"] == false
+
+    assert {:ok, surface_view, _html} = live(member_context.conn, app_surface_path)
+
+    surface_shell = get_vue(surface_view, name: "ShellOperatorWorkspaceApp")
+
+    assert surface_shell.props["currentPage"]["type"] == "workspace"
+    assert surface_shell.props["currentPage"]["surface"] == "dashboard"
+    assert surface_shell.props["currentPath"] == base_path
+  end
+
+  test "unknown app keys in app-aware routing fallback to workspace routing", %{conn: conn} do
+    context =
+      register_and_log_in_user(%{conn: conn}, %{
+        email: "unknown-app-route@example.com",
+        username: "unknown-app-route-user"
+      })
+
+    workspace =
+      create_user_workspace(context.current_user, %{
+        name: "Unknown App Route Workspace"
+      })
+
+    base_path = dashboard_path(context.current_user.owner_slug, workspace.slug)
+    unknown_app_path = "#{base_path}/apps/does-not-exist"
+
+    assert {:ok, view, _html} = live(context.conn, unknown_app_path)
+
+    workspace_shell = get_vue(view, name: "ShellOperatorWorkspaceApp")
+
+    assert workspace_shell.props["currentPage"]["type"] == "workspace"
+    assert workspace_shell.props["currentPage"]["surface"] == "dashboard"
+    assert workspace_shell.props["currentPath"] == base_path
+    assert workspace_shell.props["currentScope"]["dashboardPath"] == base_path
+    assert workspace_shell.props["currentScope"]["currentWorkspace"]["slug"] == workspace.slug
+  end
+
   test "invalid workspace routes redirect to the first accessible workspace", %{conn: conn} do
     context =
       register_and_log_in_user(%{conn: conn}, %{
