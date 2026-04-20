@@ -1,5 +1,8 @@
 ## Folio Specification
 
+See also:
+- `/Users/mhostetler/Source/EBoss/eboss_platform/apps/eboss_folio/FOLIO_RULES.md` for the executable business-rule and test matrix.
+
 ### 1) Purpose
 
 Build “Folio”: an authoritative personal command center inside an existing Elixir Phoenix application for a single user, implementing an opinionated Getting Things Done (GTD)-based task/project system with:

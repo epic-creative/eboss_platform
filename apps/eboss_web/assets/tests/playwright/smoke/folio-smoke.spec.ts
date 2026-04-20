@@ -66,7 +66,7 @@ test.describe("Folio smoke", () => {
     await expect(page.getByRole("region", { name: "Workspace app shell" })).toBeVisible()
     await expect(page.getByRole("navigation", { name: "Workspace navigation" })).toBeVisible()
     await expect(page.getByRole("region", { name: "Workspace apps" })).toBeVisible()
-    await expect(page.getByRole("region", { name: "Workspace sidebar" })).toBeVisible()
+    await expect(page.getByTestId("workspace-sidebar")).toBeVisible()
     await expect(page.getByTestId("workspace-current-app")).not.toBeVisible()
 
     await page.getByRole("link", { name: "Members" }).click()

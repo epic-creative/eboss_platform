@@ -130,6 +130,7 @@ defmodule EBossFolio.Task do
       require_atomic?(false)
       accept([])
       change({EBossFolio.Changes.SetTaskStatus, to: :done})
+      change({EBossFolio.Changes.ReconcileTaskDelegations, with: :complete})
       change({EBossFolio.Changes.AuditAction, event_action: :transition})
     end
 
@@ -137,6 +138,7 @@ defmodule EBossFolio.Task do
       require_atomic?(false)
       accept([])
       change({EBossFolio.Changes.SetTaskStatus, to: :canceled})
+      change({EBossFolio.Changes.ReconcileTaskDelegations, with: :cancel})
       change({EBossFolio.Changes.AuditAction, event_action: :transition})
     end
 
@@ -144,6 +146,7 @@ defmodule EBossFolio.Task do
       require_atomic?(false)
       accept([])
       change({EBossFolio.Changes.SetTaskStatus, to: :archived})
+      change({EBossFolio.Changes.ReconcileTaskDelegations, with: :cancel})
       change({EBossFolio.Changes.AuditAction, event_action: :transition})
     end
   end

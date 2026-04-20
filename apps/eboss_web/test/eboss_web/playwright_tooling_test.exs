@@ -18,19 +18,19 @@ defmodule EBossWeb.PlaywrightToolingTest do
     assert get_in(package_json, ["scripts", "playwright:test"]) == "playwright test"
 
     assert get_in(package_json, ["scripts", "playwright:smoke"]) ==
-             "playwright test tests/playwright/smoke"
+             "npm run playwright:setup && playwright test tests/playwright/smoke"
 
     assert get_in(package_json, ["scripts", "playwright:smoke:dashboard"]) ==
-             "playwright test tests/playwright/smoke/dashboard-shell.spec.ts"
+             "npm run playwright:setup && playwright test tests/playwright/smoke/dashboard-shell.spec.ts"
 
     assert get_in(package_json, ["scripts", "playwright:report"]) ==
              "playwright show-report test-results/playwright/report"
 
     assert get_in(package_json, ["scripts", "playwright:server:test"]) ==
-             "cd .. && PHX_SERVER=true EBOSS_ENV=test PHX_HOST=localhost MIX_ENV=test mix phx.server"
+             "bash tests/playwright/start-test-stack.sh"
 
     assert get_in(package_json, ["scripts", "playwright:setup"]) ==
-             "cd .. && EBOSS_ENV=test PHX_HOST=localhost MIX_ENV=test mix eboss.playwright.setup"
+             "cd .. && EBOSS_ENV=test PHX_HOST=127.0.0.1 MIX_ENV=test mix eboss.playwright.setup"
 
     assert File.exists?(Path.join(@playwright_dir, "smoke/auth-public.spec.ts"))
     assert File.exists?(Path.join(@playwright_dir, "smoke/bootstrap.spec.ts"))
@@ -50,6 +50,7 @@ defmodule EBossWeb.PlaywrightToolingTest do
     assert config =~ ~s(screenshot: "only-on-failure")
     assert config =~ ~s(trace: "retain-on-failure")
     assert config =~ ~s(channel: browserChannel)
+    assert config =~ ~s(const reuseManagedServers = process.env.PLAYWRIGHT_REUSE_SERVER === "1")
     assert config =~ ~s(command: "npm run playwright:server:test")
     assert config =~ ~s(url: baseUrl)
 
@@ -67,5 +68,7 @@ defmodule EBossWeb.PlaywrightToolingTest do
     assert readme =~ "auth boundary"
     assert readme =~ "dashboard handoff"
     assert readme =~ "dashboard shell smoke"
+    assert readme =~ "dedicated Vite test server"
+    assert readme =~ "refreshes deterministic browser state"
   end
 end

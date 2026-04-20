@@ -14,10 +14,11 @@ Local browser confidence starts in this tree.
 Local smoke command from `apps/eboss_web/assets`:
 
 ```bash
-npm run playwright:setup
 npm run playwright:smoke
 npm run playwright:smoke:folio-mutation
 ```
+
+Each smoke command refreshes deterministic browser state before the browser run, so the suite stays rerunnable even after the final sign-out flow invalidates the previous authenticated session.
 
 Automated repo gate from the umbrella root:
 
@@ -30,14 +31,12 @@ The `Frontend Confidence` GitHub Actions workflow runs that gate on pushes and p
 Dashboard smoke subset from `apps/eboss_web/assets`:
 
 ```bash
-npm run playwright:setup
 npm run playwright:smoke:dashboard
 ```
 
 Focused Folio mutation smoke from `apps/eboss_web/assets`:
 
 ```bash
-npm run playwright:setup
 npm run playwright:smoke:folio-mutation
 ```
 
@@ -68,7 +67,7 @@ npm run playwright:setup
 npm run playwright:verify-setup
 ```
 
-The Playwright runner starts the Phoenix test server automatically for `playwright:smoke`, `playwright:smoke:dashboard`, `playwright:verify-setup`, and `playwright:test`. Keep `npm run playwright:server:test` for manual debugging when you want the server running outside the test runner.
+The Playwright runner starts both the Phoenix test server and a dedicated Vite test server automatically for `playwright:smoke`, `playwright:smoke:dashboard`, `playwright:verify-setup`, and `playwright:test`. Keep `npm run playwright:server:test` for manual debugging when you want the full browser stack running outside the test runner.
 
 Tooling decisions:
 

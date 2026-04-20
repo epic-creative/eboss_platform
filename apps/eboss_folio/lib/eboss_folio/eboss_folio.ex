@@ -197,8 +197,6 @@ defmodule EBossFolio do
       |> Ash.Query.for_read(:read)
       |> Ash.Query.filter(expr(workspace_id == ^workspace_id_value))
 
-    with {:ok, records} <- Ash.read(query, opts) do
-      {:ok, length(records)}
-    end
+    Ash.count(query, opts)
   end
 end

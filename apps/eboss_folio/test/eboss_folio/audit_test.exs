@@ -85,10 +85,9 @@ defmodule EBossFolio.AuditTest do
     assert transition_event.diff["status"] == %{"before" => "inbox", "after" => "done"}
     assert transition_event.reason == "finished review"
 
-    all_events =
-      EBossFolio.RevisionEvent
-      |> Ash.read!(domain: EBossFolio, authorize?: false)
+    workspace_events =
+      EBossFolio.list_revision_events!(%{workspace_id: workspace.id}, actor: owner)
 
-    assert length(all_events) == 4
+    assert length(workspace_events) == 4
   end
 end

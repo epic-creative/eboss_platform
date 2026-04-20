@@ -11,7 +11,7 @@ defmodule EBossWeb.PlaywrightSetupTest do
     state_dir =
       Path.join(System.tmp_dir!(), "eboss-playwright-#{System.unique_integer([:positive])}")
 
-    base_url = "http://localhost:4002"
+    base_url = "http://127.0.0.1:4002"
 
     summary = PlaywrightSetup.prepare!(state_dir: state_dir, base_url: base_url)
 
@@ -34,7 +34,7 @@ defmodule EBossWeb.PlaywrightSetupTest do
              "cookies" => [
                %{
                  "name" => "_eboss_web_key",
-                 "domain" => "localhost",
+                 "domain" => "127.0.0.1",
                  "path" => "/",
                  "expires" => -1,
                  "httpOnly" => true,

@@ -25,6 +25,20 @@ defmodule EBossWeb.Router do
     plug :set_actor, :user
   end
 
+  pipeline :workspace_app_api do
+    plug :accepts, ["json", "json-api"]
+    plug :fetch_session
+    plug :load_from_session, otp_app: :eboss_accounts
+    plug EBossWeb.Plugs.SessionApiCsrf
+
+    plug AshAuthentication.Strategy.ApiKey.Plug,
+      resource: EBoss.Accounts.User,
+      required?: false
+
+    plug :load_from_bearer, otp_app: :eboss_accounts
+    plug :set_actor, :user
+  end
+
   scope "/", EBossWeb do
     pipe_through :browser
 
@@ -66,9 +80,7 @@ defmodule EBossWeb.Router do
   end
 
   scope "/api/v1", EBossWeb do
-    pipe_through :api
-
-    get "/open_api", OpenApiController, :show
+    pipe_through :workspace_app_api
 
     get "/:owner_slug/workspaces/:slug/bootstrap", WorkspaceBootstrapController, :show
     get "/:owner_slug/workspaces/:slug/apps/folio/bootstrap", FolioBootstrapController, :show
@@ -89,6 +101,13 @@ defmodule EBossWeb.Router do
     post "/:owner_slug/workspaces/:slug/apps/folio/tasks", FolioBootstrapController, :create_task
     get "/:owner_slug/workspaces/:slug/apps/folio/tasks", FolioBootstrapController, :tasks
     get "/:owner_slug/workspaces/:slug/apps/folio/activity", FolioBootstrapController, :activity
+  end
+
+  scope "/api/v1", EBossWeb do
+    pipe_through :api
+
+    get "/open_api", OpenApiController, :show
+
     forward "/", JsonApiRouter
   end
 

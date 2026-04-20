@@ -123,4 +123,111 @@ defmodule EBossFolio.TaskAndProjectTest do
 
     assert Exception.message(error) =~ "already has an active delegation"
   end
+
+  test "completing a delegated task completes its active delegation" do
+    owner = TestSupport.register_user()
+    workspace = TestSupport.create_user_workspace(owner)
+
+    task =
+      EBossFolio.create_task!(%{workspace_id: workspace.id, title: "Review delegated draft"},
+        actor: owner
+      )
+
+    contact =
+      EBossFolio.create_contact!(%{workspace_id: workspace.id, name: "Delegate Contact"},
+        actor: owner
+      )
+
+    _delegation =
+      EBossFolio.delegate_task!(
+        %{
+          workspace_id: workspace.id,
+          task_id: task.id,
+          contact_id: contact.id,
+          delegated_summary: "Review the draft and send notes"
+        },
+        actor: owner
+      )
+
+    completed_task = EBossFolio.complete_task!(task, actor: owner)
+
+    reloaded_task =
+      EBossFolio.get_task_in_workspace!(task.id, workspace.id,
+        actor: owner,
+        load: [delegations: :contact]
+      )
+
+    assert completed_task.status == :done
+    assert reloaded_task.status == :done
+    refute Enum.any?(reloaded_task.delegations, &(&1.status == :active))
+
+    assert Enum.any?(reloaded_task.delegations, fn delegation ->
+             delegation.status == :completed and delegation.contact.name == "Delegate Contact"
+           end)
+  end
+
+  test "canceling or archiving a delegated task cancels its active delegation" do
+    owner = TestSupport.register_user()
+    workspace = TestSupport.create_user_workspace(owner)
+
+    contact =
+      EBossFolio.create_contact!(%{workspace_id: workspace.id, name: "Cancel Contact"},
+        actor: owner
+      )
+
+    canceled_task =
+      EBossFolio.create_task!(%{workspace_id: workspace.id, title: "Cancel delegated task"},
+        actor: owner
+      )
+
+    _canceled_delegation =
+      EBossFolio.delegate_task!(
+        %{
+          workspace_id: workspace.id,
+          task_id: canceled_task.id,
+          contact_id: contact.id,
+          delegated_summary: "Wait for vendor response"
+        },
+        actor: owner
+      )
+
+    archived_task =
+      EBossFolio.create_task!(%{workspace_id: workspace.id, title: "Archive delegated task"},
+        actor: owner
+      )
+
+    _archived_delegation =
+      EBossFolio.delegate_task!(
+        %{
+          workspace_id: workspace.id,
+          task_id: archived_task.id,
+          contact_id: contact.id,
+          delegated_summary: "Hold until decision lands"
+        },
+        actor: owner
+      )
+
+    canceled_task = EBossFolio.cancel_task!(canceled_task, actor: owner)
+    archived_task = EBossFolio.archive_task!(archived_task, actor: owner)
+
+    reloaded_canceled_task =
+      EBossFolio.get_task_in_workspace!(canceled_task.id, workspace.id,
+        actor: owner,
+        load: [delegations: :contact]
+      )
+
+    reloaded_archived_task =
+      EBossFolio.get_task_in_workspace!(archived_task.id, workspace.id,
+        actor: owner,
+        load: [delegations: :contact]
+      )
+
+    assert canceled_task.status == :canceled
+    assert archived_task.status == :archived
+    refute Enum.any?(reloaded_canceled_task.delegations, &(&1.status == :active))
+    refute Enum.any?(reloaded_archived_task.delegations, &(&1.status == :active))
+
+    assert Enum.any?(reloaded_canceled_task.delegations, &(&1.status == :canceled))
+    assert Enum.any?(reloaded_archived_task.delegations, &(&1.status == :canceled))
+  end
 end

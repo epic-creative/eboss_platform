@@ -481,6 +481,81 @@ defmodule EBossWeb.JsonApiTest do
     assert payload["summary_counts"] == %{"projects" => 1, "tasks" => 1}
   end
 
+  test "session-authenticated browsers can read folio api endpoints without bearer tokens", %{
+    conn: conn
+  } do
+    %{conn: session_conn, current_user: owner} = register_and_log_in_user(%{conn: conn})
+
+    workspace =
+      create_user_workspace(owner, %{
+        name: "Session Folio Workspace"
+      })
+
+    project =
+      EBossFolio.create_project!(%{workspace_id: workspace.id, title: "Session Project"},
+        actor: owner
+      )
+
+    task =
+      EBossFolio.create_task!(%{workspace_id: workspace.id, title: "Session Task"}, actor: owner)
+
+    area =
+      EBossFolio.create_area!(%{workspace_id: workspace.id, name: "Session Area"}, actor: owner)
+
+    _updated_area =
+      EBossFolio.update_area!(area, %{description: "Session activity"}, actor: owner)
+
+    bootstrap_conn =
+      session_conn
+      |> recycle()
+      |> put_req_header("accept", "application/json")
+      |> get("/api/v1/#{owner.owner_slug}/workspaces/#{workspace.slug}/apps/folio/bootstrap")
+
+    assert %{
+             "scope" => %{
+               "app_key" => "folio",
+               "workspace" => %{"id" => workspace_id}
+             },
+             "summary_counts" => %{"projects" => 1, "tasks" => 1}
+           } = json_response(bootstrap_conn, 200)
+
+    assert workspace_id == workspace.id
+
+    projects_conn =
+      bootstrap_conn
+      |> recycle()
+      |> put_req_header("accept", "application/json")
+      |> get("/api/v1/#{owner.owner_slug}/workspaces/#{workspace.slug}/apps/folio/projects")
+
+    assert %{"projects" => [%{"id" => project_id, "title" => "Session Project"}]} =
+             json_response(projects_conn, 200)
+
+    assert project_id == project.id
+
+    tasks_conn =
+      projects_conn
+      |> recycle()
+      |> put_req_header("accept", "application/json")
+      |> get("/api/v1/#{owner.owner_slug}/workspaces/#{workspace.slug}/apps/folio/tasks")
+
+    assert %{"tasks" => [%{"id" => task_id, "title" => "Session Task"}]} =
+             json_response(tasks_conn, 200)
+
+    assert task_id == task.id
+
+    activity_conn =
+      tasks_conn
+      |> recycle()
+      |> put_req_header("accept", "application/json")
+      |> get("/api/v1/#{owner.owner_slug}/workspaces/#{workspace.slug}/apps/folio/activity")
+
+    activity_payload = json_response(activity_conn, 200)
+
+    assert Enum.any?(activity_payload["events"], fn event ->
+             event["subject"]["type"] == "area" and event["subject"]["id"] == area.id
+           end)
+  end
+
   test "authenticated clients can list workspace projects through the folio projects endpoint", %{
     conn: conn
   } do

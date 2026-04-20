@@ -28,7 +28,7 @@ test.describe("auth and public smoke", () => {
     await expect(page.getByTestId("auth-shell")).toBeVisible();
     await expect(page.getByRole("navigation", { name: "Authentication routes" })).toBeVisible();
     await expect(page.getByRole("form", { name: "Password sign-in" })).toBeVisible();
-    await expect(page.getByRole("form", { name: "Magic-link request" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Magic link" })).toBeVisible();
 
     await context.close();
   });
@@ -39,12 +39,17 @@ test.describe("auth and public smoke", () => {
     await expect(page).toHaveURL(
       new URL(preparedState.dashboard_path, preparedState.base_url).toString(),
     );
+    await expect(page.getByTestId("workspace-shell")).toBeVisible();
+    await expect(page.getByRole("region", { name: "Workspace app shell" })).toBeVisible();
+    await expect(page.getByRole("navigation", { name: "Workspace navigation" })).toBeVisible();
+    await expect(page.getByTestId("workspace-page-dashboard")).toBeVisible();
     await expect(
-      page.getByRole("heading", {
-        name: new RegExp(`Welcome back, @${preparedState.user.username}\\.`, "i"),
-      }),
+      page
+        .getByTestId("workspace-page-dashboard")
+        .getByText(`${preparedState.user.username}/${preparedState.workspace.slug}`, {
+          exact: true,
+        }),
     ).toBeVisible();
-    await expect(page.getByRole("button", { name: "Sign out" })).toBeVisible();
 
     await context.close();
   });

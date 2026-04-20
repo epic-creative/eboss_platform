@@ -1,7 +1,7 @@
 import { expect, test } from "playwright/test";
 import type { Page } from "playwright/test";
 
-import { openPreparedDashboard, loadPreparedState, type PreparedState } from "../support/prepared-state";
+import { openPreparedDashboard, type PreparedState } from "../support/prepared-state";
 
 type FolioMutationSurface = "projects" | "tasks";
 
@@ -66,7 +66,6 @@ test.describe("Folio mutation confidence", () => {
       const projectRow = mutationRowLocator(page, "project-row", projectTitle);
       await expect(projectRow).toBeVisible({ timeout: 15000 });
 
-      await projectRow.click();
       await expect(page.getByTestId("project-inspector")).toBeVisible();
 
       await page.getByTestId("projects-transition-status-select").selectOption("completed");
@@ -79,9 +78,8 @@ test.describe("Folio mutation confidence", () => {
     }
   });
 
-  test("creates, transitions, and delegates a folio task", async ({ browser }) => {
-    const preparedState = loadPreparedState();
-    const { context, page } = await openPreparedDashboard(browser);
+  test("creates, delegates, completes, and audits a folio task", async ({ browser }) => {
+    const { context, page, preparedState } = await openPreparedDashboard(browser);
     const taskTitle = uniqueMutationLabel("ST-FOL-034 task");
     const delegationContact = "Playwright Delegate";
 
@@ -97,14 +95,7 @@ test.describe("Folio mutation confidence", () => {
       const taskRow = mutationRowLocator(page, "task-row", taskTitle);
       await expect(taskRow).toBeVisible({ timeout: 15000 });
 
-      await taskRow.click();
       await expect(page.getByTestId("task-inspector")).toBeVisible();
-
-      await page.getByTestId("tasks-transition-status-select").selectOption("waiting_for");
-      await page.getByTestId("tasks-transition-submit").click();
-
-      await expect(page.getByTestId("tasks-transition-error")).toBeHidden({ timeout: 10000 });
-      await expect(page.getByTestId("task-inspector")).toContainText("Waiting for");
 
       await page.getByTestId("tasks-delegate-contact-input").fill(delegationContact);
       await page.getByTestId("tasks-delegate-summary-input").fill("Draft an execution plan for this task.");
@@ -112,7 +103,33 @@ test.describe("Folio mutation confidence", () => {
       await page.getByTestId("tasks-delegate-submit").click();
 
       await expect(page.getByTestId("tasks-delegate-error")).toBeHidden({ timeout: 10000 });
+      await expect(page.getByTestId("task-active-delegation")).toBeVisible();
+      await expect(page.getByTestId("task-delegation-locked")).toBeVisible();
+      await expect(page.getByTestId("task-inspector")).toContainText("Waiting For");
       await expect(page.getByTestId("task-inspector")).toContainText(delegationContact);
+      await expect(taskRow).toContainText("Waiting on");
+
+      await page.getByTestId("tasks-transition-status-select").selectOption("done");
+      await page.getByTestId("tasks-transition-submit").click();
+
+      await expect(page.getByTestId("tasks-transition-error")).toBeHidden({ timeout: 10000 });
+      await expect(page.getByTestId("task-inspector")).toContainText("Done");
+      await expect(page.getByTestId("task-active-delegation")).toHaveCount(0);
+      await expect(page.getByTestId("task-delegation-locked")).toHaveCount(0);
+      await expect(page.getByTestId("tasks-delegate-contact-input")).toBeVisible();
+      await expect(taskRow).not.toContainText("Waiting on");
+
+      await page.goto(new URL(`${preparedState.dashboard_path}/apps/folio/activity`, preparedState.base_url).toString(), {
+        waitUntil: "domcontentloaded",
+      });
+
+      await expect(page.getByRole("region", { name: "Folio activity page" })).toBeVisible();
+      await expect(page.getByTestId("activity-state-error")).toBeHidden({ timeout: 10000 });
+
+      const firstActivityRow = page.locator('[data-testid^="activity-row-"]').first();
+      await expect(firstActivityRow).toBeVisible();
+      await firstActivityRow.click();
+      await expect(page.getByTestId("activity-inspector")).toBeVisible();
     } finally {
       await context.close();
     }

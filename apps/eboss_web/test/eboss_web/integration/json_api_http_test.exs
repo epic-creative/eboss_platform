@@ -304,6 +304,105 @@ defmodule EBossWeb.JsonApiHttpTest do
     assert Enum.any?(response.body["events"], &(&1["subject"]["type"] == "area"))
   end
 
+  test "session-authenticated browsers can mutate folio over http with csrf protection", %{
+    req: req
+  } do
+    owner = register_user()
+    initial_cookie_header = browser_session_cookie_header(owner)
+
+    workspace =
+      Workspaces.create_workspace!(
+        %{
+          name: "HTTP Session Folio Workspace",
+          owner_type: :user,
+          owner_id: owner.id
+        },
+        actor: owner
+      )
+
+    task =
+      EBossFolio.create_task!(%{workspace_id: workspace.id, title: "HTTP Session Task"},
+        actor: owner
+      )
+
+    tasks_page_response =
+      req
+      |> Req.merge(headers: [{"cookie", initial_cookie_header}, {"accept", "text/html"}])
+      |> Req.get!(url: "/#{owner.owner_slug}/#{workspace.slug}/apps/folio/tasks")
+
+    csrf_token = tasks_page_response.body |> extract_csrf_token()
+    cookie_header = response_cookie_header(tasks_page_response, initial_cookie_header)
+
+    create_response =
+      req
+      |> Req.merge(
+        headers: [
+          {"cookie", cookie_header},
+          {"x-csrf-token", csrf_token},
+          {"accept", "application/json"}
+        ]
+      )
+      |> Req.post!(
+        url: "/api/v1/#{owner.owner_slug}/workspaces/#{workspace.slug}/apps/folio/tasks",
+        json: %{title: "HTTP Session Created Task"}
+      )
+
+    assert create_response.status == 201
+    assert create_response.body["task"]["title"] == "HTTP Session Created Task"
+    assert create_response.body["task"]["status"] == "inbox"
+
+    transition_response =
+      req
+      |> Req.merge(
+        headers: [
+          {"cookie", cookie_header},
+          {"x-csrf-token", csrf_token},
+          {"accept", "application/json"}
+        ]
+      )
+      |> Req.patch!(
+        url:
+          "/api/v1/#{owner.owner_slug}/workspaces/#{workspace.slug}/apps/folio/tasks/#{task.id}",
+        json: %{status: "done"}
+      )
+
+    assert transition_response.status == 200
+    assert transition_response.body["task"]["id"] == task.id
+    assert transition_response.body["task"]["status"] == "done"
+  end
+
+  test "session-authenticated folio mutations reject missing csrf tokens over http", %{req: req} do
+    owner = register_user()
+    initial_cookie_header = browser_session_cookie_header(owner)
+
+    workspace =
+      Workspaces.create_workspace!(
+        %{
+          name: "HTTP Session CSRF Workspace",
+          owner_type: :user,
+          owner_id: owner.id
+        },
+        actor: owner
+      )
+
+    tasks_page_response =
+      req
+      |> Req.merge(headers: [{"cookie", initial_cookie_header}, {"accept", "text/html"}])
+      |> Req.get!(url: "/#{owner.owner_slug}/#{workspace.slug}/apps/folio/tasks")
+
+    cookie_header = response_cookie_header(tasks_page_response, initial_cookie_header)
+
+    response =
+      req
+      |> Req.merge(headers: [{"cookie", cookie_header}, {"accept", "application/json"}])
+      |> Req.post!(
+        url: "/api/v1/#{owner.owner_slug}/workspaces/#{workspace.slug}/apps/folio/tasks",
+        json: %{title: "Missing csrf"}
+      )
+
+    assert response.status == 403
+  end
+
   test "folio bootstrap endpoints return 401, 403, and 404 with distinct semantics", %{req: req} do
     owner = register_user()
     member = register_user()
@@ -378,5 +477,19 @@ defmodule EBossWeb.JsonApiHttpTest do
       {_key, value} -> [value]
     end)
     |> List.first("")
+  end
+
+  defp extract_csrf_token(html) when is_binary(html) do
+    case Regex.run(~r/<meta name="csrf-token" content="([^"]+)"/, html, capture: :all_but_first) do
+      [token] -> token
+      _ -> raise "expected csrf token meta tag in rendered html"
+    end
+  end
+
+  defp response_cookie_header(response, fallback_cookie_header) do
+    case get_header(response, "set-cookie") do
+      "" -> fallback_cookie_header
+      header -> String.split(header, ";", parts: 2) |> hd()
+    end
   end
 end

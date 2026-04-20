@@ -2,6 +2,13 @@ defmodule EBossWeb.ApiIntegrationCase do
   @moduledoc false
 
   use ExUnit.CaseTemplate
+  import Phoenix.ConnTest
+  import Plug.Conn
+
+  alias AshAuthentication.Info
+
+  @endpoint EBossWeb.Endpoint
+  @session_cookie_key "_eboss_web_key"
 
   using do
     quote do
@@ -76,6 +83,27 @@ defmodule EBossWeb.ApiIntegrationCase do
       |> Ash.create!(authorize?: false)
 
     api_key.__metadata__.plaintext_api_key
+  end
+
+  def browser_session_cookie_header(user, password \\ "supersecret123") do
+    signed_in_user =
+      EBoss.Accounts.sign_in_with_password!(
+        %{email: user.email, password: password},
+        authorize?: false
+      )
+
+    session_key = "#{Info.authentication_subject_name!(EBoss.Accounts.User)}_token"
+
+    conn =
+      build_conn()
+      |> init_test_session(%{})
+      |> put_session(session_key, signed_in_user.__metadata__.token)
+      |> dispatch(@endpoint, :get, "/", %{})
+
+    case Map.fetch(conn.resp_cookies, @session_cookie_key) do
+      {:ok, cookie} -> "#{@session_cookie_key}=#{cookie.value}"
+      :error -> raise "expected #{@session_cookie_key} cookie on authenticated browser session"
+    end
   end
 
   def create_org_membership(owner, organization, user, role) do

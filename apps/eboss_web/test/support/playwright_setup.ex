@@ -12,7 +12,7 @@ defmodule EBossWeb.PlaywrightSetup do
 
   @endpoint EBossWeb.Endpoint
 
-  @default_base_url "http://localhost:4002"
+  @default_base_url "http://127.0.0.1:4002"
   @default_email "playwright-auth@localhost"
   @default_username "playwright-auth-user"
   @default_password "playwright-pass-123"
@@ -192,7 +192,7 @@ defmodule EBossWeb.PlaywrightSetup do
     %{
       name: @session_cookie_key,
       value: cookie.value,
-      domain: cookie[:domain] || uri.host || "localhost",
+      domain: cookie[:domain] || uri.host || "127.0.0.1",
       path: cookie[:path] || "/",
       expires: cookie_expires(cookie),
       httpOnly: Map.get(cookie, :http_only, true),

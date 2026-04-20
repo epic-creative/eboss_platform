@@ -1,6 +1,10 @@
 import { fileURLToPath } from "node:url"
 
 const assetsRoot = fileURLToPath(new URL(".", import.meta.url))
+const mixEnv = process.env.MIX_ENV ?? "dev"
+const mixBuildPath =
+  process.env.MIX_BUILD_PATH ??
+  fileURLToPath(new URL(`../../../_build/${mixEnv}`, import.meta.url))
 
 /** @type {import("vite").OptimizeDepsOptions} */
 export const sharedOptimizeDeps = {
@@ -11,6 +15,6 @@ export const sharedOptimizeDeps = {
 export const sharedResolve = {
   alias: {
     "@": assetsRoot,
-    "phoenix-colocated": `${process.env.MIX_BUILD_PATH}/phoenix-colocated`,
+    "phoenix-colocated": `${mixBuildPath}/phoenix-colocated`,
   },
 }

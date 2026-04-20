@@ -219,6 +219,39 @@ defmodule EBossFolio.FolioBoundaryTest do
     assert update_event.status == :success
   end
 
+  test "bootstrap summary counts stay scoped to the active workspace" do
+    owner = TestSupport.register_user()
+    workspace = TestSupport.create_user_workspace(owner)
+    other_workspace = TestSupport.create_user_workspace(owner)
+
+    _project_one =
+      Folio.create_project!(%{workspace_id: workspace.id, title: "Counted project one"},
+        actor: owner
+      )
+
+    _project_two =
+      Folio.create_project!(%{workspace_id: workspace.id, title: "Counted project two"},
+        actor: owner
+      )
+
+    _task_one =
+      Folio.create_task!(%{workspace_id: workspace.id, title: "Counted task one"}, actor: owner)
+
+    _task_two =
+      Folio.create_task!(%{workspace_id: workspace.id, title: "Counted task two"}, actor: owner)
+
+    _other_workspace_project =
+      Folio.create_project!(%{workspace_id: other_workspace.id, title: "Foreign project"},
+        actor: owner
+      )
+
+    _other_workspace_task =
+      Folio.create_task!(%{workspace_id: other_workspace.id, title: "Foreign task"}, actor: owner)
+
+    assert {:ok, %{projects: 2, tasks: 2}} =
+             EBossFolio.bootstrap_summary_counts(workspace.id, actor: owner)
+  end
+
   test "workspace-scoped project reads are available through the folio boundary" do
     owner = TestSupport.register_user()
     workspace = TestSupport.create_user_workspace(owner)

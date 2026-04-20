@@ -1,4 +1,10 @@
 <script setup lang="ts">
+import { useAttrs } from "vue"
+
+defineOptions({
+  inheritAttrs: false,
+})
+
 defineProps<{
   open: boolean
   title: string
@@ -8,6 +14,8 @@ defineProps<{
 const emit = defineEmits<{
   close: []
 }>()
+
+const attrs = useAttrs()
 </script>
 
 <template>
@@ -15,6 +23,7 @@ const emit = defineEmits<{
     <div class="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm md:hidden" @click="emit('close')" />
 
     <aside
+      v-bind="attrs"
       class="so-fade-in fixed inset-y-0 right-0 z-50 flex w-[320px] max-w-[85vw] flex-col border-l border-[hsl(var(--so-border))] bg-[hsl(var(--so-card))] md:static md:z-auto md:max-h-[calc(100vh-7rem)] md:w-80 md:shrink-0 md:rounded-md md:rounded-l-none md:border md:border-l-0 md:shadow-none md:sticky md:top-0"
     >
       <div class="flex items-center justify-between border-b border-[hsl(var(--so-border))] px-4 py-2.5">

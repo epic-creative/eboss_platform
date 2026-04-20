@@ -25,14 +25,40 @@ export class FolioApiError extends Error {
   }
 }
 
+const csrfTokenFromMeta = (): string | null => {
+  if (typeof document === "undefined") return null
+
+  const token = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content
+  return token && token.trim() !== "" ? token : null
+}
+
+const shouldAttachCsrfToken = (method: string): boolean => {
+  return !["GET", "HEAD", "OPTIONS"].includes(method.toUpperCase())
+}
+
 export const requestJson = async <T>(url: string, init: FolioApiRequestInit = {}): Promise<T> => {
+  const headers = new Headers({
+    Accept: "application/json",
+  })
+
+  for (const [key, value] of Object.entries(init.headers ?? {})) {
+    headers.set(key, value)
+  }
+
+  const method = init.method ?? "GET"
+
+  if (shouldAttachCsrfToken(method) && !headers.has("x-csrf-token")) {
+    const csrfToken = csrfTokenFromMeta()
+
+    if (csrfToken) {
+      headers.set("x-csrf-token", csrfToken)
+    }
+  }
+
   const response = await fetch(url, {
     credentials: "same-origin",
-    headers: {
-      Accept: "application/json",
-      ...init.headers,
-    },
     ...init,
+    headers,
   })
 
   const payload = await response.json().catch(() => null)

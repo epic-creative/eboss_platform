@@ -576,7 +576,11 @@ const submitDelegateTask = async () => {
           </InspectorSection>
 
           <InspectorSection title="Delegation" with-divider>
-            <div v-if="activeDelegation" class="space-y-2">
+            <div
+              v-if="activeDelegation"
+              class="space-y-2"
+              data-testid="task-active-delegation"
+            >
               <InspectorField
                 label="Contact"
                 :value="activeDelegation.contact.name || activeDelegation.contact.id"
@@ -598,6 +602,7 @@ const submitDelegateTask = async () => {
               <p
                 v-if="hasActiveDelegation"
                 class="text-xs text-[hsl(var(--so-muted-foreground))]"
+                data-testid="task-delegation-locked"
               >
                 Complete or cancel the active delegation before assigning this task again.
               </p>

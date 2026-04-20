@@ -14,12 +14,10 @@ test("authenticated setup state opens the dashboard shell", async ({ browser }) 
   const { context, page, preparedState } = await openPreparedDashboard(browser);
 
   await expect(page).toHaveURL(new URL(preparedState.dashboard_path, preparedState.base_url).toString());
-  await expect(
-    page.getByRole("heading", {
-      name: new RegExp(`Welcome back, @${preparedState.user.username}\\.`, "i"),
-    }),
-  ).toBeVisible();
-  await expect(page.getByRole("button", { name: "Sign out" })).toBeVisible();
+  await expect(page.getByTestId("workspace-shell")).toBeVisible();
+  await expect(page.getByRole("region", { name: "Workspace app shell" })).toBeVisible();
+  await expect(page.getByTestId("workspace-page-dashboard")).toBeVisible();
+  await expect(page.getByTestId("workspace-avatar-menu-trigger")).toBeVisible();
 
   await context.close();
 });

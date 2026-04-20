@@ -1,7 +1,8 @@
 import { defineConfig } from "playwright/test";
 
 const browserChannel = process.env.PLAYWRIGHT_BROWSER_CHANNEL ?? "chromium";
-const baseUrl = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:4002";
+const baseUrl = process.env.PLAYWRIGHT_BASE_URL ?? "http://127.0.0.1:4002";
+const reuseManagedServers = process.env.PLAYWRIGHT_REUSE_SERVER === "1";
 
 export default defineConfig({
   testDir: "./tests/playwright",
@@ -25,7 +26,7 @@ export default defineConfig({
   },
   webServer: {
     command: "npm run playwright:server:test",
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: reuseManagedServers,
     stderr: "pipe",
     stdout: "pipe",
     timeout: 120_000,
