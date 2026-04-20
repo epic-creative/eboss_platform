@@ -328,6 +328,34 @@ defmodule EBossWeb.ApiSpec do
           "403" => %{"description" => "Workspace access is forbidden"},
           "404" => %{"description" => "Workspace not found"}
         }
+      },
+      "post" => %{
+        "summary" => "Create a workspace-scoped Folio task",
+        "description" =>
+          "Creates a new Folio task for the workspace. Tasks may be created standalone or linked to a project.",
+        "parameters" => workspace_path_parameters(),
+        "requestBody" => %{
+          "required" => true,
+          "content" => %{
+            "application/json" => %{
+              "schema" => %{"$ref" => "#/components/schemas/FolioTaskCreateRequest"}
+            }
+          }
+        },
+        "responses" => %{
+          "201" => %{
+            "description" => "Folio task created",
+            "content" => %{
+              "application/json" => %{
+                "schema" => %{"$ref" => "#/components/schemas/FolioTaskCreateResponse"}
+              }
+            }
+          },
+          "400" => %{"description" => "Invalid payload"},
+          "401" => %{"description" => "Authentication required"},
+          "403" => %{"description" => "Workspace access is forbidden"},
+          "404" => %{"description" => "Workspace not found"}
+        }
       }
     }
   end
@@ -512,6 +540,22 @@ defmodule EBossWeb.ApiSpec do
           },
           "required" => ["id", "title", "status"]
         },
+        "FolioTaskCreateRequest" => %{
+          "type" => "object",
+          "properties" => %{
+            "title" => %{
+              "type" => "string",
+              "minLength" => 1,
+              "description" => "Task title"
+            },
+            "project_id" => %{
+              "type" => "string",
+              "nullable" => true,
+              "description" => "Optional workspace project identifier to link this task."
+            }
+          },
+          "required" => ["title"]
+        },
         "FolioProjectsResponse" => %{
           "type" => "object",
           "properties" => %{
@@ -541,6 +585,14 @@ defmodule EBossWeb.ApiSpec do
             }
           },
           "required" => ["scope", "tasks"]
+        },
+        "FolioTaskCreateResponse" => %{
+          "type" => "object",
+          "properties" => %{
+            "scope" => %{"$ref" => "#/components/schemas/FolioAppScope"},
+            "task" => %{"$ref" => "#/components/schemas/FolioTaskSummary"}
+          },
+          "required" => ["scope", "task"]
         },
         "FolioActivityEvent" => %{
           "type" => "object",

@@ -14,6 +14,8 @@ import type {
   FolioProjectUpdatePayload,
   FolioProjectUpdateResponse,
   FolioProjectsResponse,
+  FolioTaskCreatePayload,
+  FolioTaskCreateResponse,
   FolioTasksResponse,
   FolioWorkspaceRef,
 } from "./types"
@@ -35,6 +37,16 @@ export const createFolioProject = (
   payload: FolioProjectCreatePayload,
 ): Promise<FolioProjectCreateResponse> =>
   requestJson<FolioProjectCreateResponse>(folioProjectsPath(scope), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  })
+
+export const createFolioTask = (
+  scope: FolioWorkspaceRef,
+  payload: FolioTaskCreatePayload,
+): Promise<FolioTaskCreateResponse> =>
+  requestJson<FolioTaskCreateResponse>(folioTasksPath(scope), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),

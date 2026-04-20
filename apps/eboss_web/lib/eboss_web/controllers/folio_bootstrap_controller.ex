@@ -104,6 +104,30 @@ defmodule EBossWeb.FolioBootstrapController do
     end
   end
 
+  def create_task(conn, %{"owner_slug" => owner_slug, "slug" => slug}) do
+    current_user = conn.assigns[:current_user] || PlugHelpers.get_actor(conn)
+
+    case AppScope.fetch_workspace_scope(current_user, owner_slug, slug) do
+      {:ok, %AppScope{} = scope} ->
+        case authorize_folio_manage(scope) do
+          :ok ->
+            handle_authorized_task_create(conn, scope, current_user)
+
+          {:error, :forbidden} ->
+            error_json(conn, :forbidden, "workspace_forbidden", "Workspace access is forbidden")
+        end
+
+      {:error, :unauthorized} ->
+        error_json(conn, :unauthorized, "authentication_required", "Authentication is required")
+
+      {:error, :forbidden} ->
+        error_json(conn, :forbidden, "workspace_forbidden", "Workspace access is forbidden")
+
+      {:error, :not_found} ->
+        error_json(conn, :not_found, "workspace_not_found", "Workspace not found")
+    end
+  end
+
   def tasks(conn, %{"owner_slug" => owner_slug, "slug" => slug}) do
     current_user = conn.assigns[:current_user] || PlugHelpers.get_actor(conn)
 
@@ -268,6 +292,30 @@ defmodule EBossWeb.FolioBootstrapController do
     end
   end
 
+  defp handle_authorized_task_create(conn, %AppScope{} = scope, current_user) do
+    with {:ok, params} <- parse_task_create_params(conn.body_params),
+         {:ok, task} <-
+           EBossFolio.create_task(
+             Map.put(params, :workspace_id, scope.current_workspace.id),
+             actor: current_user
+           ) do
+      conn
+      |> put_status(:created)
+      |> json(%{
+        scope: folio_scope_payload(scope),
+        task: task_summary_payload(task)
+      })
+    else
+      {:error, _reason} ->
+        error_json(
+          conn,
+          :bad_request,
+          "invalid_task_payload",
+          "Task payload could not be processed"
+        )
+    end
+  end
+
   defp handle_authorized_activity_scope(conn, %AppScope{} = scope, current_user) do
     with {:ok, events} <-
            EBossFolio.list_activity_feed(scope.current_workspace.id, actor: current_user) do
@@ -348,6 +396,75 @@ defmodule EBossWeb.FolioBootstrapController do
   defp parse_project_create_params(_payload) do
     {:error, :invalid_payload}
   end
+
+  defp parse_task_create_params(payload) when is_map(payload) do
+    with {:ok, title} <- required_task_title(payload),
+         {:ok, project_id} <- optional_task_project_id(payload) do
+      attrs =
+        %{}
+        |> maybe_put(:title, title)
+        |> maybe_put(:project_id, project_id)
+
+      {:ok, attrs}
+    end
+  end
+
+  defp parse_task_create_params(_payload) do
+    {:error, :invalid_payload}
+  end
+
+  defp required_task_title(payload) do
+    case fetch_payload_field(payload, :title) do
+      :missing ->
+        {:error, :invalid_payload}
+
+      {:present, value} ->
+        normalize_required_task_title_value(value)
+    end
+  end
+
+  defp optional_task_project_id(payload) do
+    case fetch_payload_field(payload, :project_id) do
+      :missing ->
+        {:ok, :missing}
+
+      {:present, value} ->
+        normalize_task_project_id_value(value)
+    end
+  end
+
+  defp normalize_required_task_title_value(value) when is_binary(value) do
+    title = String.trim(value)
+
+    if title == "" do
+      {:error, :invalid_payload}
+    else
+      {:ok, {:set, title}}
+    end
+  end
+
+  defp normalize_required_task_title_value(value) when is_atom(value) do
+    value
+    |> to_string()
+    |> normalize_required_task_title_value()
+  end
+
+  defp normalize_required_task_title_value(_value), do: {:error, :invalid_payload}
+
+  defp normalize_task_project_id_value(nil), do: {:ok, {:set, nil}}
+
+  defp normalize_task_project_id_value(value) when is_binary(value) do
+    project_id = String.trim(value)
+    {:ok, {:set, if(project_id == "", do: nil, else: project_id)}}
+  end
+
+  defp normalize_task_project_id_value(value) when is_atom(value) do
+    value
+    |> to_string()
+    |> normalize_task_project_id_value()
+  end
+
+  defp normalize_task_project_id_value(_value), do: {:error, :invalid_payload}
 
   defp parse_project_update_params(payload) when is_map(payload) do
     with {:ok, title} <- optional_project_title(payload),

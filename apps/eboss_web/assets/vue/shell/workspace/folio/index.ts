@@ -9,6 +9,7 @@ export {
 } from "./paths"
 export { requestJson, FolioApiError } from "./http"
 export {
+  createFolioTask,
   createFolioProject,
   fetchFolioActivity,
   fetchFolioBootstrap,
@@ -31,6 +32,8 @@ export type {
   FolioActivityResponse,
   FolioBootstrapResponse,
   FolioProjectSummary,
+  FolioTaskCreatePayload,
+  FolioTaskCreateResponse,
   FolioProjectUpdatePayload,
   FolioProjectUpdateResponse,
   FolioProjectsResponse,

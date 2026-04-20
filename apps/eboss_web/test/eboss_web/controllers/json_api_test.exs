@@ -82,6 +82,34 @@ defmodule EBossWeb.JsonApiTest do
            ] ==
              "array"
 
+    assert get_in(spec, [
+             "paths",
+             "/api/v1/{owner_slug}/workspaces/{slug}/apps/folio/tasks",
+             "post",
+             "requestBody",
+             "content",
+             "application/json",
+             "schema",
+             "$ref"
+           ]) == "#/components/schemas/FolioTaskCreateRequest"
+
+    assert get_in(spec, [
+             "paths",
+             "/api/v1/{owner_slug}/workspaces/{slug}/apps/folio/tasks",
+             "post",
+             "responses",
+             "201",
+             "content",
+             "application/json",
+             "schema",
+             "$ref"
+           ]) == "#/components/schemas/FolioTaskCreateResponse"
+
+    assert get_in(spec, ["components", "schemas", "FolioTaskCreateResponse", "required"]) == [
+             "scope",
+             "task"
+           ]
+
     assert get_in(spec, ["components", "schemas", "FolioActivityResponse", "required"]) == [
              "scope",
              "events"
@@ -821,6 +849,167 @@ defmodule EBossWeb.JsonApiTest do
                task["project_id"] == linked_project.id and
                task["status"] == "next_action"
            end)
+  end
+
+  test "authenticated clients can create workspace tasks through the folio tasks endpoint", %{
+    conn: conn
+  } do
+    owner = register_user()
+    api_key = create_api_key(owner)
+
+    workspace =
+      Workspaces.create_workspace!(
+        %{
+          name: "Folio Task Create Workspace",
+          owner_type: :user,
+          owner_id: owner.id
+        },
+        actor: owner
+      )
+
+    second_workspace =
+      Workspaces.create_workspace!(
+        %{
+          name: "External Task Create Workspace",
+          owner_type: :user,
+          owner_id: owner.id
+        },
+        actor: owner
+      )
+
+    linked_project =
+      EBossFolio.create_project!(
+        %{workspace_id: workspace.id, title: "Task Linking Project"},
+        actor: owner
+      )
+
+    linked_task_conn =
+      conn
+      |> put_req_header("authorization", "Bearer #{api_key}")
+      |> put_req_header("accept", "application/json")
+      |> put_req_header("content-type", "application/json")
+      |> post(
+        "/api/v1/#{owner.owner_slug}/workspaces/#{workspace.slug}/apps/folio/tasks",
+        Jason.encode!(%{title: "Draft rollout notes", project_id: linked_project.id})
+      )
+
+    linked_payload = json_response(linked_task_conn, 201)
+    linked_task_id = linked_payload["task"]["id"]
+
+    assert linked_payload["scope"]["app_key"] == "folio"
+    assert linked_payload["scope"]["workspace"]["id"] == workspace.id
+    assert linked_payload["task"]["title"] == "Draft rollout notes"
+    assert linked_payload["task"]["status"] == "inbox"
+    assert linked_payload["task"]["project_id"] == linked_project.id
+
+    standalone_task_conn =
+      build_conn()
+      |> put_req_header("authorization", "Bearer #{api_key}")
+      |> put_req_header("accept", "application/json")
+      |> put_req_header("content-type", "application/json")
+      |> post(
+        "/api/v1/#{owner.owner_slug}/workspaces/#{workspace.slug}/apps/folio/tasks",
+        Jason.encode!(%{title: "Inbox capture"})
+      )
+
+    standalone_payload = json_response(standalone_task_conn, 201)
+    standalone_task_id = standalone_payload["task"]["id"]
+
+    assert standalone_payload["task"]["title"] == "Inbox capture"
+    assert standalone_payload["task"]["status"] == "inbox"
+    assert standalone_payload["task"]["project_id"] == nil
+
+    assert {:ok, linked_task} =
+             EBossFolio.get_task_in_workspace(linked_task_id, workspace.id, actor: owner)
+
+    assert linked_task.workspace_id == workspace.id
+    assert linked_task.project_id == linked_project.id
+    assert linked_task.title == "Draft rollout notes"
+
+    assert {:ok, standalone_task} =
+             EBossFolio.get_task_in_workspace(standalone_task_id, workspace.id, actor: owner)
+
+    assert standalone_task.workspace_id == workspace.id
+    assert standalone_task.project_id == nil
+    assert standalone_task.title == "Inbox capture"
+
+    assert {:error, :not_found} =
+             EBossFolio.get_task_in_workspace(linked_task_id, second_workspace.id, actor: owner)
+  end
+
+  test "folio task create endpoint rejects invalid task payloads", %{conn: conn} do
+    owner = register_user()
+    api_key = create_api_key(owner)
+
+    workspace =
+      Workspaces.create_workspace!(
+        %{
+          name: "Folio Task Invalid Payload Workspace",
+          owner_type: :user,
+          owner_id: owner.id
+        },
+        actor: owner
+      )
+
+    conn =
+      conn
+      |> put_req_header("authorization", "Bearer #{api_key}")
+      |> put_req_header("accept", "application/json")
+      |> put_req_header("content-type", "application/json")
+      |> post(
+        "/api/v1/#{owner.owner_slug}/workspaces/#{workspace.slug}/apps/folio/tasks",
+        Jason.encode!(%{title: "   ", project_id: []})
+      )
+
+    assert %{
+             "error" => %{
+               "code" => "invalid_task_payload",
+               "message" => "Task payload could not be processed"
+             }
+           } = json_response(conn, 400)
+
+    assert {:ok, []} = EBossFolio.list_tasks_in_workspace(workspace.id, actor: owner)
+  end
+
+  test "folio task create endpoint forbids users without folio manage access", %{conn: conn} do
+    owner = register_user()
+    member = register_user()
+
+    organization =
+      Organizations.create_organization!(%{name: "Folio Task Create-Locked Org Workspace"},
+        actor: owner
+      )
+
+    create_org_membership(owner, organization, member, :member)
+
+    api_key = create_api_key(member)
+
+    workspace =
+      Workspaces.create_workspace!(
+        %{
+          name: "Folio Task Create-Locked Org Workspace",
+          owner_type: :organization,
+          owner_id: organization.id
+        },
+        actor: owner
+      )
+
+    conn =
+      conn
+      |> put_req_header("authorization", "Bearer #{api_key}")
+      |> put_req_header("accept", "application/json")
+      |> put_req_header("content-type", "application/json")
+      |> post(
+        "/api/v1/#{organization.owner_slug}/workspaces/#{workspace.slug}/apps/folio/tasks",
+        Jason.encode!(%{title: "Blocked task"})
+      )
+
+    assert %{
+             "error" => %{
+               "code" => "workspace_forbidden",
+               "message" => "Workspace access is forbidden"
+             }
+           } = json_response(conn, 403)
   end
 
   test "authenticated clients can list workspace activity through the folio activity endpoint", %{

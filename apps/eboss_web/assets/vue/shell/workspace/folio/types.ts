@@ -113,6 +113,16 @@ export interface FolioTaskSummary {
   review_at: string | null
 }
 
+export interface FolioTaskCreatePayload {
+  title: string
+  project_id?: string | null
+}
+
+export interface FolioTaskCreateResponse {
+  scope: FolioScope
+  task: FolioTaskSummary
+}
+
 export interface FolioActivityActor {
   type: string
   id: string | null

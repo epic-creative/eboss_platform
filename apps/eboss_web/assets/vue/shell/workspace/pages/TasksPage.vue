@@ -1,14 +1,20 @@
 <script setup lang="ts">
 import { computed, ref } from "vue"
-import { AlertTriangle, CheckCircle2, LoaderCircle, Search, Star } from "lucide-vue-next"
+import { AlertTriangle, CheckCircle2, LoaderCircle, Plus, Search, Star } from "lucide-vue-next"
 
 import InspectorField from "../InspectorField.vue"
 import InspectorPane from "../InspectorPane.vue"
 import InspectorSection from "../InspectorSection.vue"
 import WorkspaceEmptyState from "../WorkspaceEmptyState.vue"
 import WorkspacePageHeader from "../WorkspacePageHeader.vue"
+import WorkspacePanel from "../WorkspacePanel.vue"
 import type { Task } from "../types"
 import { formatFolioDate, statusLabel, taskStatusClass } from "../presenters"
+
+interface TaskProjectOption {
+  id: string
+  title: string
+}
 
 const props = defineProps<{
   workspaceReference: string
@@ -16,7 +22,11 @@ const props = defineProps<{
   selectedTask: Task | null
   loading: boolean
   error: string | null
+  canCreateTask: boolean
+  creatingTask: boolean
+  projectOptions: TaskProjectOption[]
   refresh: () => Promise<void>
+  createTask: (title: string, projectId: string | null) => Promise<void>
 }>()
 
 const emit = defineEmits<{
@@ -38,6 +48,10 @@ type StatusFilter = (typeof statusFilters)[number]
 
 const selectedTaskFilter = ref<StatusFilter>("all")
 const searchQuery = ref("")
+const createFormOpen = ref(false)
+const createTaskTitle = ref("")
+const createTaskProjectId = ref("")
+const createTaskError = ref<string | null>(null)
 
 const taskQuery = computed(() => {
   const search = searchQuery.value.trim().toLowerCase()
@@ -88,11 +102,63 @@ const sortTasks = computed(() =>
     return left.title.localeCompare(right.title)
   }),
 )
+
+const openCreateTaskForm = () => {
+  if (!props.canCreateTask) return
+
+  createTaskError.value = null
+  createFormOpen.value = true
+}
+
+const closeCreateTaskForm = () => {
+  createTaskTitle.value = ""
+  createTaskProjectId.value = ""
+  createTaskError.value = null
+  createFormOpen.value = false
+}
+
+const normalizedProjectId = (): string | null => {
+  const projectId = createTaskProjectId.value.trim()
+  return projectId === "" ? null : projectId
+}
+
+const submitCreateTask = async () => {
+  if (!props.canCreateTask || props.creatingTask) return
+
+  const title = createTaskTitle.value.trim()
+
+  if (!title) {
+    createTaskError.value = "Task title is required."
+    return
+  }
+
+  createTaskError.value = null
+
+  try {
+    await props.createTask(title, normalizedProjectId())
+    closeCreateTaskForm()
+  } catch (cause) {
+    createTaskError.value = cause instanceof Error ? cause.message : "Task creation failed."
+  }
+}
 </script>
 
 <template>
   <div class="ui-workspace-page" data-testid="workspace-page-tasks">
-    <WorkspacePageHeader title="Tasks" :subtitle="workspaceReference" />
+    <WorkspacePageHeader title="Tasks" :subtitle="workspaceReference">
+      <template #actions>
+        <button
+          v-if="canCreateTask"
+          type="button"
+          class="so-button-primary"
+          data-testid="tasks-create-open"
+          @click="openCreateTaskForm"
+        >
+          <Plus class="h-3 w-3" />
+          New task
+        </button>
+      </template>
+    </WorkspacePageHeader>
 
     <div class="flex items-center gap-2">
       <div class="relative max-w-xs flex-1">
@@ -124,6 +190,88 @@ const sortTasks = computed(() =>
         </button>
       </div>
     </div>
+
+    <WorkspacePanel
+      v-if="createFormOpen"
+      title="Create task"
+      subtitle="Capture a standalone task or link it to a project."
+      data-testid="tasks-create-form"
+    >
+      <form class="space-y-3" data-testid="tasks-create-form-element" @submit.prevent="submitCreateTask">
+        <div class="space-y-1">
+          <label
+            for="folio-task-title"
+            class="so-font-mono text-[11px] uppercase tracking-[0.06em] text-[hsl(var(--so-muted-foreground))]"
+          >
+            Task title
+          </label>
+          <input
+            id="folio-task-title"
+            v-model="createTaskTitle"
+            class="so-input-field"
+            type="text"
+            autocomplete="off"
+            placeholder="Example: Draft rollout notes"
+            data-testid="tasks-create-title-input"
+            :disabled="creatingTask"
+            @input="createTaskError = null"
+          />
+        </div>
+
+        <div class="space-y-1">
+          <label
+            for="folio-task-project"
+            class="so-font-mono text-[11px] uppercase tracking-[0.06em] text-[hsl(var(--so-muted-foreground))]"
+          >
+            Project (optional)
+          </label>
+          <select
+            id="folio-task-project"
+            v-model="createTaskProjectId"
+            class="so-input-field"
+            data-testid="tasks-create-project-select"
+            :disabled="creatingTask"
+            @change="createTaskError = null"
+          >
+            <option value="">Unassigned</option>
+            <option v-for="project in projectOptions" :key="project.id" :value="project.id">
+              {{ project.title }}
+            </option>
+          </select>
+        </div>
+
+        <div
+          v-if="createTaskError"
+          class="so-alert-panel so-alert-panel-error"
+          data-testid="tasks-create-error"
+        >
+          <p class="text-xs text-[hsl(var(--so-destructive))]">{{ createTaskError }}</p>
+        </div>
+
+        <div class="flex flex-wrap items-center justify-end gap-2">
+          <button
+            type="button"
+            class="so-button-secondary"
+            :disabled="creatingTask"
+            data-testid="tasks-create-cancel"
+            @click="closeCreateTaskForm"
+          >
+            Cancel
+          </button>
+
+          <button
+            type="submit"
+            class="so-button-primary"
+            :disabled="creatingTask"
+            data-testid="tasks-create-submit"
+          >
+            <LoaderCircle v-if="creatingTask" class="h-3 w-3 animate-spin" />
+            <Plus v-else class="h-3 w-3" />
+            {{ creatingTask ? "Creating..." : "Create task" }}
+          </button>
+        </div>
+      </form>
+    </WorkspacePanel>
 
     <div class="flex gap-0">
       <div

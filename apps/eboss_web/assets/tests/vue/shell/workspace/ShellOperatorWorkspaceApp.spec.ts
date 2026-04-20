@@ -777,6 +777,214 @@ describe("ShellOperatorWorkspaceApp", () => {
     expect(tasksView.text()).toContain("Review date")
   })
 
+  it("creates a folio task from the tasks surface and refreshes the list", async () => {
+    const fetchMock = vi
+      .spyOn(global, "fetch")
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          scope: {},
+          projects: [
+            {
+              id: "project-1",
+              title: "Atlas Service",
+              status: "active",
+              priority_position: null,
+              due_at: null,
+              review_at: null,
+            },
+          ],
+        }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          scope: {},
+          tasks: [
+            {
+              id: "task-1",
+              title: "Existing task",
+              status: "inbox",
+              project_id: null,
+              priority_position: null,
+              due_at: null,
+              review_at: null,
+            },
+          ],
+        }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 201,
+        json: async () => ({
+          scope: {},
+          task: {
+            id: "task-2",
+            title: "Draft rollout notes",
+            status: "inbox",
+            project_id: "project-1",
+            priority_position: null,
+            due_at: null,
+            review_at: null,
+          },
+        }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          scope: {},
+          tasks: [
+            {
+              id: "task-1",
+              title: "Existing task",
+              status: "inbox",
+              project_id: null,
+              priority_position: null,
+              due_at: null,
+              review_at: null,
+            },
+            {
+              id: "task-2",
+              title: "Draft rollout notes",
+              status: "inbox",
+              project_id: "project-1",
+              priority_position: null,
+              due_at: null,
+              review_at: null,
+            },
+          ],
+        }),
+      } as Response)
+
+    const wrapper = mountComponent(ShellOperatorWorkspaceApp, {
+      props: {
+        currentUser: {
+          username: "operator",
+          email: "operator@example.com",
+        },
+        currentScope: scope({
+          apps: {
+            folio: {
+              key: "folio",
+              label: "Folio",
+              defaultPath: "/primary-owner/primary-workspace/apps/folio",
+              enabled: true,
+              capabilities: {
+                read: true,
+                manage: true,
+              },
+            },
+          },
+        }),
+        currentPage: appRoute("folio", "tasks"),
+        currentPath: "/primary-owner/primary-workspace/apps/folio/tasks",
+        signOutPath: "/sign-out",
+        csrfToken: "csrf-token",
+      },
+      global: {
+        stubs: {
+          ThemeToggleButton: {
+            template: "<button data-testid=\"theme-toggle-stub\" />",
+          },
+        },
+      },
+    })
+
+    await nextTick()
+    await nextMacrotask()
+    await nextTick()
+    await nextMacrotask()
+
+    const tasksView = wrapper.get('[data-testid="workspace-page-tasks"]')
+    await tasksView.get('[data-testid="tasks-create-open"]').trigger("click")
+
+    await tasksView.get('[data-testid="tasks-create-title-input"]').setValue("Draft rollout notes")
+    await tasksView.get('[data-testid="tasks-create-project-select"]').setValue("project-1")
+    await tasksView.get('[data-testid="tasks-create-form-element"]').trigger("submit")
+
+    await nextTick()
+    await nextMacrotask()
+    await nextTick()
+    await nextMacrotask()
+
+    expect(fetchMock).toHaveBeenCalledTimes(4)
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      3,
+      "/api/v1/primary-owner/workspaces/primary-workspace/apps/folio/tasks",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({ title: "Draft rollout notes", project_id: "project-1" }),
+        headers: expect.objectContaining({
+          "Content-Type": "application/json",
+        }),
+      }),
+    )
+
+    expect(tasksView.text()).toContain("Draft rollout notes")
+    expect(tasksView.find('[data-testid="tasks-create-form"]').exists()).toBe(false)
+  })
+
+  it("hides task creation controls when folio manage access is not granted", async () => {
+    vi.spyOn(global, "fetch").mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        scope: {},
+        tasks: [],
+      }),
+    } as Response)
+
+    const wrapper = mountComponent(ShellOperatorWorkspaceApp, {
+      props: {
+        currentUser: {
+          username: "operator",
+          email: "operator@example.com",
+        },
+        currentScope: scope({
+          capabilities: {
+            readWorkspace: true,
+            manageWorkspace: false,
+            readFolio: true,
+            manageFolio: false,
+          },
+          apps: {
+            folio: {
+              key: "folio",
+              label: "Folio",
+              defaultPath: "/primary-owner/primary-workspace/apps/folio",
+              enabled: true,
+              capabilities: {
+                read: true,
+                manage: false,
+              },
+            },
+          },
+        }),
+        currentPage: appRoute("folio", "tasks"),
+        currentPath: "/primary-owner/primary-workspace/apps/folio/tasks",
+        signOutPath: "/sign-out",
+        csrfToken: "csrf-token",
+      },
+      global: {
+        stubs: {
+          ThemeToggleButton: {
+            template: "<button data-testid=\"theme-toggle-stub\" />",
+          },
+        },
+      },
+    })
+
+    await nextTick()
+    await nextMacrotask()
+
+    const tasksView = wrapper.get('[data-testid="workspace-page-tasks"]')
+    expect(tasksView.find('[data-testid="tasks-create-open"]').exists()).toBe(false)
+    expect(tasksView.find('[data-testid="tasks-create-form"]').exists()).toBe(false)
+  })
+
   it("renders real folio activity on folio activity surface", async () => {
     vi.spyOn(global, "fetch").mockResolvedValue({
       ok: true,
@@ -1042,7 +1250,7 @@ describe("ShellOperatorWorkspaceApp", () => {
 
     await errorState.get("button").trigger("click")
 
-    expect(global.fetch).toHaveBeenCalledTimes(2)
+    expect(global.fetch).toHaveBeenCalledTimes(3)
   })
 
   it("shows an empty state on folio activity surface", async () => {

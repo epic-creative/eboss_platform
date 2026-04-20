@@ -21,6 +21,7 @@ import ProjectsPage from "./pages/ProjectsPage.vue"
 import TasksPage from "./pages/TasksPage.vue"
 import SettingsPage from "./pages/SettingsPage.vue"
 import {
+  createFolioTask,
   createFolioProject,
   updateFolioProject,
   useFolioActivity,
@@ -74,6 +75,7 @@ const selectedActivity = ref<FolioActivityEvent | null>(null)
 const selectedProjectFilter = ref<ProjectFilter>("all")
 const creatingProject = ref(false)
 const updatingProject = ref(false)
+const creatingTask = ref(false)
 const projectFilters = ["all", "active", "on_hold", "completed", "canceled", "archived"] satisfies ProjectFilter[]
 const isWorkspaceRoute = computed(() => props.currentPage.type === "workspace")
 const isAppRoute = computed(() => props.currentPage.type === "app")
@@ -130,11 +132,19 @@ const isFolioActivitySurface = computed(
   () => isFolioAppRoute.value && currentAppPage.value?.app_surface === "activity",
 )
 const folioWorkspaceScope = useFolioWorkspaceScope(props.currentScope)
+const shouldLoadFolioProjects = computed(
+  () =>
+    isFolioProjectsSurface.value ||
+    (isFolioTasksSurface.value && props.currentScope.capabilities.manageFolio),
+)
 const folioProjectsQuery = useFolioProjects(folioWorkspaceScope, {
   autoFetch: true,
-  enabled: isFolioProjectsSurface,
+  enabled: shouldLoadFolioProjects,
 })
 const folioProjects = computed(() => folioProjectsQuery.projects.value.map(mapFolioProject))
+const taskProjectOptions = computed(() =>
+  folioProjects.value.map((project) => ({ id: project.id, title: project.name })),
+)
 
 const createWorkspaceProject = async (title: string): Promise<void> => {
   const scope = folioWorkspaceScope.value
@@ -205,6 +215,34 @@ const mapFolioTask = (task: FolioTaskSummary): Task => ({
   reviewAt: task.review_at,
 })
 const folioTasks = computed(() => folioTasksQuery.tasks.value.map(mapFolioTask))
+const createWorkspaceTask = async (title: string, projectId: string | null): Promise<void> => {
+  const scope = folioWorkspaceScope.value
+
+  if (!scope) {
+    throw new Error("Workspace scope is unavailable.")
+  }
+
+  if (!props.currentScope.capabilities.manageFolio) {
+    throw new Error("You do not have permission to create tasks in this workspace.")
+  }
+
+  if (creatingTask.value) return
+
+  creatingTask.value = true
+
+  try {
+    const response = await createFolioTask(scope, {
+      title,
+      project_id: projectId,
+    })
+
+    selectedTask.value = mapFolioTask(response.task)
+    await folioTasksQuery.refresh()
+  } finally {
+    creatingTask.value = false
+  }
+}
+
 const folioActivityQuery = useFolioActivity(folioWorkspaceScope, {
   autoFetch: true,
   enabled: isFolioActivitySurface,
@@ -443,7 +481,11 @@ watch(currentWorkspaceKey, () => {
               :selected-task="selectedTask"
               :loading="folioTasksQuery.loading.value"
               :error="folioTasksQuery.error.value"
+              :can-create-task="currentScope.capabilities.manageFolio"
+              :creating-task="creatingTask"
+              :project-options="taskProjectOptions"
               :refresh="folioTasksQuery.refresh"
+              :create-task="createWorkspaceTask"
               @update:selected-task="selectedTask = $event"
             />
             <ActivityPage
