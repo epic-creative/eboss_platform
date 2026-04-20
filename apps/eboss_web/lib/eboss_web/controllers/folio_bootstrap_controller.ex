@@ -128,6 +128,33 @@ defmodule EBossWeb.FolioBootstrapController do
     end
   end
 
+  def update_task(
+        conn,
+        %{"owner_slug" => owner_slug, "slug" => slug, "task_id" => task_id}
+      ) do
+    current_user = conn.assigns[:current_user] || PlugHelpers.get_actor(conn)
+
+    case AppScope.fetch_workspace_scope(current_user, owner_slug, slug) do
+      {:ok, %AppScope{} = scope} ->
+        case authorize_folio_manage(scope) do
+          :ok ->
+            handle_authorized_task_update(conn, scope, current_user, task_id)
+
+          {:error, :forbidden} ->
+            error_json(conn, :forbidden, "workspace_forbidden", "Workspace access is forbidden")
+        end
+
+      {:error, :unauthorized} ->
+        error_json(conn, :unauthorized, "authentication_required", "Authentication is required")
+
+      {:error, :forbidden} ->
+        error_json(conn, :forbidden, "workspace_forbidden", "Workspace access is forbidden")
+
+      {:error, :not_found} ->
+        error_json(conn, :not_found, "workspace_not_found", "Workspace not found")
+    end
+  end
+
   def tasks(conn, %{"owner_slug" => owner_slug, "slug" => slug}) do
     current_user = conn.assigns[:current_user] || PlugHelpers.get_actor(conn)
 
@@ -316,6 +343,47 @@ defmodule EBossWeb.FolioBootstrapController do
     end
   end
 
+  defp handle_authorized_task_update(conn, %AppScope{} = scope, current_user, task_id) do
+    with {:ok, target_status} <- parse_task_transition_params(conn.body_params),
+         {:ok, task} <-
+           EBossFolio.get_task_in_workspace(task_id, scope.current_workspace.id,
+             actor: current_user
+           ),
+         {:ok, task} <- transition_task(task, target_status, current_user) do
+      json(conn, %{
+        scope: folio_scope_payload(scope),
+        task: task_summary_payload(task)
+      })
+    else
+      {:error, :not_found} ->
+        error_json(conn, :not_found, "task_not_found", "Task not found")
+
+      {:error, :invalid_payload} ->
+        error_json(
+          conn,
+          :bad_request,
+          "invalid_task_payload",
+          "Task payload could not be processed"
+        )
+
+      {:error, %Ash.Error.Invalid{} = error} ->
+        error_json(
+          conn,
+          :bad_request,
+          "invalid_task_transition",
+          Exception.message(error)
+        )
+
+      {:error, _reason} ->
+        error_json(
+          conn,
+          :bad_request,
+          "invalid_task_transition",
+          "Task transition could not be processed"
+        )
+    end
+  end
+
   defp handle_authorized_activity_scope(conn, %AppScope{} = scope, current_user) do
     with {:ok, events} <-
            EBossFolio.list_activity_feed(scope.current_workspace.id, actor: current_user) do
@@ -413,6 +481,14 @@ defmodule EBossWeb.FolioBootstrapController do
     {:error, :invalid_payload}
   end
 
+  defp parse_task_transition_params(payload) when is_map(payload) do
+    with {:ok, status} <- required_task_transition_status(payload) do
+      {:ok, status}
+    end
+  end
+
+  defp parse_task_transition_params(_payload), do: {:error, :invalid_payload}
+
   defp required_task_title(payload) do
     case fetch_payload_field(payload, :title) do
       :missing ->
@@ -430,6 +506,16 @@ defmodule EBossWeb.FolioBootstrapController do
 
       {:present, value} ->
         normalize_task_project_id_value(value)
+    end
+  end
+
+  defp required_task_transition_status(payload) do
+    case fetch_payload_field(payload, :status) do
+      :missing ->
+        {:error, :invalid_payload}
+
+      {:present, value} ->
+        normalize_task_transition_status(value)
     end
   end
 
@@ -465,6 +551,45 @@ defmodule EBossWeb.FolioBootstrapController do
   end
 
   defp normalize_task_project_id_value(_value), do: {:error, :invalid_payload}
+
+  defp normalize_task_transition_status(value) when is_binary(value) do
+    case value |> String.trim() do
+      "inbox" -> {:ok, :inbox}
+      "next_action" -> {:ok, :next_action}
+      "waiting_for" -> {:ok, :waiting_for}
+      "scheduled" -> {:ok, :scheduled}
+      "someday_maybe" -> {:ok, :someday_maybe}
+      "done" -> {:ok, :done}
+      "canceled" -> {:ok, :canceled}
+      "archived" -> {:ok, :archived}
+      _ -> {:error, :invalid_payload}
+    end
+  end
+
+  defp normalize_task_transition_status(value) when is_atom(value) do
+    value
+    |> to_string()
+    |> normalize_task_transition_status()
+  end
+
+  defp normalize_task_transition_status(_value), do: {:error, :invalid_payload}
+
+  defp transition_task(task, :inbox, actor), do: EBossFolio.move_task_to_inbox(task, actor: actor)
+
+  defp transition_task(task, :next_action, actor),
+    do: EBossFolio.mark_task_next_action(task, actor: actor)
+
+  defp transition_task(task, :waiting_for, actor),
+    do: EBossFolio.mark_task_waiting_for(task, actor: actor)
+
+  defp transition_task(task, :scheduled, actor), do: EBossFolio.schedule_task(task, actor: actor)
+
+  defp transition_task(task, :someday_maybe, actor),
+    do: EBossFolio.mark_task_someday_maybe(task, actor: actor)
+
+  defp transition_task(task, :done, actor), do: EBossFolio.complete_task(task, actor: actor)
+  defp transition_task(task, :canceled, actor), do: EBossFolio.cancel_task(task, actor: actor)
+  defp transition_task(task, :archived, actor), do: EBossFolio.archive_task(task, actor: actor)
 
   defp parse_project_update_params(payload) when is_map(payload) do
     with {:ok, title} <- optional_project_title(payload),

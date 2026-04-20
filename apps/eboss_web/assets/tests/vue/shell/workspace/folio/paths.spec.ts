@@ -5,6 +5,7 @@ import {
   folioBootstrapPath,
   folioProjectPath,
   folioProjectsPath,
+  folioTaskPath,
   folioTasksPath,
   folioWorkspaceRef,
 } from "@/vue/shell/workspace/folio/paths"
@@ -54,6 +55,9 @@ describe("folio paths", () => {
       "/api/v1/alpha-team/workspaces/main-workspace/apps/folio/projects/project-123",
     )
     expect(folioTasksPath(scope)).toBe("/api/v1/alpha-team/workspaces/main-workspace/apps/folio/tasks")
+    expect(folioTaskPath(scope, "task-456")).toBe(
+      "/api/v1/alpha-team/workspaces/main-workspace/apps/folio/tasks/task-456",
+    )
     expect(folioActivityPath(scope)).toBe("/api/v1/alpha-team/workspaces/main-workspace/apps/folio/activity")
   })
 

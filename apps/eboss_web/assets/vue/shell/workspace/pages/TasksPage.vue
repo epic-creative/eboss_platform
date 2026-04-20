@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from "vue"
+import { computed, ref, watch } from "vue"
 import { AlertTriangle, CheckCircle2, LoaderCircle, Plus, Search, Star } from "lucide-vue-next"
 
 import InspectorField from "../InspectorField.vue"
@@ -24,9 +24,12 @@ const props = defineProps<{
   error: string | null
   canCreateTask: boolean
   creatingTask: boolean
+  canTransitionTask: boolean
+  transitioningTask: boolean
   projectOptions: TaskProjectOption[]
   refresh: () => Promise<void>
   createTask: (title: string, projectId: string | null) => Promise<void>
+  transitionTask: (taskId: string, status: Task["status"]) => Promise<void>
 }>()
 
 const emit = defineEmits<{
@@ -52,6 +55,8 @@ const createFormOpen = ref(false)
 const createTaskTitle = ref("")
 const createTaskProjectId = ref("")
 const createTaskError = ref<string | null>(null)
+const transitionStatus = ref<Task["status"]>("inbox")
+const transitionError = ref<string | null>(null)
 
 const taskQuery = computed(() => {
   const search = searchQuery.value.trim().toLowerCase()
@@ -139,6 +144,27 @@ const submitCreateTask = async () => {
     closeCreateTaskForm()
   } catch (cause) {
     createTaskError.value = cause instanceof Error ? cause.message : "Task creation failed."
+  }
+}
+
+watch(
+  () => [props.selectedTask?.id, props.selectedTask?.status] as const,
+  () => {
+    transitionError.value = null
+    transitionStatus.value = props.selectedTask?.status ?? "inbox"
+  },
+  { immediate: true },
+)
+
+const submitTransitionTask = async () => {
+  if (!props.selectedTask || !props.canTransitionTask || props.transitioningTask) return
+
+  transitionError.value = null
+
+  try {
+    await props.transitionTask(props.selectedTask.id, transitionStatus.value)
+  } catch (cause) {
+    transitionError.value = cause instanceof Error ? cause.message : "Task transition failed."
   }
 }
 </script>
@@ -398,6 +424,50 @@ const submitCreateTask = async () => {
               </span>
             </InspectorField>
             <InspectorField label="Task ID" :value="selectedTask.id" mono />
+
+            <div v-if="canTransitionTask" class="space-y-2">
+              <label
+                for="folio-task-transition-status"
+                class="so-font-mono text-[11px] uppercase tracking-[0.06em] text-[hsl(var(--so-muted-foreground))]"
+              >
+                Move to
+              </label>
+              <div class="flex items-center gap-2">
+                <select
+                  id="folio-task-transition-status"
+                  v-model="transitionStatus"
+                  class="so-input-field h-8"
+                  data-testid="tasks-transition-status-select"
+                  :disabled="transitioningTask"
+                >
+                  <option value="inbox">Inbox</option>
+                  <option value="next_action">Next Action</option>
+                  <option value="waiting_for">Waiting For</option>
+                  <option value="scheduled">Scheduled</option>
+                  <option value="someday_maybe">Someday Maybe</option>
+                  <option value="done">Done</option>
+                  <option value="canceled">Canceled</option>
+                  <option value="archived">Archived</option>
+                </select>
+                <button
+                  type="button"
+                  class="so-button-primary h-8"
+                  data-testid="tasks-transition-submit"
+                  :disabled="transitioningTask"
+                  @click="submitTransitionTask"
+                >
+                  <LoaderCircle v-if="transitioningTask" class="h-3 w-3 animate-spin" />
+                  <span>{{ transitioningTask ? "Updating..." : "Apply" }}</span>
+                </button>
+              </div>
+              <div
+                v-if="transitionError"
+                class="so-alert-panel so-alert-panel-error"
+                data-testid="tasks-transition-error"
+              >
+                <p class="text-xs text-[hsl(var(--so-destructive))]">{{ transitionError }}</p>
+              </div>
+            </div>
           </InspectorSection>
 
           <InspectorSection title="Context" with-divider>

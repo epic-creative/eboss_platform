@@ -4,6 +4,7 @@ export {
   folioBootstrapPath,
   folioProjectPath,
   folioProjectsPath,
+  folioTaskPath,
   folioTasksPath,
   folioWorkspaceRef,
 } from "./paths"
@@ -15,6 +16,7 @@ export {
   fetchFolioBootstrap,
   fetchFolioProjects,
   fetchFolioTasks,
+  transitionFolioTask,
   updateFolioProject,
 } from "./queries"
 export {
@@ -34,6 +36,8 @@ export type {
   FolioProjectSummary,
   FolioTaskCreatePayload,
   FolioTaskCreateResponse,
+  FolioTaskTransitionPayload,
+  FolioTaskTransitionResponse,
   FolioProjectUpdatePayload,
   FolioProjectUpdateResponse,
   FolioProjectsResponse,

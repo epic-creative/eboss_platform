@@ -81,6 +81,10 @@ defmodule EBossWeb.Router do
           FolioBootstrapController,
           :update_project
 
+    patch "/:owner_slug/workspaces/:slug/apps/folio/tasks/:task_id",
+          FolioBootstrapController,
+          :update_task
+
     get "/:owner_slug/workspaces/:slug/apps/folio/projects", FolioBootstrapController, :projects
     post "/:owner_slug/workspaces/:slug/apps/folio/tasks", FolioBootstrapController, :create_task
     get "/:owner_slug/workspaces/:slug/apps/folio/tasks", FolioBootstrapController, :tasks

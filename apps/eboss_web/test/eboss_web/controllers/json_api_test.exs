@@ -37,6 +37,11 @@ defmodule EBossWeb.JsonApiTest do
 
     assert Map.has_key?(
              spec["paths"],
+             "/api/v1/{owner_slug}/workspaces/{slug}/apps/folio/tasks/{task_id}"
+           )
+
+    assert Map.has_key?(
+             spec["paths"],
              "/api/v1/{owner_slug}/workspaces/{slug}/apps/folio/activity"
            )
 
@@ -108,6 +113,33 @@ defmodule EBossWeb.JsonApiTest do
     assert get_in(spec, ["components", "schemas", "FolioTaskCreateResponse", "required"]) == [
              "scope",
              "task"
+           ]
+
+    assert get_in(spec, [
+             "paths",
+             "/api/v1/{owner_slug}/workspaces/{slug}/apps/folio/tasks/{task_id}",
+             "patch",
+             "requestBody",
+             "content",
+             "application/json",
+             "schema",
+             "$ref"
+           ]) == "#/components/schemas/FolioTaskTransitionRequest"
+
+    assert get_in(spec, [
+             "paths",
+             "/api/v1/{owner_slug}/workspaces/{slug}/apps/folio/tasks/{task_id}",
+             "patch",
+             "responses",
+             "200",
+             "content",
+             "application/json",
+             "schema",
+             "$ref"
+           ]) == "#/components/schemas/FolioTaskCreateResponse"
+
+    assert get_in(spec, ["components", "schemas", "FolioTaskTransitionRequest", "required"]) == [
+             "status"
            ]
 
     assert get_in(spec, ["components", "schemas", "FolioActivityResponse", "required"]) == [
@@ -937,6 +969,120 @@ defmodule EBossWeb.JsonApiTest do
              EBossFolio.get_task_in_workspace(linked_task_id, second_workspace.id, actor: owner)
   end
 
+  test "authenticated clients can transition workspace tasks through the folio task endpoint", %{
+    conn: conn
+  } do
+    owner = register_user()
+    api_key = create_api_key(owner)
+
+    workspace =
+      Workspaces.create_workspace!(
+        %{
+          name: "Folio Task Transition Workspace",
+          owner_type: :user,
+          owner_id: owner.id
+        },
+        actor: owner
+      )
+
+    task =
+      EBossFolio.create_task!(%{workspace_id: workspace.id, title: "Advance status"},
+        actor: owner
+      )
+
+    transition_conn =
+      conn
+      |> put_req_header("authorization", "Bearer #{api_key}")
+      |> put_req_header("accept", "application/json")
+      |> put_req_header("content-type", "application/json")
+      |> patch(
+        "/api/v1/#{owner.owner_slug}/workspaces/#{workspace.slug}/apps/folio/tasks/#{task.id}",
+        Jason.encode!(%{status: "done"})
+      )
+
+    transition_payload = json_response(transition_conn, 200)
+
+    assert transition_payload["scope"]["app_key"] == "folio"
+    assert transition_payload["task"]["id"] == task.id
+    assert transition_payload["task"]["status"] == "done"
+
+    assert {:ok, transitioned_task} =
+             EBossFolio.get_task_in_workspace(task.id, workspace.id, actor: owner)
+
+    assert transitioned_task.status == :done
+
+    tasks_conn =
+      build_conn()
+      |> put_req_header("authorization", "Bearer #{api_key}")
+      |> put_req_header("accept", "application/json")
+      |> get("/api/v1/#{owner.owner_slug}/workspaces/#{workspace.slug}/apps/folio/tasks")
+
+    tasks_payload = json_response(tasks_conn, 200)
+
+    assert Enum.any?(tasks_payload["tasks"], fn listed_task ->
+             listed_task["id"] == task.id and listed_task["status"] == "done"
+           end)
+
+    activity_conn =
+      build_conn()
+      |> put_req_header("authorization", "Bearer #{api_key}")
+      |> put_req_header("accept", "application/json")
+      |> get("/api/v1/#{owner.owner_slug}/workspaces/#{workspace.slug}/apps/folio/activity")
+
+    activity_payload = json_response(activity_conn, 200)
+
+    assert Enum.any?(activity_payload["events"], fn event ->
+             event["action"] == "transition" and
+               event["subject"]["type"] == "task" and
+               event["subject"]["id"] == task.id and
+               get_in(event, ["changes", "status", "after"]) == "done"
+           end)
+  end
+
+  test "folio task transition endpoint reports invalid transitions clearly", %{conn: conn} do
+    owner = register_user()
+    api_key = create_api_key(owner)
+
+    workspace =
+      Workspaces.create_workspace!(
+        %{
+          name: "Folio Task Transition Validation Workspace",
+          owner_type: :user,
+          owner_id: owner.id
+        },
+        actor: owner
+      )
+
+    task =
+      EBossFolio.create_task!(%{workspace_id: workspace.id, title: "Blocked follow-up"},
+        actor: owner
+      )
+
+    transition_conn =
+      conn
+      |> put_req_header("authorization", "Bearer #{api_key}")
+      |> put_req_header("accept", "application/json")
+      |> put_req_header("content-type", "application/json")
+      |> patch(
+        "/api/v1/#{owner.owner_slug}/workspaces/#{workspace.slug}/apps/folio/tasks/#{task.id}",
+        Jason.encode!(%{status: "waiting_for"})
+      )
+
+    assert %{
+             "error" => %{
+               "code" => "invalid_task_transition",
+               "message" => message
+             }
+           } = json_response(transition_conn, 400)
+
+    assert message =~ "waiting_for tasks require notes or an active delegation"
+
+    assert {:ok, unchanged_task} =
+             EBossFolio.get_task_in_workspace(task.id, workspace.id, actor: owner)
+
+    assert unchanged_task.status == :inbox
+  end
+
   test "folio task create endpoint rejects invalid task payloads", %{conn: conn} do
     owner = register_user()
     api_key = create_api_key(owner)
@@ -1002,6 +1148,61 @@ defmodule EBossWeb.JsonApiTest do
       |> post(
         "/api/v1/#{organization.owner_slug}/workspaces/#{workspace.slug}/apps/folio/tasks",
         Jason.encode!(%{title: "Blocked task"})
+      )
+
+    assert %{
+             "error" => %{
+               "code" => "workspace_forbidden",
+               "message" => "Workspace access is forbidden"
+             }
+           } = json_response(conn, 403)
+  end
+
+  test "folio task transition endpoint forbids users without folio manage access", %{conn: conn} do
+    owner = register_user()
+    member = register_user()
+
+    organization =
+      Organizations.create_organization!(%{name: "Folio Task Transition-Locked Org"},
+        actor: owner
+      )
+
+    create_org_membership(owner, organization, member, :member)
+
+    owner_api_key = create_api_key(owner)
+    member_api_key = create_api_key(member)
+
+    workspace =
+      Workspaces.create_workspace!(
+        %{
+          name: "Folio Task Transition-Locked Workspace",
+          owner_type: :organization,
+          owner_id: organization.id
+        },
+        actor: owner
+      )
+
+    task_id =
+      build_conn()
+      |> put_req_header("authorization", "Bearer #{owner_api_key}")
+      |> put_req_header("accept", "application/json")
+      |> put_req_header("content-type", "application/json")
+      |> post(
+        "/api/v1/#{organization.owner_slug}/workspaces/#{workspace.slug}/apps/folio/tasks",
+        Jason.encode!(%{title: "Member cannot transition this"})
+      )
+      |> json_response(201)
+      |> Map.fetch!("task")
+      |> Map.fetch!("id")
+
+    conn =
+      conn
+      |> put_req_header("authorization", "Bearer #{member_api_key}")
+      |> put_req_header("accept", "application/json")
+      |> put_req_header("content-type", "application/json")
+      |> patch(
+        "/api/v1/#{organization.owner_slug}/workspaces/#{workspace.slug}/apps/folio/tasks/#{task_id}",
+        Jason.encode!(%{status: "done"})
       )
 
     assert %{

@@ -195,6 +195,8 @@ defmodule EBossWeb.ApiSpec do
       "/api/v1/{owner_slug}/workspaces/{slug}/apps/folio/projects/{project_id}" =>
         folio_project_path_item(),
       "/api/v1/{owner_slug}/workspaces/{slug}/apps/folio/tasks" => folio_tasks_path_item(),
+      "/api/v1/{owner_slug}/workspaces/{slug}/apps/folio/tasks/{task_id}" =>
+        folio_task_path_item(),
       "/api/v1/{owner_slug}/workspaces/{slug}/apps/folio/activity" => folio_activity_path_item()
     }
   end
@@ -360,6 +362,39 @@ defmodule EBossWeb.ApiSpec do
     }
   end
 
+  defp folio_task_path_item do
+    %{
+      "patch" => %{
+        "summary" => "Transition workspace-scoped Folio task status",
+        "description" =>
+          "Transitions a Folio task to a supported status using the task workflow action model.",
+        "parameters" => workspace_task_path_parameters(),
+        "requestBody" => %{
+          "required" => true,
+          "content" => %{
+            "application/json" => %{
+              "schema" => %{"$ref" => "#/components/schemas/FolioTaskTransitionRequest"}
+            }
+          }
+        },
+        "responses" => %{
+          "200" => %{
+            "description" => "Folio task transitioned",
+            "content" => %{
+              "application/json" => %{
+                "schema" => %{"$ref" => "#/components/schemas/FolioTaskCreateResponse"}
+              }
+            }
+          },
+          "400" => %{"description" => "Invalid payload or unsupported transition"},
+          "401" => %{"description" => "Authentication required"},
+          "403" => %{"description" => "Workspace access is forbidden"},
+          "404" => %{"description" => "Workspace or task not found"}
+        }
+      }
+    }
+  end
+
   defp folio_activity_path_item do
     %{
       "get" => %{
@@ -406,6 +441,18 @@ defmodule EBossWeb.ApiSpec do
       [
         %{
           "name" => "project_id",
+          "in" => "path",
+          "required" => true,
+          "schema" => %{"type" => "string"}
+        }
+      ]
+  end
+
+  defp workspace_task_path_parameters do
+    workspace_path_parameters() ++
+      [
+        %{
+          "name" => "task_id",
           "in" => "path",
           "required" => true,
           "schema" => %{"type" => "string"}
@@ -555,6 +602,26 @@ defmodule EBossWeb.ApiSpec do
             }
           },
           "required" => ["title"]
+        },
+        "FolioTaskTransitionRequest" => %{
+          "type" => "object",
+          "properties" => %{
+            "status" => %{
+              "type" => "string",
+              "enum" => [
+                "inbox",
+                "next_action",
+                "waiting_for",
+                "scheduled",
+                "someday_maybe",
+                "done",
+                "canceled",
+                "archived"
+              ],
+              "description" => "Target task status transition"
+            }
+          },
+          "required" => ["status"]
         },
         "FolioProjectsResponse" => %{
           "type" => "object",

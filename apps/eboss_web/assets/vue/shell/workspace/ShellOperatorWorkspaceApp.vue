@@ -23,6 +23,7 @@ import SettingsPage from "./pages/SettingsPage.vue"
 import {
   createFolioTask,
   createFolioProject,
+  transitionFolioTask,
   updateFolioProject,
   useFolioActivity,
   useFolioProjects,
@@ -33,6 +34,7 @@ import type {
   FolioActivityEvent,
   FolioProjectSummary,
   FolioProjectUpdatePayload,
+  FolioTaskStatus,
   FolioTaskSummary,
 } from "./folio/types"
 import type {
@@ -76,6 +78,7 @@ const selectedProjectFilter = ref<ProjectFilter>("all")
 const creatingProject = ref(false)
 const updatingProject = ref(false)
 const creatingTask = ref(false)
+const transitioningTask = ref(false)
 const projectFilters = ["all", "active", "on_hold", "completed", "canceled", "archived"] satisfies ProjectFilter[]
 const isWorkspaceRoute = computed(() => props.currentPage.type === "workspace")
 const isAppRoute = computed(() => props.currentPage.type === "app")
@@ -240,6 +243,31 @@ const createWorkspaceTask = async (title: string, projectId: string | null): Pro
     await folioTasksQuery.refresh()
   } finally {
     creatingTask.value = false
+  }
+}
+
+const transitionWorkspaceTask = async (taskId: string, status: FolioTaskStatus): Promise<void> => {
+  const scope = folioWorkspaceScope.value
+
+  if (!scope) {
+    throw new Error("Workspace scope is unavailable.")
+  }
+
+  if (!props.currentScope.capabilities.manageFolio) {
+    throw new Error("You do not have permission to transition tasks in this workspace.")
+  }
+
+  if (transitioningTask.value) return
+
+  transitioningTask.value = true
+
+  try {
+    const response = await transitionFolioTask(scope, taskId, { status })
+
+    selectedTask.value = mapFolioTask(response.task)
+    await folioTasksQuery.refresh()
+  } finally {
+    transitioningTask.value = false
   }
 }
 
@@ -483,9 +511,12 @@ watch(currentWorkspaceKey, () => {
               :error="folioTasksQuery.error.value"
               :can-create-task="currentScope.capabilities.manageFolio"
               :creating-task="creatingTask"
+              :can-transition-task="currentScope.capabilities.manageFolio"
+              :transitioning-task="transitioningTask"
               :project-options="taskProjectOptions"
               :refresh="folioTasksQuery.refresh"
               :create-task="createWorkspaceTask"
+              :transition-task="transitionWorkspaceTask"
               @update:selected-task="selectedTask = $event"
             />
             <ActivityPage

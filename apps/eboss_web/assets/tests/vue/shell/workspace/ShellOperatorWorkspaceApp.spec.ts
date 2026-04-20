@@ -927,6 +927,235 @@ describe("ShellOperatorWorkspaceApp", () => {
     expect(tasksView.find('[data-testid="tasks-create-form"]').exists()).toBe(false)
   })
 
+  it("transitions a folio task from the tasks inspector and refreshes the list", async () => {
+    const fetchMock = vi
+      .spyOn(global, "fetch")
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          scope: {},
+          projects: [],
+        }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          scope: {},
+          tasks: [
+            {
+              id: "task-1",
+              title: "Review rollout notes",
+              status: "inbox",
+              project_id: null,
+              priority_position: null,
+              due_at: null,
+              review_at: null,
+            },
+          ],
+        }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          scope: {},
+          task: {
+            id: "task-1",
+            title: "Review rollout notes",
+            status: "done",
+            project_id: null,
+            priority_position: null,
+            due_at: null,
+            review_at: null,
+          },
+        }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          scope: {},
+          tasks: [
+            {
+              id: "task-1",
+              title: "Review rollout notes",
+              status: "done",
+              project_id: null,
+              priority_position: null,
+              due_at: null,
+              review_at: null,
+            },
+          ],
+        }),
+      } as Response)
+
+    const wrapper = mountComponent(ShellOperatorWorkspaceApp, {
+      props: {
+        currentUser: {
+          username: "operator",
+          email: "operator@example.com",
+        },
+        currentScope: scope({
+          apps: {
+            folio: {
+              key: "folio",
+              label: "Folio",
+              defaultPath: "/primary-owner/primary-workspace/apps/folio",
+              enabled: true,
+              capabilities: {
+                read: true,
+                manage: true,
+              },
+            },
+          },
+        }),
+        currentPage: appRoute("folio", "tasks"),
+        currentPath: "/primary-owner/primary-workspace/apps/folio/tasks",
+        signOutPath: "/sign-out",
+        csrfToken: "csrf-token",
+      },
+      global: {
+        stubs: {
+          ThemeToggleButton: {
+            template: "<button data-testid=\"theme-toggle-stub\" />",
+          },
+        },
+      },
+    })
+
+    await nextTick()
+    await nextMacrotask()
+    await nextTick()
+    await nextMacrotask()
+
+    const tasksView = wrapper.get('[data-testid="workspace-page-tasks"]')
+    await tasksView.get('[data-testid="task-row-task-1"]').trigger("click")
+    await nextTick()
+
+    await tasksView.get('[data-testid="tasks-transition-status-select"]').setValue("done")
+    await tasksView.get('[data-testid="tasks-transition-submit"]').trigger("click")
+
+    await nextTick()
+    await nextMacrotask()
+    await nextTick()
+    await nextMacrotask()
+
+    expect(fetchMock).toHaveBeenCalledTimes(4)
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      3,
+      "/api/v1/primary-owner/workspaces/primary-workspace/apps/folio/tasks/task-1",
+      expect.objectContaining({
+        method: "PATCH",
+        body: JSON.stringify({ status: "done" }),
+        headers: expect.objectContaining({
+          "Content-Type": "application/json",
+        }),
+      }),
+    )
+
+    expect(tasksView.text()).toContain("Done")
+    expect(tasksView.find('[data-testid="tasks-transition-error"]').exists()).toBe(false)
+  })
+
+  it("shows transition validation errors from the folio task endpoint", async () => {
+    const fetchMock = vi
+      .spyOn(global, "fetch")
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          scope: {},
+          projects: [],
+        }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          scope: {},
+          tasks: [
+            {
+              id: "task-1",
+              title: "Waiting dependency",
+              status: "inbox",
+              project_id: null,
+              priority_position: null,
+              due_at: null,
+              review_at: null,
+            },
+          ],
+        }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 400,
+        statusText: "Bad Request",
+        json: async () => ({
+          error: {
+            code: "invalid_task_transition",
+            message: "waiting_for tasks require notes or an active delegation",
+          },
+        }),
+      } as Response)
+
+    const wrapper = mountComponent(ShellOperatorWorkspaceApp, {
+      props: {
+        currentUser: {
+          username: "operator",
+          email: "operator@example.com",
+        },
+        currentScope: scope({
+          apps: {
+            folio: {
+              key: "folio",
+              label: "Folio",
+              defaultPath: "/primary-owner/primary-workspace/apps/folio",
+              enabled: true,
+              capabilities: {
+                read: true,
+                manage: true,
+              },
+            },
+          },
+        }),
+        currentPage: appRoute("folio", "tasks"),
+        currentPath: "/primary-owner/primary-workspace/apps/folio/tasks",
+        signOutPath: "/sign-out",
+        csrfToken: "csrf-token",
+      },
+      global: {
+        stubs: {
+          ThemeToggleButton: {
+            template: "<button data-testid=\"theme-toggle-stub\" />",
+          },
+        },
+      },
+    })
+
+    await nextTick()
+    await nextMacrotask()
+    await nextTick()
+    await nextMacrotask()
+
+    const tasksView = wrapper.get('[data-testid="workspace-page-tasks"]')
+    await tasksView.get('[data-testid="task-row-task-1"]').trigger("click")
+    await nextTick()
+
+    await tasksView.get('[data-testid="tasks-transition-status-select"]').setValue("waiting_for")
+    await tasksView.get('[data-testid="tasks-transition-submit"]').trigger("click")
+
+    await nextTick()
+    await nextMacrotask()
+    await nextTick()
+
+    expect(fetchMock).toHaveBeenCalledTimes(3)
+    expect(tasksView.get('[data-testid="tasks-transition-error"]').text()).toContain(
+      "waiting_for tasks require notes or an active delegation",
+    )
+  })
+
   it("hides task creation controls when folio manage access is not granted", async () => {
     vi.spyOn(global, "fetch").mockResolvedValue({
       ok: true,

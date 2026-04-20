@@ -123,6 +123,15 @@ export interface FolioTaskCreateResponse {
   task: FolioTaskSummary
 }
 
+export interface FolioTaskTransitionPayload {
+  status: FolioTaskStatus
+}
+
+export interface FolioTaskTransitionResponse {
+  scope: FolioScope
+  task: FolioTaskSummary
+}
+
 export interface FolioActivityActor {
   type: string
   id: string | null

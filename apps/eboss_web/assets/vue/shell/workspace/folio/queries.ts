@@ -4,6 +4,7 @@ import {
   folioBootstrapPath,
   folioProjectPath,
   folioProjectsPath,
+  folioTaskPath,
   folioTasksPath,
 } from "./paths"
 import type {
@@ -16,6 +17,8 @@ import type {
   FolioProjectsResponse,
   FolioTaskCreatePayload,
   FolioTaskCreateResponse,
+  FolioTaskTransitionPayload,
+  FolioTaskTransitionResponse,
   FolioTasksResponse,
   FolioWorkspaceRef,
 } from "./types"
@@ -48,6 +51,17 @@ export const createFolioTask = (
 ): Promise<FolioTaskCreateResponse> =>
   requestJson<FolioTaskCreateResponse>(folioTasksPath(scope), {
     method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  })
+
+export const transitionFolioTask = (
+  scope: FolioWorkspaceRef,
+  taskId: string,
+  payload: FolioTaskTransitionPayload,
+): Promise<FolioTaskTransitionResponse> =>
+  requestJson<FolioTaskTransitionResponse>(folioTaskPath(scope, taskId), {
+    method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   })
