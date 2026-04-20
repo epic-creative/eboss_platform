@@ -133,7 +133,7 @@ defmodule EBossWeb.JsonApiTest do
              "application/json",
              "schema",
              "$ref"
-           ]) == "#/components/schemas/FolioTaskTransitionRequest"
+           ]) == "#/components/schemas/FolioTaskMutationRequest"
 
     assert get_in(spec, [
              "paths",
@@ -149,6 +149,21 @@ defmodule EBossWeb.JsonApiTest do
 
     assert get_in(spec, ["components", "schemas", "FolioTaskTransitionRequest", "required"]) == [
              "status"
+           ]
+
+    assert get_in(spec, ["components", "schemas", "FolioTaskDelegationRequest", "required"]) == [
+             "intent",
+             "delegated_summary"
+           ]
+
+    assert get_in(spec, [
+             "components",
+             "schemas",
+             "FolioTaskMutationRequest",
+             "oneOf"
+           ]) == [
+             %{"$ref" => "#/components/schemas/FolioTaskTransitionRequest"},
+             %{"$ref" => "#/components/schemas/FolioTaskDelegationRequest"}
            ]
 
     assert get_in(spec, ["components", "schemas", "FolioActivityResponse", "required"]) == [
@@ -1161,6 +1176,115 @@ defmodule EBossWeb.JsonApiTest do
                event["subject"]["type"] == "task" and
                event["subject"]["id"] == task.id and
                get_in(event, ["changes", "status", "after"]) == "done"
+           end)
+  end
+
+  test "authenticated clients can delegate workspace tasks through the folio task endpoint", %{
+    conn: conn
+  } do
+    owner = register_user()
+    api_key = create_api_key(owner)
+
+    workspace =
+      Workspaces.create_workspace!(
+        %{
+          name: "Folio Task Delegation Workspace",
+          owner_type: :user,
+          owner_id: owner.id
+        },
+        actor: owner
+      )
+
+    task =
+      EBossFolio.create_task!(%{workspace_id: workspace.id, title: "Follow up with vendor"},
+        actor: owner
+      )
+
+    delegate_conn =
+      conn
+      |> put_req_header("authorization", "Bearer #{api_key}")
+      |> put_req_header("accept", "application/json")
+      |> put_req_header("content-type", "application/json")
+      |> patch(
+        "/api/v1/#{owner.owner_slug}/workspaces/#{workspace.slug}/apps/folio/tasks/#{task.id}",
+        Jason.encode!(%{
+          intent: "delegate",
+          contact_name: "Avery Partner",
+          delegated_summary: "Send the revised estimate package",
+          quality_expectations: "Include licensing constraints in the response",
+          follow_up_at: "2026-05-01",
+          deadline_expectations_at: "2026-05-07"
+        })
+      )
+
+    delegate_payload = json_response(delegate_conn, 200)
+
+    assert delegate_payload["scope"]["app_key"] == "folio"
+    assert delegate_payload["task"]["id"] == task.id
+    assert delegate_payload["task"]["status"] == "waiting_for"
+    assert delegate_payload["task"]["active_delegation"]["status"] == "active"
+
+    assert delegate_payload["task"]["active_delegation"]["delegated_summary"] ==
+             "Send the revised estimate package"
+
+    assert delegate_payload["task"]["active_delegation"]["contact"]["name"] == "Avery Partner"
+
+    assert String.starts_with?(
+             delegate_payload["task"]["active_delegation"]["follow_up_at"],
+             "2026-05-01"
+           )
+
+    assert String.starts_with?(
+             delegate_payload["task"]["active_delegation"]["deadline_expectations_at"],
+             "2026-05-07"
+           )
+
+    assert {:ok, delegated_task} =
+             EBossFolio.get_task_in_workspace(task.id, workspace.id,
+               actor: owner,
+               load: [delegations: :contact]
+             )
+
+    assert delegated_task.status == :waiting_for
+
+    assert Enum.any?(delegated_task.delegations, fn delegation ->
+             delegation.status == :active and
+               delegation.delegated_summary == "Send the revised estimate package" and
+               delegation.contact.name == "Avery Partner"
+           end)
+
+    tasks_conn =
+      build_conn()
+      |> put_req_header("authorization", "Bearer #{api_key}")
+      |> put_req_header("accept", "application/json")
+      |> get("/api/v1/#{owner.owner_slug}/workspaces/#{workspace.slug}/apps/folio/tasks")
+
+    tasks_payload = json_response(tasks_conn, 200)
+
+    assert Enum.any?(tasks_payload["tasks"], fn listed_task ->
+             listed_task["id"] == task.id and
+               listed_task["status"] == "waiting_for" and
+               listed_task["active_delegation"]["status"] == "active" and
+               get_in(listed_task, ["active_delegation", "contact", "name"]) == "Avery Partner"
+           end)
+
+    activity_conn =
+      build_conn()
+      |> put_req_header("authorization", "Bearer #{api_key}")
+      |> put_req_header("accept", "application/json")
+      |> get("/api/v1/#{owner.owner_slug}/workspaces/#{workspace.slug}/apps/folio/activity")
+
+    activity_payload = json_response(activity_conn, 200)
+
+    assert Enum.any?(activity_payload["events"], fn event ->
+             event["action"] == "create" and event["subject"]["type"] == "delegation"
+           end)
+
+    assert Enum.any?(activity_payload["events"], fn event ->
+             event["action"] == "transition" and
+               event["subject"]["type"] == "task" and
+               event["subject"]["id"] == task.id and
+               get_in(event, ["changes", "status", "after"]) == "waiting_for"
            end)
   end
 

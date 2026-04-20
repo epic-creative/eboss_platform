@@ -120,6 +120,7 @@ export interface FolioTaskSummary {
   priority_position: number | null
   due_at: string | null
   review_at: string | null
+  active_delegation: FolioTaskActiveDelegationSummary | null
 }
 
 export interface FolioTaskCreatePayload {
@@ -134,6 +135,33 @@ export interface FolioTaskCreateResponse {
 
 export interface FolioTaskTransitionPayload {
   status: FolioTaskStatus
+}
+
+export interface FolioTaskDelegationContactSummary {
+  id: string
+  name: string | null
+  email: string | null
+}
+
+export interface FolioTaskActiveDelegationSummary {
+  id: string
+  status: "active" | "completed" | "canceled"
+  delegated_at: string
+  delegated_summary: string
+  quality_expectations: string | null
+  deadline_expectations_at: string | null
+  follow_up_at: string | null
+  contact: FolioTaskDelegationContactSummary
+}
+
+export interface FolioTaskDelegatePayload {
+  intent: "delegate"
+  contact_id?: string
+  contact_name?: string
+  delegated_summary: string
+  quality_expectations?: string | null
+  deadline_expectations_at?: string | null
+  follow_up_at?: string | null
 }
 
 export interface FolioTaskTransitionResponse {

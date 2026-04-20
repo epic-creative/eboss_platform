@@ -161,6 +161,24 @@ export interface Task {
   priorityPosition: number | null
   dueAt: string | null
   reviewAt: string | null
+  activeDelegation: TaskActiveDelegation | null
+}
+
+export interface TaskDelegationContact {
+  id: string
+  name: string | null
+  email: string | null
+}
+
+export interface TaskActiveDelegation {
+  id: string
+  status: "active" | "completed" | "canceled"
+  delegatedAt: string
+  delegatedSummary: string
+  qualityExpectations: string | null
+  deadlineExpectationsAt: string | null
+  followUpAt: string | null
+  contact: TaskDelegationContact
 }
 
 export interface OverviewEvent {

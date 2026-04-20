@@ -8,6 +8,7 @@ defmodule EBossFolio do
   require Ash.Query
 
   alias EBossFolio.ActivityFeedProvider
+  alias EBossFolio.Contact
   alias EBossFolio.Project
   alias EBossFolio.Task
 
@@ -143,6 +144,25 @@ defmodule EBossFolio do
     end
   end
 
+  def get_contact_in_workspace(contact_id, workspace_id, opts \\ [])
+      when is_binary(contact_id) and is_binary(workspace_id) do
+    case Contact
+         |> Ash.Query.for_read(:read)
+         |> Ash.Query.filter(expr(id == ^contact_id and workspace_id == ^workspace_id))
+         |> Ash.read_one(opts) do
+      {:ok, nil} -> {:error, :not_found}
+      result -> result
+    end
+  end
+
+  def get_contact_in_workspace!(contact_id, workspace_id, opts \\ [])
+      when is_binary(contact_id) and is_binary(workspace_id) do
+    case get_contact_in_workspace(contact_id, workspace_id, opts) do
+      {:ok, contact} -> contact
+      {:error, reason} -> raise reason
+    end
+  end
+
   def list_activity_feed(workspace_id, opts \\ []) when is_binary(workspace_id) do
     with {:ok, revision_events} <- list_revision_events(%{workspace_id: workspace_id}, opts) do
       {:ok, ActivityFeedProvider.map_events(revision_events)}
@@ -167,6 +187,7 @@ defmodule EBossFolio do
     Task
     |> Ash.Query.for_read(:read)
     |> Ash.Query.filter(expr(workspace_id == ^workspace_id))
+    |> Ash.Query.load(delegations: :contact)
     |> Ash.Query.sort(inserted_at: :asc)
   end
 

@@ -23,6 +23,7 @@ import SettingsPage from "./pages/SettingsPage.vue"
 import {
   createFolioTask,
   createFolioProject,
+  delegateFolioTask,
   transitionFolioProject,
   transitionFolioTask,
   updateFolioProject,
@@ -35,6 +36,7 @@ import type {
   FolioActivityEvent,
   FolioProjectStatus,
   FolioProjectSummary,
+  FolioTaskDelegatePayload,
   FolioProjectUpdatePayload,
   FolioTaskStatus,
   FolioTaskSummary,
@@ -82,6 +84,7 @@ const updatingProject = ref(false)
 const transitioningProject = ref(false)
 const creatingTask = ref(false)
 const transitioningTask = ref(false)
+const delegatingTask = ref(false)
 const projectFilters = ["all", "active", "on_hold", "completed", "canceled", "archived"] satisfies ProjectFilter[]
 const isWorkspaceRoute = computed(() => props.currentPage.type === "workspace")
 const isAppRoute = computed(() => props.currentPage.type === "app")
@@ -239,6 +242,28 @@ const folioTasksQuery = useFolioTasks(folioWorkspaceScope, {
   autoFetch: true,
   enabled: isFolioTasksSurface,
 })
+
+const mapFolioTaskDelegation = (
+  delegation: FolioTaskSummary["active_delegation"],
+): Task["activeDelegation"] => {
+  if (!delegation) return null
+
+  return {
+    id: delegation.id,
+    status: delegation.status,
+    delegatedAt: delegation.delegated_at,
+    delegatedSummary: delegation.delegated_summary,
+    qualityExpectations: delegation.quality_expectations,
+    deadlineExpectationsAt: delegation.deadline_expectations_at,
+    followUpAt: delegation.follow_up_at,
+    contact: {
+      id: delegation.contact.id,
+      name: delegation.contact.name,
+      email: delegation.contact.email,
+    },
+  }
+}
+
 const mapFolioTask = (task: FolioTaskSummary): Task => ({
   id: task.id,
   title: task.title,
@@ -247,6 +272,7 @@ const mapFolioTask = (task: FolioTaskSummary): Task => ({
   priorityPosition: task.priority_position,
   dueAt: task.due_at,
   reviewAt: task.review_at,
+  activeDelegation: mapFolioTaskDelegation(task.active_delegation),
 })
 const folioTasks = computed(() => folioTasksQuery.tasks.value.map(mapFolioTask))
 const createWorkspaceTask = async (title: string, projectId: string | null): Promise<void> => {
@@ -299,6 +325,34 @@ const transitionWorkspaceTask = async (taskId: string, status: FolioTaskStatus):
     await folioTasksQuery.refresh()
   } finally {
     transitioningTask.value = false
+  }
+}
+
+const delegateWorkspaceTask = async (
+  taskId: string,
+  payload: FolioTaskDelegatePayload,
+): Promise<void> => {
+  const scope = folioWorkspaceScope.value
+
+  if (!scope) {
+    throw new Error("Workspace scope is unavailable.")
+  }
+
+  if (!props.currentScope.capabilities.manageFolio) {
+    throw new Error("You do not have permission to delegate tasks in this workspace.")
+  }
+
+  if (delegatingTask.value) return
+
+  delegatingTask.value = true
+
+  try {
+    const response = await delegateFolioTask(scope, taskId, payload)
+
+    selectedTask.value = mapFolioTask(response.task)
+    await folioTasksQuery.refresh()
+  } finally {
+    delegatingTask.value = false
   }
 }
 
@@ -547,10 +601,13 @@ watch(currentWorkspaceKey, () => {
               :creating-task="creatingTask"
               :can-transition-task="currentScope.capabilities.manageFolio"
               :transitioning-task="transitioningTask"
+              :can-delegate-task="currentScope.capabilities.manageFolio"
+              :delegating-task="delegatingTask"
               :project-options="taskProjectOptions"
               :refresh="folioTasksQuery.refresh"
               :create-task="createWorkspaceTask"
               :transition-task="transitionWorkspaceTask"
+              :delegate-task="delegateWorkspaceTask"
               @update:selected-task="selectedTask = $event"
             />
             <ActivityPage

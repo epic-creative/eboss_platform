@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue"
-import { AlertTriangle, CheckCircle2, LoaderCircle, Plus, Search, Star } from "lucide-vue-next"
+import { AlertTriangle, CheckCircle2, LoaderCircle, Plus, Search, Star, UserRound } from "lucide-vue-next"
 
 import InspectorField from "../InspectorField.vue"
 import InspectorPane from "../InspectorPane.vue"
@@ -26,10 +26,24 @@ const props = defineProps<{
   creatingTask: boolean
   canTransitionTask: boolean
   transitioningTask: boolean
+  canDelegateTask: boolean
+  delegatingTask: boolean
   projectOptions: TaskProjectOption[]
   refresh: () => Promise<void>
   createTask: (title: string, projectId: string | null) => Promise<void>
   transitionTask: (taskId: string, status: Task["status"]) => Promise<void>
+  delegateTask: (
+    taskId: string,
+    payload: {
+      intent: "delegate"
+      contact_name?: string
+      contact_id?: string
+      delegated_summary: string
+      quality_expectations?: string | null
+      deadline_expectations_at?: string | null
+      follow_up_at?: string | null
+    },
+  ) => Promise<void>
 }>()
 
 const emit = defineEmits<{
@@ -57,6 +71,17 @@ const createTaskProjectId = ref("")
 const createTaskError = ref<string | null>(null)
 const transitionStatus = ref<Task["status"]>("inbox")
 const transitionError = ref<string | null>(null)
+const delegationContactName = ref("")
+const delegatedSummary = ref("")
+const delegationQualityExpectations = ref("")
+const delegationFollowUpAt = ref("")
+const delegationDeadlineAt = ref("")
+const delegationError = ref<string | null>(null)
+
+const activeDelegation = computed(() => props.selectedTask?.activeDelegation ?? null)
+const hasActiveDelegation = computed(
+  () => activeDelegation.value !== null && activeDelegation.value.status === "active",
+)
 
 const taskQuery = computed(() => {
   const search = searchQuery.value.trim().toLowerCase()
@@ -152,6 +177,12 @@ watch(
   () => {
     transitionError.value = null
     transitionStatus.value = props.selectedTask?.status ?? "inbox"
+    delegationError.value = null
+    delegationContactName.value = activeDelegation.value?.contact.name ?? ""
+    delegatedSummary.value = activeDelegation.value?.delegatedSummary ?? ""
+    delegationQualityExpectations.value = activeDelegation.value?.qualityExpectations ?? ""
+    delegationFollowUpAt.value = toDateInputValue(activeDelegation.value?.followUpAt ?? null)
+    delegationDeadlineAt.value = toDateInputValue(activeDelegation.value?.deadlineExpectationsAt ?? null)
   },
   { immediate: true },
 )
@@ -165,6 +196,66 @@ const submitTransitionTask = async () => {
     await props.transitionTask(props.selectedTask.id, transitionStatus.value)
   } catch (cause) {
     transitionError.value = cause instanceof Error ? cause.message : "Task transition failed."
+  }
+}
+
+function toDateInputValue(value: string | null): string {
+  if (!value) return ""
+
+  const prefix = value.match(/^(\d{4}-\d{2}-\d{2})/)
+  if (prefix) return prefix[1]
+
+  const parsed = new Date(value)
+  return Number.isNaN(parsed.valueOf()) ? "" : parsed.toISOString().slice(0, 10)
+}
+
+const optionalText = (value: string): string | null => {
+  const trimmed = value.trim()
+  return trimmed === "" ? null : trimmed
+}
+
+const optionalDate = (value: string): string | null => {
+  const trimmed = value.trim()
+  return trimmed === "" ? null : trimmed
+}
+
+const delegationContactLabel = (task: Task): string | null =>
+  task.activeDelegation?.contact.name || task.activeDelegation?.contact.id || null
+
+const submitDelegateTask = async () => {
+  if (!props.selectedTask || !props.canDelegateTask || props.delegatingTask) return
+
+  if (hasActiveDelegation.value) {
+    delegationError.value = "This task already has an active delegation."
+    return
+  }
+
+  const contactName = delegationContactName.value.trim()
+  const summary = delegatedSummary.value.trim()
+
+  if (!contactName) {
+    delegationError.value = "Contact name is required."
+    return
+  }
+
+  if (!summary) {
+    delegationError.value = "Delegated summary is required."
+    return
+  }
+
+  delegationError.value = null
+
+  try {
+    await props.delegateTask(props.selectedTask.id, {
+      intent: "delegate",
+      contact_name: contactName,
+      delegated_summary: summary,
+      quality_expectations: optionalText(delegationQualityExpectations.value),
+      follow_up_at: optionalDate(delegationFollowUpAt.value),
+      deadline_expectations_at: optionalDate(delegationDeadlineAt.value),
+    })
+  } catch (cause) {
+    delegationError.value = cause instanceof Error ? cause.message : "Task delegation failed."
   }
 }
 </script>
@@ -370,6 +461,12 @@ const submitTransitionTask = async () => {
                 <span class="so-font-mono hidden text-[11px] text-[hsl(var(--so-muted-foreground))] sm:inline">
                   {{ task.id }}
                 </span>
+                <span
+                  v-if="task.activeDelegation"
+                  class="so-font-mono hidden rounded border border-[hsl(var(--so-warning))/0.4] bg-[hsl(var(--so-warning))/0.1] px-1.5 py-0.5 text-[10px] text-[hsl(var(--so-warning))] lg:inline"
+                >
+                  Waiting on {{ delegationContactLabel(task) || "Contact" }}
+                </span>
               </div>
             </div>
 
@@ -466,6 +563,155 @@ const submitTransitionTask = async () => {
                 data-testid="tasks-transition-error"
               >
                 <p class="text-xs text-[hsl(var(--so-destructive))]">{{ transitionError }}</p>
+              </div>
+            </div>
+          </InspectorSection>
+
+          <InspectorSection title="Delegation" with-divider>
+            <div v-if="activeDelegation" class="space-y-2">
+              <InspectorField
+                label="Contact"
+                :value="activeDelegation.contact.name || activeDelegation.contact.id"
+              />
+              <InspectorField label="Delegated work" :value="activeDelegation.delegatedSummary" />
+              <InspectorField
+                label="Follow up"
+                :value="formatFolioDate(activeDelegation.followUpAt)"
+                mono
+              />
+              <InspectorField
+                label="Deadline"
+                :value="formatFolioDate(activeDelegation.deadlineExpectationsAt)"
+                mono
+              />
+            </div>
+
+            <div v-if="canDelegateTask" class="space-y-2.5">
+              <p
+                v-if="hasActiveDelegation"
+                class="text-xs text-[hsl(var(--so-muted-foreground))]"
+              >
+                Complete or cancel the active delegation before assigning this task again.
+              </p>
+
+              <template v-else>
+                <div class="space-y-1">
+                  <label
+                    for="folio-task-delegate-contact"
+                    class="so-font-mono text-[11px] uppercase tracking-[0.06em] text-[hsl(var(--so-muted-foreground))]"
+                  >
+                    Contact name
+                  </label>
+                  <input
+                    id="folio-task-delegate-contact"
+                    v-model="delegationContactName"
+                    class="so-input-field h-8"
+                    type="text"
+                    data-testid="tasks-delegate-contact-input"
+                    autocomplete="off"
+                    placeholder="Who owns the handoff?"
+                    :disabled="delegatingTask"
+                    @input="delegationError = null"
+                  />
+                </div>
+
+                <div class="space-y-1">
+                  <label
+                    for="folio-task-delegate-summary"
+                    class="so-font-mono text-[11px] uppercase tracking-[0.06em] text-[hsl(var(--so-muted-foreground))]"
+                  >
+                    Delegated summary
+                  </label>
+                  <input
+                    id="folio-task-delegate-summary"
+                    v-model="delegatedSummary"
+                    class="so-input-field h-8"
+                    type="text"
+                    data-testid="tasks-delegate-summary-input"
+                    autocomplete="off"
+                    placeholder="What was delegated?"
+                    :disabled="delegatingTask"
+                    @input="delegationError = null"
+                  />
+                </div>
+
+                <div class="space-y-1">
+                  <label
+                    for="folio-task-delegate-quality"
+                    class="so-font-mono text-[11px] uppercase tracking-[0.06em] text-[hsl(var(--so-muted-foreground))]"
+                  >
+                    Quality expectations
+                  </label>
+                  <input
+                    id="folio-task-delegate-quality"
+                    v-model="delegationQualityExpectations"
+                    class="so-input-field h-8"
+                    type="text"
+                    data-testid="tasks-delegate-quality-input"
+                    autocomplete="off"
+                    placeholder="How should success look?"
+                    :disabled="delegatingTask"
+                    @input="delegationError = null"
+                  />
+                </div>
+
+                <div class="grid gap-2 sm:grid-cols-2">
+                  <div class="space-y-1">
+                    <label
+                      for="folio-task-delegate-follow-up-at"
+                      class="so-font-mono text-[11px] uppercase tracking-[0.06em] text-[hsl(var(--so-muted-foreground))]"
+                    >
+                      Follow up date
+                    </label>
+                    <input
+                      id="folio-task-delegate-follow-up-at"
+                      v-model="delegationFollowUpAt"
+                      class="so-input-field h-8"
+                      type="date"
+                      data-testid="tasks-delegate-follow-up-input"
+                      :disabled="delegatingTask"
+                      @input="delegationError = null"
+                    />
+                  </div>
+
+                  <div class="space-y-1">
+                    <label
+                      for="folio-task-delegate-deadline-at"
+                      class="so-font-mono text-[11px] uppercase tracking-[0.06em] text-[hsl(var(--so-muted-foreground))]"
+                    >
+                      Deadline date
+                    </label>
+                    <input
+                      id="folio-task-delegate-deadline-at"
+                      v-model="delegationDeadlineAt"
+                      class="so-input-field h-8"
+                      type="date"
+                      data-testid="tasks-delegate-deadline-input"
+                      :disabled="delegatingTask"
+                      @input="delegationError = null"
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  class="so-button-primary h-8"
+                  data-testid="tasks-delegate-submit"
+                  :disabled="delegatingTask"
+                  @click="submitDelegateTask"
+                >
+                  <LoaderCircle v-if="delegatingTask" class="h-3 w-3 animate-spin" />
+                  <UserRound v-else class="h-3 w-3" />
+                  <span>{{ delegatingTask ? "Delegating..." : "Delegate + wait" }}</span>
+                </button>
+              </template>
+
+              <div
+                v-if="delegationError"
+                class="so-alert-panel so-alert-panel-error"
+                data-testid="tasks-delegate-error"
+              >
+                <p class="text-xs text-[hsl(var(--so-destructive))]">{{ delegationError }}</p>
               </div>
             </div>
           </InspectorSection>

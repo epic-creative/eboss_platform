@@ -19,6 +19,7 @@ import type {
   FolioProjectsResponse,
   FolioTaskCreatePayload,
   FolioTaskCreateResponse,
+  FolioTaskDelegatePayload,
   FolioTaskTransitionPayload,
   FolioTaskTransitionResponse,
   FolioTasksResponse,
@@ -61,6 +62,17 @@ export const transitionFolioTask = (
   scope: FolioWorkspaceRef,
   taskId: string,
   payload: FolioTaskTransitionPayload,
+): Promise<FolioTaskTransitionResponse> =>
+  requestJson<FolioTaskTransitionResponse>(folioTaskPath(scope, taskId), {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  })
+
+export const delegateFolioTask = (
+  scope: FolioWorkspaceRef,
+  taskId: string,
+  payload: FolioTaskDelegatePayload,
 ): Promise<FolioTaskTransitionResponse> =>
   requestJson<FolioTaskTransitionResponse>(folioTaskPath(scope, taskId), {
     method: "PATCH",

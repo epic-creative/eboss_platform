@@ -365,15 +365,15 @@ defmodule EBossWeb.ApiSpec do
   defp folio_task_path_item do
     %{
       "patch" => %{
-        "summary" => "Transition workspace-scoped Folio task status",
+        "summary" => "Apply a workspace-scoped Folio task workflow mutation",
         "description" =>
-          "Transitions a Folio task to a supported status using the task workflow action model.",
+          "Transitions a Folio task status or delegates the task using the existing contact/delegation workflow model.",
         "parameters" => workspace_task_path_parameters(),
         "requestBody" => %{
           "required" => true,
           "content" => %{
             "application/json" => %{
-              "schema" => %{"$ref" => "#/components/schemas/FolioTaskTransitionRequest"}
+              "schema" => %{"$ref" => "#/components/schemas/FolioTaskMutationRequest"}
             }
           }
         },
@@ -580,6 +580,37 @@ defmodule EBossWeb.ApiSpec do
             }
           }
         },
+        "FolioTaskDelegationContactSummary" => %{
+          "type" => "object",
+          "properties" => %{
+            "id" => %{"type" => "string"},
+            "name" => %{"type" => "string", "nullable" => true},
+            "email" => %{"type" => "string", "nullable" => true}
+          },
+          "required" => ["id"]
+        },
+        "FolioTaskActiveDelegationSummary" => %{
+          "type" => "object",
+          "properties" => %{
+            "id" => %{"type" => "string"},
+            "status" => %{"type" => "string", "enum" => ["active", "completed", "canceled"]},
+            "delegated_at" => %{"type" => "string", "format" => "date-time"},
+            "delegated_summary" => %{"type" => "string"},
+            "quality_expectations" => %{"type" => "string", "nullable" => true},
+            "deadline_expectations_at" => %{
+              "type" => "string",
+              "format" => "date-time",
+              "nullable" => true
+            },
+            "follow_up_at" => %{
+              "type" => "string",
+              "format" => "date-time",
+              "nullable" => true
+            },
+            "contact" => %{"$ref" => "#/components/schemas/FolioTaskDelegationContactSummary"}
+          },
+          "required" => ["id", "status", "delegated_at", "delegated_summary", "contact"]
+        },
         "FolioTaskSummary" => %{
           "type" => "object",
           "properties" => %{
@@ -589,7 +620,11 @@ defmodule EBossWeb.ApiSpec do
             "project_id" => %{"type" => "string", "nullable" => true},
             "priority_position" => %{"type" => "integer", "nullable" => true},
             "due_at" => %{"type" => "string", "format" => "date-time", "nullable" => true},
-            "review_at" => %{"type" => "string", "format" => "date-time", "nullable" => true}
+            "review_at" => %{"type" => "string", "format" => "date-time", "nullable" => true},
+            "active_delegation" => %{
+              "nullable" => true,
+              "allOf" => [%{"$ref" => "#/components/schemas/FolioTaskActiveDelegationSummary"}]
+            }
           },
           "required" => ["id", "title", "status"]
         },
@@ -612,6 +647,11 @@ defmodule EBossWeb.ApiSpec do
         "FolioTaskTransitionRequest" => %{
           "type" => "object",
           "properties" => %{
+            "intent" => %{
+              "type" => "string",
+              "enum" => ["transition"],
+              "description" => "Optional explicit task workflow intent selector."
+            },
             "status" => %{
               "type" => "string",
               "enum" => [
@@ -628,6 +668,51 @@ defmodule EBossWeb.ApiSpec do
             }
           },
           "required" => ["status"]
+        },
+        "FolioTaskDelegationRequest" => %{
+          "type" => "object",
+          "properties" => %{
+            "intent" => %{
+              "type" => "string",
+              "enum" => ["delegate"],
+              "description" => "Selects delegated-work workflow mutation."
+            },
+            "contact_id" => %{
+              "type" => "string",
+              "description" =>
+                "Existing workspace contact identifier. Provide this or contact_name."
+            },
+            "contact_name" => %{
+              "type" => "string",
+              "description" => "Contact name to create and use for delegation."
+            },
+            "delegated_summary" => %{
+              "type" => "string",
+              "minLength" => 1,
+              "description" => "Summary of delegated work."
+            },
+            "quality_expectations" => %{
+              "type" => "string",
+              "nullable" => true
+            },
+            "deadline_expectations_at" => %{
+              "type" => "string",
+              "format" => "date-time",
+              "nullable" => true
+            },
+            "follow_up_at" => %{
+              "type" => "string",
+              "format" => "date-time",
+              "nullable" => true
+            }
+          },
+          "required" => ["intent", "delegated_summary"]
+        },
+        "FolioTaskMutationRequest" => %{
+          "oneOf" => [
+            %{"$ref" => "#/components/schemas/FolioTaskTransitionRequest"},
+            %{"$ref" => "#/components/schemas/FolioTaskDelegationRequest"}
+          ]
         },
         "FolioProjectsResponse" => %{
           "type" => "object",

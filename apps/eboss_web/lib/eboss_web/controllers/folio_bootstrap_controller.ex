@@ -369,7 +369,10 @@ defmodule EBossWeb.FolioBootstrapController do
 
   defp handle_authorized_tasks_scope(conn, %AppScope{} = scope, current_user) do
     with {:ok, tasks} <-
-           EBossFolio.list_tasks_in_workspace(scope.current_workspace.id, actor: current_user) do
+           EBossFolio.list_tasks_in_workspace(scope.current_workspace.id,
+             actor: current_user,
+             load: [delegations: :contact]
+           ) do
       json(conn, %{
         scope: folio_scope_payload(scope),
         tasks: Enum.map(tasks, &task_summary_payload/1)
@@ -405,12 +408,13 @@ defmodule EBossWeb.FolioBootstrapController do
   end
 
   defp handle_authorized_task_update(conn, %AppScope{} = scope, current_user, task_id) do
-    with {:ok, target_status} <- parse_task_transition_params(conn.body_params),
+    with {:ok, intent} <- parse_task_update_intent(conn.body_params),
          {:ok, task} <-
            EBossFolio.get_task_in_workspace(task_id, scope.current_workspace.id,
-             actor: current_user
+             actor: current_user,
+             load: [delegations: :contact]
            ),
-         {:ok, task} <- transition_task(task, target_status, current_user) do
+         {:ok, task} <- apply_task_update_intent(task, intent, scope, current_user) do
       json(conn, %{
         scope: folio_scope_payload(scope),
         task: task_summary_payload(task)
@@ -433,6 +437,14 @@ defmodule EBossWeb.FolioBootstrapController do
           :bad_request,
           "invalid_task_transition",
           Exception.message(error)
+        )
+
+      {:error, :invalid_task_workflow, message} ->
+        error_json(
+          conn,
+          :bad_request,
+          "invalid_task_transition",
+          message
         )
 
       {:error, _reason} ->
@@ -557,6 +569,45 @@ defmodule EBossWeb.FolioBootstrapController do
     {:error, :invalid_payload}
   end
 
+  defp parse_task_update_intent(payload) when is_map(payload) do
+    case fetch_payload_field(payload, :intent) do
+      :missing ->
+        parse_task_transition_intent(payload)
+
+      {:present, intent} ->
+        parse_task_intent_payload(payload, intent)
+    end
+  end
+
+  defp parse_task_update_intent(_payload), do: {:error, :invalid_payload}
+
+  defp parse_task_intent_payload(payload, intent) when is_binary(intent) do
+    case intent |> String.trim() do
+      "transition" ->
+        parse_task_transition_intent(payload)
+
+      "delegate" ->
+        with {:ok, attrs} <- parse_task_delegation_params(payload) do
+          {:ok, {:delegate, attrs}}
+        end
+
+      _ ->
+        {:error, :invalid_payload}
+    end
+  end
+
+  defp parse_task_intent_payload(payload, intent) when is_atom(intent) do
+    parse_task_intent_payload(payload, to_string(intent))
+  end
+
+  defp parse_task_intent_payload(_payload, _intent), do: {:error, :invalid_payload}
+
+  defp parse_task_transition_intent(payload) do
+    with {:ok, status} <- parse_task_transition_params(payload) do
+      {:ok, {:transition, status}}
+    end
+  end
+
   defp parse_task_transition_params(payload) when is_map(payload) do
     with {:ok, status} <- required_task_transition_status(payload) do
       {:ok, status}
@@ -585,6 +636,26 @@ defmodule EBossWeb.FolioBootstrapController do
     end
   end
 
+  defp optional_task_delegation_text(payload, field) do
+    case fetch_payload_field(payload, field) do
+      :missing ->
+        {:ok, :missing}
+
+      {:present, value} ->
+        normalize_project_text_value(value)
+    end
+  end
+
+  defp optional_task_delegation_datetime(payload, field) do
+    case fetch_payload_field(payload, field) do
+      :missing ->
+        {:ok, :missing}
+
+      {:present, value} ->
+        normalize_project_datetime_value(value)
+    end
+  end
+
   defp required_task_transition_status(payload) do
     case fetch_payload_field(payload, :status) do
       :missing ->
@@ -592,6 +663,52 @@ defmodule EBossWeb.FolioBootstrapController do
 
       {:present, value} ->
         normalize_task_transition_status(value)
+    end
+  end
+
+  defp parse_task_delegation_params(payload) do
+    with {:ok, contact_reference} <- required_task_delegation_contact(payload),
+         {:ok, delegated_summary} <- required_task_delegation_summary(payload),
+         {:ok, quality_expectations} <-
+           optional_task_delegation_text(payload, :quality_expectations),
+         {:ok, deadline_expectations_at} <-
+           optional_task_delegation_datetime(payload, :deadline_expectations_at),
+         {:ok, follow_up_at} <- optional_task_delegation_datetime(payload, :follow_up_at) do
+      attrs =
+        %{}
+        |> Map.put(:contact_reference, contact_reference)
+        |> maybe_put(:delegated_summary, delegated_summary)
+        |> maybe_put(:quality_expectations, quality_expectations)
+        |> maybe_put(:deadline_expectations_at, deadline_expectations_at)
+        |> maybe_put(:follow_up_at, follow_up_at)
+
+      {:ok, attrs}
+    end
+  end
+
+  defp required_task_delegation_contact(payload) do
+    case fetch_payload_field(payload, :contact_id) do
+      {:present, value} ->
+        normalize_task_delegation_contact_id(value)
+
+      :missing ->
+        case fetch_payload_field(payload, :contact_name) do
+          :missing ->
+            {:error, :invalid_payload}
+
+          {:present, value} ->
+            normalize_task_delegation_contact_name(value)
+        end
+    end
+  end
+
+  defp required_task_delegation_summary(payload) do
+    case fetch_payload_field(payload, :delegated_summary) do
+      :missing ->
+        {:error, :invalid_payload}
+
+      {:present, value} ->
+        normalize_required_task_delegation_summary(value)
     end
   end
 
@@ -627,6 +744,60 @@ defmodule EBossWeb.FolioBootstrapController do
   end
 
   defp normalize_task_project_id_value(_value), do: {:error, :invalid_payload}
+
+  defp normalize_task_delegation_contact_id(value) when is_binary(value) do
+    contact_id = String.trim(value)
+
+    if contact_id == "" do
+      {:error, :invalid_payload}
+    else
+      {:ok, {:existing, contact_id}}
+    end
+  end
+
+  defp normalize_task_delegation_contact_id(value) when is_atom(value) do
+    value
+    |> to_string()
+    |> normalize_task_delegation_contact_id()
+  end
+
+  defp normalize_task_delegation_contact_id(_value), do: {:error, :invalid_payload}
+
+  defp normalize_task_delegation_contact_name(value) when is_binary(value) do
+    contact_name = String.trim(value)
+
+    if contact_name == "" do
+      {:error, :invalid_payload}
+    else
+      {:ok, {:new, contact_name}}
+    end
+  end
+
+  defp normalize_task_delegation_contact_name(value) when is_atom(value) do
+    value
+    |> to_string()
+    |> normalize_task_delegation_contact_name()
+  end
+
+  defp normalize_task_delegation_contact_name(_value), do: {:error, :invalid_payload}
+
+  defp normalize_required_task_delegation_summary(value) when is_binary(value) do
+    summary = String.trim(value)
+
+    if summary == "" do
+      {:error, :invalid_payload}
+    else
+      {:ok, {:set, summary}}
+    end
+  end
+
+  defp normalize_required_task_delegation_summary(value) when is_atom(value) do
+    value
+    |> to_string()
+    |> normalize_required_task_delegation_summary()
+  end
+
+  defp normalize_required_task_delegation_summary(_value), do: {:error, :invalid_payload}
 
   defp normalize_task_transition_status(value) when is_binary(value) do
     case value |> String.trim() do
@@ -675,6 +846,73 @@ defmodule EBossWeb.FolioBootstrapController do
     else
       {:error, :invalid_payload}
     end
+  end
+
+  defp apply_task_update_intent(task, {:transition, target_status}, _scope, actor) do
+    with {:ok, task} <- transition_task(task, target_status, actor) do
+      load_task_with_delegations(task, task.workspace_id, actor)
+    end
+  end
+
+  defp apply_task_update_intent(task, {:delegate, attrs}, %AppScope{} = scope, actor) do
+    workspace_id = scope.current_workspace.id
+
+    with :ok <- ensure_task_can_be_marked_waiting_for(task),
+         {:ok, contact} <-
+           resolve_delegation_contact(attrs.contact_reference, workspace_id, actor),
+         {:ok, _delegation} <-
+           create_task_delegation(task, workspace_id, contact.id, attrs, actor),
+         {:ok, task} <- transition_task(task, :waiting_for, actor),
+         {:ok, loaded_task} <- load_task_with_delegations(task, workspace_id, actor) do
+      {:ok, loaded_task}
+    end
+  end
+
+  defp ensure_task_can_be_marked_waiting_for(%EBossFolio.Task{status: status}) do
+    if status in [:inbox, :next_action, :waiting_for, :scheduled, :someday_maybe] do
+      :ok
+    else
+      {:error, :invalid_task_workflow, "cannot delegate task from #{status} status"}
+    end
+  end
+
+  defp resolve_delegation_contact({:existing, contact_id}, workspace_id, actor) do
+    EBossFolio.get_contact_in_workspace(contact_id, workspace_id, actor: actor)
+  end
+
+  defp resolve_delegation_contact({:new, contact_name}, workspace_id, actor) do
+    EBossFolio.create_contact(
+      %{
+        workspace_id: workspace_id,
+        name: contact_name
+      },
+      actor: actor
+    )
+  end
+
+  defp create_task_delegation(task, workspace_id, contact_id, attrs, actor) do
+    delegation_attrs =
+      %{
+        workspace_id: workspace_id,
+        task_id: task.id,
+        contact_id: contact_id
+      }
+      |> maybe_put(:delegated_summary, {:set, attrs.delegated_summary})
+      |> maybe_put_value(:quality_expectations, Map.get(attrs, :quality_expectations, :missing))
+      |> maybe_put_value(
+        :deadline_expectations_at,
+        Map.get(attrs, :deadline_expectations_at, :missing)
+      )
+      |> maybe_put_value(:follow_up_at, Map.get(attrs, :follow_up_at, :missing))
+
+    EBossFolio.delegate_task(delegation_attrs, actor: actor)
+  end
+
+  defp load_task_with_delegations(task, workspace_id, actor) do
+    EBossFolio.get_task_in_workspace(task.id, workspace_id,
+      actor: actor,
+      load: [delegations: :contact]
+    )
   end
 
   defp transition_task(task, :inbox, actor), do: EBossFolio.move_task_to_inbox(task, actor: actor)
@@ -907,6 +1145,8 @@ defmodule EBossWeb.FolioBootstrapController do
 
   defp maybe_put(attrs, _field, :missing), do: attrs
   defp maybe_put(attrs, field, {:set, value}), do: Map.put(attrs, field, value)
+  defp maybe_put_value(attrs, _field, :missing), do: attrs
+  defp maybe_put_value(attrs, field, value), do: Map.put(attrs, field, value)
 
   defp task_summary_payload(%EBossFolio.Task{} = task) do
     %{
@@ -916,7 +1156,48 @@ defmodule EBossWeb.FolioBootstrapController do
       project_id: task.project_id,
       priority_position: task.priority_position,
       due_at: task.due_at,
-      review_at: task.review_at
+      review_at: task.review_at,
+      active_delegation: active_delegation_payload(task)
+    }
+  end
+
+  defp active_delegation_payload(%EBossFolio.Task{delegations: delegations})
+       when is_list(delegations) do
+    case Enum.find(delegations, &(&1.status == :active)) do
+      nil ->
+        nil
+
+      delegation ->
+        %{
+          id: delegation.id,
+          status: delegation.status,
+          delegated_at: delegation.delegated_at,
+          delegated_summary: delegation.delegated_summary,
+          quality_expectations: delegation.quality_expectations,
+          deadline_expectations_at: delegation.deadline_expectations_at,
+          follow_up_at: delegation.follow_up_at,
+          contact: delegation_contact_payload(delegation)
+        }
+    end
+  end
+
+  defp active_delegation_payload(_task), do: nil
+
+  defp delegation_contact_payload(%EBossFolio.Delegation{
+         contact: %EBossFolio.Contact{} = contact
+       }) do
+    %{
+      id: contact.id,
+      name: contact.name,
+      email: contact.email
+    }
+  end
+
+  defp delegation_contact_payload(%EBossFolio.Delegation{contact_id: contact_id}) do
+    %{
+      id: contact_id,
+      name: nil,
+      email: nil
     }
   end
 

@@ -1269,6 +1269,183 @@ describe("ShellOperatorWorkspaceApp", () => {
     expect(tasksView.find('[data-testid="tasks-transition-error"]').exists()).toBe(false)
   })
 
+  it("delegates a folio task from the tasks inspector and refreshes delegated waiting-for state", async () => {
+    const fetchMock = vi
+      .spyOn(global, "fetch")
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          scope: {},
+          projects: [],
+        }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          scope: {},
+          tasks: [
+            {
+              id: "task-1",
+              title: "Collect approval notes",
+              status: "inbox",
+              project_id: null,
+              priority_position: null,
+              due_at: null,
+              review_at: null,
+              active_delegation: null,
+            },
+          ],
+        }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          scope: {},
+          task: {
+            id: "task-1",
+            title: "Collect approval notes",
+            status: "waiting_for",
+            project_id: null,
+            priority_position: null,
+            due_at: null,
+            review_at: null,
+            active_delegation: {
+              id: "delegation-1",
+              status: "active",
+              delegated_at: "2026-04-20T12:00:00Z",
+              delegated_summary: "Send updated approval notes",
+              quality_expectations: "Include legal and billing caveats",
+              follow_up_at: "2026-05-01T00:00:00Z",
+              deadline_expectations_at: "2026-05-07T00:00:00Z",
+              contact: {
+                id: "contact-1",
+                name: "Avery Partner",
+                email: null,
+              },
+            },
+          },
+        }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          scope: {},
+          tasks: [
+            {
+              id: "task-1",
+              title: "Collect approval notes",
+              status: "waiting_for",
+              project_id: null,
+              priority_position: null,
+              due_at: null,
+              review_at: null,
+              active_delegation: {
+                id: "delegation-1",
+                status: "active",
+                delegated_at: "2026-04-20T12:00:00Z",
+                delegated_summary: "Send updated approval notes",
+                quality_expectations: "Include legal and billing caveats",
+                follow_up_at: "2026-05-01T00:00:00Z",
+                deadline_expectations_at: "2026-05-07T00:00:00Z",
+                contact: {
+                  id: "contact-1",
+                  name: "Avery Partner",
+                  email: null,
+                },
+              },
+            },
+          ],
+        }),
+      } as Response)
+
+    const wrapper = mountComponent(ShellOperatorWorkspaceApp, {
+      props: {
+        currentUser: {
+          username: "operator",
+          email: "operator@example.com",
+        },
+        currentScope: scope({
+          apps: {
+            folio: {
+              key: "folio",
+              label: "Folio",
+              defaultPath: "/primary-owner/primary-workspace/apps/folio",
+              enabled: true,
+              capabilities: {
+                read: true,
+                manage: true,
+              },
+            },
+          },
+        }),
+        currentPage: appRoute("folio", "tasks"),
+        currentPath: "/primary-owner/primary-workspace/apps/folio/tasks",
+        signOutPath: "/sign-out",
+        csrfToken: "csrf-token",
+      },
+      global: {
+        stubs: {
+          ThemeToggleButton: {
+            template: "<button data-testid=\"theme-toggle-stub\" />",
+          },
+        },
+      },
+    })
+
+    await nextTick()
+    await nextMacrotask()
+    await nextTick()
+    await nextMacrotask()
+
+    const tasksView = wrapper.get('[data-testid="workspace-page-tasks"]')
+    await tasksView.get('[data-testid="task-row-task-1"]').trigger("click")
+    await nextTick()
+
+    await tasksView.get('[data-testid="tasks-delegate-contact-input"]').setValue("Avery Partner")
+    await tasksView.get('[data-testid="tasks-delegate-summary-input"]').setValue(
+      "Send updated approval notes",
+    )
+    await tasksView.get('[data-testid="tasks-delegate-quality-input"]').setValue(
+      "Include legal and billing caveats",
+    )
+    await tasksView.get('[data-testid="tasks-delegate-follow-up-input"]').setValue("2026-05-01")
+    await tasksView.get('[data-testid="tasks-delegate-deadline-input"]').setValue("2026-05-07")
+    await tasksView.get('[data-testid="tasks-delegate-submit"]').trigger("click")
+
+    await nextTick()
+    await nextMacrotask()
+    await nextTick()
+    await nextMacrotask()
+
+    expect(fetchMock).toHaveBeenCalledTimes(4)
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      3,
+      "/api/v1/primary-owner/workspaces/primary-workspace/apps/folio/tasks/task-1",
+      expect.objectContaining({
+        method: "PATCH",
+        body: JSON.stringify({
+          intent: "delegate",
+          contact_name: "Avery Partner",
+          delegated_summary: "Send updated approval notes",
+          quality_expectations: "Include legal and billing caveats",
+          follow_up_at: "2026-05-01",
+          deadline_expectations_at: "2026-05-07",
+        }),
+        headers: expect.objectContaining({
+          "Content-Type": "application/json",
+        }),
+      }),
+    )
+
+    expect(tasksView.text()).toContain("Waiting on Avery Partner")
+    expect(tasksView.text()).toContain("Send updated approval notes")
+    expect(tasksView.find('[data-testid="tasks-delegate-error"]').exists()).toBe(false)
+  })
+
   it("shows transition validation errors from the folio task endpoint", async () => {
     const fetchMock = vi
       .spyOn(global, "fetch")
