@@ -445,6 +445,165 @@ describe("ShellOperatorWorkspaceApp", () => {
     expect(projectsView.find('[data-testid="projects-create-form"]').exists()).toBe(false)
   })
 
+  it("updates folio project details from the projects inspector and refreshes the list", async () => {
+    const fetchMock = vi
+      .spyOn(global, "fetch")
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          scope: {},
+          projects: [
+            {
+              id: "project-1",
+              title: "Atlas Service",
+              description: "Initial scope",
+              status: "active",
+              priority_position: 1,
+              due_at: "2026-04-01T00:00:00Z",
+              review_at: "2026-04-02T00:00:00Z",
+              notes: "Old notes",
+              metadata: {
+                cadence: "monthly",
+              },
+            },
+          ],
+        }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          scope: {},
+          project: {
+            id: "project-1",
+            title: "Atlas Service Revamp",
+            description: "Refined project scope",
+            status: "active",
+            priority_position: 1,
+            due_at: "2026-05-10T00:00:00Z",
+            review_at: "2026-05-15T00:00:00Z",
+            notes: "Updated notes",
+            metadata: {
+              cadence: "weekly",
+              owner: "ops",
+            },
+          },
+        }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          scope: {},
+          projects: [
+            {
+              id: "project-1",
+              title: "Atlas Service Revamp",
+              description: "Refined project scope",
+              status: "active",
+              priority_position: 1,
+              due_at: "2026-05-10T00:00:00Z",
+              review_at: "2026-05-15T00:00:00Z",
+              notes: "Updated notes",
+              metadata: {
+                cadence: "weekly",
+                owner: "ops",
+              },
+            },
+          ],
+        }),
+      } as Response)
+
+    const wrapper = mountComponent(ShellOperatorWorkspaceApp, {
+      props: {
+        currentUser: {
+          username: "operator",
+          email: "operator@example.com",
+        },
+        currentScope: scope({
+          apps: {
+            folio: {
+              key: "folio",
+              label: "Folio",
+              defaultPath: "/primary-owner/primary-workspace/apps/folio",
+              enabled: true,
+              capabilities: {
+                read: true,
+                manage: true,
+              },
+            },
+          },
+        }),
+        currentPage: appRoute("folio", "projects"),
+        currentPath: "/primary-owner/primary-workspace/apps/folio/projects",
+        signOutPath: "/sign-out",
+        csrfToken: "csrf-token",
+      },
+      global: {
+        stubs: {
+          ThemeToggleButton: {
+            template: "<button data-testid=\"theme-toggle-stub\" />",
+          },
+        },
+      },
+    })
+
+    await nextTick()
+    await nextMacrotask()
+
+    const projectsView = wrapper.get('[data-testid="workspace-page-projects"]')
+    await projectsView.get('[data-testid="project-row-project-1"]').trigger("click")
+    await nextTick()
+
+    await projectsView.get('[data-testid="project-edit-open"]').trigger("click")
+
+    await projectsView.get('[data-testid="project-edit-title-input"]').setValue("Atlas Service Revamp")
+    await projectsView.get('[data-testid="project-edit-description-input"]').setValue("Refined project scope")
+    await projectsView.get('[data-testid="project-edit-due-input"]').setValue("2026-05-10")
+    await projectsView.get('[data-testid="project-edit-review-input"]').setValue("2026-05-15")
+    await projectsView.get('[data-testid="project-edit-notes-input"]').setValue("Updated notes")
+    await projectsView
+      .get('[data-testid="project-edit-metadata-input"]')
+      .setValue('{"cadence":"weekly","owner":"ops"}')
+    await projectsView.get('[data-testid="project-edit-form"]').trigger("submit")
+
+    await nextTick()
+    await nextMacrotask()
+    await nextTick()
+    await nextMacrotask()
+
+    expect(fetchMock).toHaveBeenCalledTimes(3)
+    const patchCall = fetchMock.mock.calls[1]
+
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      "/api/v1/primary-owner/workspaces/primary-workspace/apps/folio/projects/project-1",
+      expect.objectContaining({
+        method: "PATCH",
+        headers: expect.objectContaining({
+          "Content-Type": "application/json",
+        }),
+      }),
+    )
+    expect(JSON.parse(String(patchCall[1]?.body))).toEqual({
+      title: "Atlas Service Revamp",
+      description: "Refined project scope",
+      due_at: "2026-05-10",
+      review_at: "2026-05-15",
+      notes: "Updated notes",
+      metadata: { cadence: "weekly", owner: "ops" },
+    })
+
+    expect(projectsView.text()).toContain("Atlas Service Revamp")
+    expect(projectsView.get('[data-testid="project-description-value"]').text()).toContain(
+      "Refined project scope",
+    )
+    expect(projectsView.get('[data-testid="project-metadata-value"]').text()).toContain(
+      "\"cadence\": \"weekly\"",
+    )
+  })
+
   it("hides project creation controls when folio manage access is not granted", async () => {
     vi.spyOn(global, "fetch").mockResolvedValue({
       ok: true,

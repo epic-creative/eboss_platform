@@ -192,6 +192,8 @@ defmodule EBossWeb.ApiSpec do
       "/api/v1/{owner_slug}/workspaces/{slug}/apps/folio/bootstrap" =>
         folio_bootstrap_path_item(),
       "/api/v1/{owner_slug}/workspaces/{slug}/apps/folio/projects" => folio_projects_path_item(),
+      "/api/v1/{owner_slug}/workspaces/{slug}/apps/folio/projects/{project_id}" =>
+        folio_project_path_item(),
       "/api/v1/{owner_slug}/workspaces/{slug}/apps/folio/tasks" => folio_tasks_path_item(),
       "/api/v1/{owner_slug}/workspaces/{slug}/apps/folio/activity" => folio_activity_path_item()
     }
@@ -273,6 +275,39 @@ defmodule EBossWeb.ApiSpec do
     }
   end
 
+  defp folio_project_path_item do
+    %{
+      "patch" => %{
+        "summary" => "Update workspace-scoped Folio project details",
+        "description" =>
+          "Updates editable project detail fields for a workspace-scoped Folio project.",
+        "parameters" => workspace_project_path_parameters(),
+        "requestBody" => %{
+          "required" => true,
+          "content" => %{
+            "application/json" => %{
+              "schema" => %{"$ref" => "#/components/schemas/FolioProjectUpdateRequest"}
+            }
+          }
+        },
+        "responses" => %{
+          "200" => %{
+            "description" => "Folio project updated",
+            "content" => %{
+              "application/json" => %{
+                "schema" => %{"$ref" => "#/components/schemas/FolioProjectCreateResponse"}
+              }
+            }
+          },
+          "400" => %{"description" => "Invalid payload"},
+          "401" => %{"description" => "Authentication required"},
+          "403" => %{"description" => "Workspace access is forbidden"},
+          "404" => %{"description" => "Workspace or project not found"}
+        }
+      }
+    }
+  end
+
   defp folio_tasks_path_item do
     %{
       "get" => %{
@@ -338,6 +373,18 @@ defmodule EBossWeb.ApiSpec do
     ]
   end
 
+  defp workspace_project_path_parameters do
+    workspace_path_parameters() ++
+      [
+        %{
+          "name" => "project_id",
+          "in" => "path",
+          "required" => true,
+          "schema" => %{"type" => "string"}
+        }
+      ]
+  end
+
   defp folio_app_components do
     %{
       "schemas" => %{
@@ -381,10 +428,13 @@ defmodule EBossWeb.ApiSpec do
           "properties" => %{
             "id" => %{"type" => "string"},
             "title" => %{"type" => "string"},
+            "description" => %{"type" => "string", "nullable" => true},
             "status" => %{"type" => "string"},
             "priority_position" => %{"type" => "integer", "nullable" => true},
             "due_at" => %{"type" => "string", "format" => "date-time", "nullable" => true},
-            "review_at" => %{"type" => "string", "format" => "date-time", "nullable" => true}
+            "review_at" => %{"type" => "string", "format" => "date-time", "nullable" => true},
+            "notes" => %{"type" => "string", "nullable" => true},
+            "metadata" => %{"type" => "object"}
           },
           "required" => ["id", "title", "status"]
         },
@@ -417,6 +467,37 @@ defmodule EBossWeb.ApiSpec do
             }
           },
           "required" => ["title"]
+        },
+        "FolioProjectUpdateRequest" => %{
+          "type" => "object",
+          "properties" => %{
+            "title" => %{
+              "type" => "string",
+              "minLength" => 1,
+              "description" => "Project title"
+            },
+            "description" => %{
+              "type" => "string",
+              "nullable" => true
+            },
+            "notes" => %{
+              "type" => "string",
+              "nullable" => true
+            },
+            "due_at" => %{
+              "type" => "string",
+              "format" => "date-time",
+              "nullable" => true
+            },
+            "review_at" => %{
+              "type" => "string",
+              "format" => "date-time",
+              "nullable" => true
+            },
+            "metadata" => %{
+              "type" => "object"
+            }
+          }
         },
         "FolioTaskSummary" => %{
           "type" => "object",

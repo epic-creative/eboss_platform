@@ -17,6 +17,9 @@ export const folioBootstrapPath = (scope: FolioWorkspaceRef): string =>
 export const folioProjectsPath = (scope: FolioWorkspaceRef): string =>
   `${folioBasePath(scope)}/projects`
 
+export const folioProjectPath = (scope: FolioWorkspaceRef, projectId: string): string =>
+  `${folioProjectsPath(scope)}/${encodeSegment(projectId)}`
+
 export const folioTasksPath = (scope: FolioWorkspaceRef): string =>
   `${folioBasePath(scope)}/tasks`
 

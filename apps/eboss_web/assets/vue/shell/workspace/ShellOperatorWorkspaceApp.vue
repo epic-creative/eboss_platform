@@ -22,12 +22,18 @@ import TasksPage from "./pages/TasksPage.vue"
 import SettingsPage from "./pages/SettingsPage.vue"
 import {
   createFolioProject,
+  updateFolioProject,
   useFolioActivity,
   useFolioProjects,
   useFolioTasks,
   useFolioWorkspaceScope,
 } from "./folio"
-import type { FolioActivityEvent, FolioProjectSummary, FolioTaskSummary } from "./folio/types"
+import type {
+  FolioActivityEvent,
+  FolioProjectSummary,
+  FolioProjectUpdatePayload,
+  FolioTaskSummary,
+} from "./folio/types"
 import type {
   AccessAuditRecord,
   AccessTab,
@@ -67,6 +73,7 @@ const selectedTask = ref<Task | null>(null)
 const selectedActivity = ref<FolioActivityEvent | null>(null)
 const selectedProjectFilter = ref<ProjectFilter>("all")
 const creatingProject = ref(false)
+const updatingProject = ref(false)
 const projectFilters = ["all", "active", "on_hold", "completed", "canceled", "archived"] satisfies ProjectFilter[]
 const isWorkspaceRoute = computed(() => props.currentPage.type === "workspace")
 const isAppRoute = computed(() => props.currentPage.type === "app")
@@ -86,10 +93,13 @@ const mapFolioProjectStatus = (status: string): Project["status"] => {
 const mapFolioProject = (project: FolioProjectSummary): Project => ({
   id: project.id,
   name: project.title,
+  description: project.description,
   status: mapFolioProjectStatus(project.status),
   dueAt: project.due_at,
   reviewAt: project.review_at,
   priorityPosition: project.priority_position,
+  notes: project.notes,
+  metadata: project.metadata,
 })
 
 const currentWorkspace = computed(() => props.currentScope.currentWorkspace)
@@ -149,6 +159,35 @@ const createWorkspaceProject = async (title: string): Promise<void> => {
     await folioProjectsQuery.refresh()
   } finally {
     creatingProject.value = false
+  }
+}
+
+const updateWorkspaceProject = async (
+  projectId: string,
+  payload: FolioProjectUpdatePayload,
+): Promise<void> => {
+  const scope = folioWorkspaceScope.value
+
+  if (!scope) {
+    throw new Error("Workspace scope is unavailable.")
+  }
+
+  if (!props.currentScope.capabilities.manageFolio) {
+    throw new Error("You do not have permission to edit projects in this workspace.")
+  }
+
+  if (updatingProject.value) return
+
+  updatingProject.value = true
+
+  try {
+    const response = await updateFolioProject(scope, projectId, payload)
+
+    selectedProjectFilter.value = "all"
+    selectedProject.value = mapFolioProject(response.project)
+    await folioProjectsQuery.refresh()
+  } finally {
+    updatingProject.value = false
   }
 }
 
@@ -388,9 +427,12 @@ watch(currentWorkspaceKey, () => {
               :loading="folioProjectsQuery.loading.value"
               :error="folioProjectsQuery.error.value"
               :can-create-project="currentScope.capabilities.manageFolio"
+              :can-update-project="currentScope.capabilities.manageFolio"
               :creating-project="creatingProject"
+              :updating-project="updatingProject"
               :refresh="folioProjectsQuery.refresh"
               :create-project="createWorkspaceProject"
+              :update-project="updateWorkspaceProject"
               @update:project-filter="selectedProjectFilter = $event"
               @update:selected-project="selectedProject = $event"
             />

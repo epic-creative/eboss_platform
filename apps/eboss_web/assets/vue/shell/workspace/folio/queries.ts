@@ -1,10 +1,18 @@
 import { requestJson } from "./http"
-import { folioActivityPath, folioBootstrapPath, folioProjectsPath, folioTasksPath } from "./paths"
+import {
+  folioActivityPath,
+  folioBootstrapPath,
+  folioProjectPath,
+  folioProjectsPath,
+  folioTasksPath,
+} from "./paths"
 import type {
   FolioActivityResponse,
   FolioBootstrapResponse,
   FolioProjectCreatePayload,
   FolioProjectCreateResponse,
+  FolioProjectUpdatePayload,
+  FolioProjectUpdateResponse,
   FolioProjectsResponse,
   FolioTasksResponse,
   FolioWorkspaceRef,
@@ -28,6 +36,17 @@ export const createFolioProject = (
 ): Promise<FolioProjectCreateResponse> =>
   requestJson<FolioProjectCreateResponse>(folioProjectsPath(scope), {
     method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  })
+
+export const updateFolioProject = (
+  scope: FolioWorkspaceRef,
+  projectId: string,
+  payload: FolioProjectUpdatePayload,
+): Promise<FolioProjectUpdateResponse> =>
+  requestJson<FolioProjectUpdateResponse>(folioProjectPath(scope, projectId), {
+    method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   })

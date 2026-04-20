@@ -71,10 +71,13 @@ export interface FolioBootstrapResponse {
 export interface FolioProjectSummary {
   id: string
   title: string
+  description: string | null
   status: FolioProjectStatus
   priority_position: number | null
   due_at: string | null
   review_at: string | null
+  notes: string | null
+  metadata: Record<string, unknown>
 }
 
 export interface FolioProjectCreatePayload {
@@ -82,6 +85,20 @@ export interface FolioProjectCreatePayload {
 }
 
 export interface FolioProjectCreateResponse {
+  scope: FolioScope
+  project: FolioProjectSummary
+}
+
+export interface FolioProjectUpdatePayload {
+  title?: string
+  description?: string | null
+  due_at?: string | null
+  review_at?: string | null
+  notes?: string | null
+  metadata?: Record<string, unknown>
+}
+
+export interface FolioProjectUpdateResponse {
   scope: FolioScope
   project: FolioProjectSummary
 }

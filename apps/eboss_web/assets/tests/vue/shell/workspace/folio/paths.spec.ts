@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest"
 import {
   folioActivityPath,
   folioBootstrapPath,
+  folioProjectPath,
   folioProjectsPath,
   folioTasksPath,
   folioWorkspaceRef,
@@ -48,6 +49,9 @@ describe("folio paths", () => {
     )
     expect(folioProjectsPath(scope)).toBe(
       "/api/v1/alpha-team/workspaces/main-workspace/apps/folio/projects",
+    )
+    expect(folioProjectPath(scope, "project-123")).toBe(
+      "/api/v1/alpha-team/workspaces/main-workspace/apps/folio/projects/project-123",
     )
     expect(folioTasksPath(scope)).toBe("/api/v1/alpha-team/workspaces/main-workspace/apps/folio/tasks")
     expect(folioActivityPath(scope)).toBe("/api/v1/alpha-team/workspaces/main-workspace/apps/folio/activity")

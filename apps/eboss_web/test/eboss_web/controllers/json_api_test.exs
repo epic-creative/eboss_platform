@@ -28,6 +28,11 @@ defmodule EBossWeb.JsonApiTest do
              "/api/v1/{owner_slug}/workspaces/{slug}/apps/folio/projects"
            )
 
+    assert Map.has_key?(
+             spec["paths"],
+             "/api/v1/{owner_slug}/workspaces/{slug}/apps/folio/projects/{project_id}"
+           )
+
     assert Map.has_key?(spec["paths"], "/api/v1/{owner_slug}/workspaces/{slug}/apps/folio/tasks")
 
     assert Map.has_key?(
@@ -471,6 +476,201 @@ defmodule EBossWeb.JsonApiTest do
 
     assert {:error, :not_found} =
              EBossFolio.get_project_in_workspace(project_id, second_workspace.id, actor: owner)
+  end
+
+  test "authenticated clients can update workspace projects through the folio project endpoint",
+       %{
+         conn: conn
+       } do
+    owner = register_user()
+    api_key = create_api_key(owner)
+
+    workspace =
+      Workspaces.create_workspace!(
+        %{
+          name: "Folio Project Update Workspace",
+          owner_type: :user,
+          owner_id: owner.id
+        },
+        actor: owner
+      )
+
+    project =
+      EBossFolio.create_project!(
+        %{workspace_id: workspace.id, title: "Launch console", description: "Initial scope"},
+        actor: owner
+      )
+
+    conn =
+      conn
+      |> put_req_header("authorization", "Bearer #{api_key}")
+      |> put_req_header("accept", "application/json")
+      |> put_req_header("content-type", "application/json")
+      |> patch(
+        "/api/v1/#{owner.owner_slug}/workspaces/#{workspace.slug}/apps/folio/projects/#{project.id}",
+        Jason.encode!(%{
+          title: "Launch orchestration console",
+          description: "Drive launch readiness",
+          due_at: "2026-06-01",
+          review_at: "2026-06-15",
+          notes: "Review dependencies weekly",
+          metadata: %{
+            "cadence" => "weekly",
+            "stream" => "infra"
+          }
+        })
+      )
+
+    payload = json_response(conn, 200)
+
+    assert payload["scope"]["app_key"] == "folio"
+    assert payload["scope"]["workspace"]["id"] == workspace.id
+    assert payload["project"]["id"] == project.id
+    assert payload["project"]["title"] == "Launch orchestration console"
+    assert payload["project"]["description"] == "Drive launch readiness"
+    assert payload["project"]["notes"] == "Review dependencies weekly"
+    assert payload["project"]["metadata"] == %{"cadence" => "weekly", "stream" => "infra"}
+    assert payload["project"]["due_at"] =~ "2026-06-01"
+    assert payload["project"]["review_at"] =~ "2026-06-15"
+
+    assert {:ok, updated_project} =
+             EBossFolio.get_project_in_workspace(project.id, workspace.id, actor: owner)
+
+    assert updated_project.title == "Launch orchestration console"
+    assert updated_project.description == "Drive launch readiness"
+    assert updated_project.notes == "Review dependencies weekly"
+    assert updated_project.metadata["cadence"] == "weekly"
+    assert updated_project.metadata["stream"] == "infra"
+
+    projects_conn =
+      build_conn()
+      |> put_req_header("authorization", "Bearer #{api_key}")
+      |> put_req_header("accept", "application/json")
+      |> get("/api/v1/#{owner.owner_slug}/workspaces/#{workspace.slug}/apps/folio/projects")
+
+    projects_payload = json_response(projects_conn, 200)
+
+    assert Enum.any?(projects_payload["projects"], fn listed_project ->
+             listed_project["id"] == project.id and
+               listed_project["title"] == "Launch orchestration console" and
+               listed_project["description"] == "Drive launch readiness" and
+               listed_project["notes"] == "Review dependencies weekly"
+           end)
+
+    activity_conn =
+      build_conn()
+      |> put_req_header("authorization", "Bearer #{api_key}")
+      |> put_req_header("accept", "application/json")
+      |> get("/api/v1/#{owner.owner_slug}/workspaces/#{workspace.slug}/apps/folio/activity")
+
+    activity_payload = json_response(activity_conn, 200)
+
+    assert Enum.any?(activity_payload["events"], fn event ->
+             event["action"] == "update" and
+               event["subject"]["type"] == "project" and
+               event["subject"]["id"] == project.id and
+               get_in(event, ["changes", "title", "after"]) == "Launch orchestration console" and
+               get_in(event, ["changes", "description", "after"]) == "Drive launch readiness"
+           end)
+  end
+
+  test "folio project update endpoint rejects invalid project payloads", %{conn: conn} do
+    owner = register_user()
+    api_key = create_api_key(owner)
+
+    workspace =
+      Workspaces.create_workspace!(
+        %{
+          name: "Folio Project Update Invalid Payload Workspace",
+          owner_type: :user,
+          owner_id: owner.id
+        },
+        actor: owner
+      )
+
+    project =
+      EBossFolio.create_project!(
+        %{workspace_id: workspace.id, title: "Unchanged title"},
+        actor: owner
+      )
+
+    conn =
+      conn
+      |> put_req_header("authorization", "Bearer #{api_key}")
+      |> put_req_header("accept", "application/json")
+      |> put_req_header("content-type", "application/json")
+      |> patch(
+        "/api/v1/#{owner.owner_slug}/workspaces/#{workspace.slug}/apps/folio/projects/#{project.id}",
+        Jason.encode!(%{title: "   ", metadata: []})
+      )
+
+    assert %{
+             "error" => %{
+               "code" => "invalid_project_payload",
+               "message" => "Project payload could not be processed"
+             }
+           } = json_response(conn, 400)
+
+    assert {:ok, unchanged_project} =
+             EBossFolio.get_project_in_workspace(project.id, workspace.id, actor: owner)
+
+    assert unchanged_project.title == "Unchanged title"
+    assert unchanged_project.metadata == %{}
+  end
+
+  test "folio project update endpoint forbids users without folio manage access", %{conn: conn} do
+    owner = register_user()
+    member = register_user()
+
+    organization =
+      Organizations.create_organization!(%{name: "Folio Update-Locked Org Workspace"},
+        actor: owner
+      )
+
+    create_org_membership(owner, organization, member, :member)
+
+    owner_api_key = create_api_key(owner)
+    member_api_key = create_api_key(member)
+
+    workspace =
+      Workspaces.create_workspace!(
+        %{
+          name: "Folio Update-Locked Org Workspace",
+          owner_type: :organization,
+          owner_id: organization.id
+        },
+        actor: owner
+      )
+
+    project =
+      build_conn()
+      |> put_req_header("authorization", "Bearer #{owner_api_key}")
+      |> put_req_header("accept", "application/json")
+      |> put_req_header("content-type", "application/json")
+      |> post(
+        "/api/v1/#{organization.owner_slug}/workspaces/#{workspace.slug}/apps/folio/projects",
+        Jason.encode!(%{title: "Protected project"})
+      )
+      |> json_response(201)
+      |> Map.fetch!("project")
+      |> Map.fetch!("id")
+
+    conn =
+      conn
+      |> put_req_header("authorization", "Bearer #{member_api_key}")
+      |> put_req_header("accept", "application/json")
+      |> put_req_header("content-type", "application/json")
+      |> patch(
+        "/api/v1/#{organization.owner_slug}/workspaces/#{workspace.slug}/apps/folio/projects/#{project}",
+        Jason.encode!(%{title: "Blocked update"})
+      )
+
+    assert %{
+             "error" => %{
+               "code" => "workspace_forbidden",
+               "message" => "Workspace access is forbidden"
+             }
+           } = json_response(conn, 403)
   end
 
   test "folio project create endpoint rejects invalid project payloads", %{conn: conn} do

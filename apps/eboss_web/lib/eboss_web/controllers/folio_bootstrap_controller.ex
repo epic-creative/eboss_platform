@@ -77,6 +77,33 @@ defmodule EBossWeb.FolioBootstrapController do
     end
   end
 
+  def update_project(
+        conn,
+        %{"owner_slug" => owner_slug, "slug" => slug, "project_id" => project_id}
+      ) do
+    current_user = conn.assigns[:current_user] || PlugHelpers.get_actor(conn)
+
+    case AppScope.fetch_workspace_scope(current_user, owner_slug, slug) do
+      {:ok, %AppScope{} = scope} ->
+        case authorize_folio_manage(scope) do
+          :ok ->
+            handle_authorized_project_update(conn, scope, current_user, project_id)
+
+          {:error, :forbidden} ->
+            error_json(conn, :forbidden, "workspace_forbidden", "Workspace access is forbidden")
+        end
+
+      {:error, :unauthorized} ->
+        error_json(conn, :unauthorized, "authentication_required", "Authentication is required")
+
+      {:error, :forbidden} ->
+        error_json(conn, :forbidden, "workspace_forbidden", "Workspace access is forbidden")
+
+      {:error, :not_found} ->
+        error_json(conn, :not_found, "workspace_not_found", "Workspace not found")
+    end
+  end
+
   def tasks(conn, %{"owner_slug" => owner_slug, "slug" => slug}) do
     current_user = conn.assigns[:current_user] || PlugHelpers.get_actor(conn)
 
@@ -190,6 +217,44 @@ defmodule EBossWeb.FolioBootstrapController do
     end
   end
 
+  defp handle_authorized_project_update(
+         conn,
+         %AppScope{} = scope,
+         current_user,
+         project_id
+       ) do
+    with {:ok, params} <- parse_project_update_params(conn.body_params),
+         {:ok, project} <-
+           EBossFolio.get_project_in_workspace(project_id, scope.current_workspace.id,
+             actor: current_user
+           ),
+         {:ok, project} <- EBossFolio.update_project_details(project, params, actor: current_user) do
+      json(conn, %{
+        scope: folio_scope_payload(scope),
+        project: project_summary_payload(project)
+      })
+    else
+      {:error, :not_found} ->
+        error_json(conn, :not_found, "project_not_found", "Project not found")
+
+      {:error, :invalid_payload} ->
+        error_json(
+          conn,
+          :bad_request,
+          "invalid_project_payload",
+          "Project payload could not be processed"
+        )
+
+      {:error, _reason} ->
+        error_json(
+          conn,
+          :bad_request,
+          "invalid_project_payload",
+          "Project payload could not be processed"
+        )
+    end
+  end
+
   defp handle_authorized_tasks_scope(conn, %AppScope{} = scope, current_user) do
     with {:ok, tasks} <-
            EBossFolio.list_tasks_in_workspace(scope.current_workspace.id, actor: current_user) do
@@ -252,10 +317,13 @@ defmodule EBossWeb.FolioBootstrapController do
     %{
       id: project.id,
       title: project.title,
+      description: project.description,
       status: project.status,
       priority_position: project.priority_position,
       due_at: project.due_at,
-      review_at: project.review_at
+      review_at: project.review_at,
+      notes: project.notes,
+      metadata: project.metadata
     }
   end
 
@@ -281,6 +349,34 @@ defmodule EBossWeb.FolioBootstrapController do
     {:error, :invalid_payload}
   end
 
+  defp parse_project_update_params(payload) when is_map(payload) do
+    with {:ok, title} <- optional_project_title(payload),
+         {:ok, description} <- optional_project_text(payload, :description),
+         {:ok, notes} <- optional_project_text(payload, :notes),
+         {:ok, due_at} <- optional_project_datetime(payload, :due_at),
+         {:ok, review_at} <- optional_project_datetime(payload, :review_at),
+         {:ok, metadata} <- optional_project_metadata(payload) do
+      attrs =
+        %{}
+        |> maybe_put(:title, title)
+        |> maybe_put(:description, description)
+        |> maybe_put(:notes, notes)
+        |> maybe_put(:due_at, due_at)
+        |> maybe_put(:review_at, review_at)
+        |> maybe_put(:metadata, metadata)
+
+      if map_size(attrs) == 0 do
+        {:error, :invalid_payload}
+      else
+        {:ok, attrs}
+      end
+    end
+  end
+
+  defp parse_project_update_params(_payload) do
+    {:error, :invalid_payload}
+  end
+
   defp normalized_project_title(payload) do
     payload
     |> Map.get("title", Map.get(payload, :title, nil))
@@ -301,6 +397,156 @@ defmodule EBossWeb.FolioBootstrapController do
       value -> value
     end
   end
+
+  defp optional_project_title(payload) do
+    case fetch_payload_field(payload, :title) do
+      :missing ->
+        {:ok, :missing}
+
+      {:present, value} ->
+        normalize_project_title_value(value)
+    end
+  end
+
+  defp optional_project_text(payload, field) do
+    case fetch_payload_field(payload, field) do
+      :missing ->
+        {:ok, :missing}
+
+      {:present, value} ->
+        normalize_project_text_value(value)
+    end
+  end
+
+  defp optional_project_datetime(payload, field) do
+    case fetch_payload_field(payload, field) do
+      :missing ->
+        {:ok, :missing}
+
+      {:present, value} ->
+        normalize_project_datetime_value(value)
+    end
+  end
+
+  defp optional_project_metadata(payload) do
+    case fetch_payload_field(payload, :metadata) do
+      :missing ->
+        {:ok, :missing}
+
+      {:present, value} ->
+        normalize_project_metadata_value(value)
+    end
+  end
+
+  defp fetch_payload_field(payload, field) do
+    string_field = to_string(field)
+
+    cond do
+      Map.has_key?(payload, string_field) -> {:present, Map.get(payload, string_field)}
+      Map.has_key?(payload, field) -> {:present, Map.get(payload, field)}
+      true -> :missing
+    end
+  end
+
+  defp normalize_project_title_value(value) when is_binary(value) do
+    title = String.trim(value)
+
+    if title == "" do
+      {:error, :invalid_payload}
+    else
+      {:ok, {:set, title}}
+    end
+  end
+
+  defp normalize_project_title_value(value) when is_atom(value) do
+    value
+    |> to_string()
+    |> normalize_project_title_value()
+  end
+
+  defp normalize_project_title_value(_value), do: {:error, :invalid_payload}
+
+  defp normalize_project_text_value(nil), do: {:ok, {:set, nil}}
+
+  defp normalize_project_text_value(value) when is_binary(value) do
+    trimmed = String.trim(value)
+    {:ok, {:set, if(trimmed == "", do: nil, else: trimmed)}}
+  end
+
+  defp normalize_project_text_value(value) when is_atom(value) do
+    value
+    |> to_string()
+    |> normalize_project_text_value()
+  end
+
+  defp normalize_project_text_value(_value), do: {:error, :invalid_payload}
+
+  defp normalize_project_datetime_value(nil), do: {:ok, {:set, nil}}
+
+  defp normalize_project_datetime_value(value) when is_binary(value) do
+    trimmed = String.trim(value)
+
+    cond do
+      trimmed == "" ->
+        {:ok, {:set, nil}}
+
+      true ->
+        with {:error, :invalid_format} <- parse_datetime_value(trimmed),
+             {:error, :invalid_format} <- parse_date_value(trimmed) do
+          {:error, :invalid_payload}
+        else
+          {:ok, datetime} -> {:ok, {:set, datetime}}
+        end
+    end
+  end
+
+  defp normalize_project_datetime_value(value) when is_atom(value) do
+    value
+    |> to_string()
+    |> normalize_project_datetime_value()
+  end
+
+  defp normalize_project_datetime_value(_value), do: {:error, :invalid_payload}
+
+  defp parse_datetime_value(value) do
+    case DateTime.from_iso8601(value) do
+      {:ok, datetime, _offset} -> {:ok, datetime}
+      {:error, _reason} -> {:error, :invalid_format}
+    end
+  end
+
+  defp parse_date_value(value) do
+    with {:ok, date} <- Date.from_iso8601(value),
+         {:ok, datetime} <- DateTime.new(date, ~T[00:00:00], "Etc/UTC") do
+      {:ok, datetime}
+    else
+      _ -> {:error, :invalid_format}
+    end
+  end
+
+  defp normalize_project_metadata_value(nil), do: {:ok, {:set, %{}}}
+
+  defp normalize_project_metadata_value(value) when is_map(value), do: {:ok, {:set, value}}
+
+  defp normalize_project_metadata_value(value) when is_binary(value) do
+    trimmed = String.trim(value)
+
+    cond do
+      trimmed == "" ->
+        {:ok, {:set, %{}}}
+
+      true ->
+        case Jason.decode(trimmed) do
+          {:ok, decoded} when is_map(decoded) -> {:ok, {:set, decoded}}
+          _ -> {:error, :invalid_payload}
+        end
+    end
+  end
+
+  defp normalize_project_metadata_value(_value), do: {:error, :invalid_payload}
+
+  defp maybe_put(attrs, _field, :missing), do: attrs
+  defp maybe_put(attrs, field, {:set, value}), do: Map.put(attrs, field, value)
 
   defp task_summary_payload(%EBossFolio.Task{} = task) do
     %{

@@ -78,10 +78,13 @@ export interface WorkspaceScope {
 export interface Project {
   id: string
   name: string
+  description: string | null
   status: ProjectStatus
   dueAt: string | null
   reviewAt: string | null
   priorityPosition: number | null
+  notes: string | null
+  metadata: Record<string, unknown>
 }
 
 export interface Member {

@@ -29,6 +29,11 @@ defmodule EBossWeb.JsonApiHttpTest do
 
     assert Map.has_key?(
              response.body["paths"],
+             "/api/v1/{owner_slug}/workspaces/{slug}/apps/folio/projects/{project_id}"
+           )
+
+    assert Map.has_key?(
+             response.body["paths"],
              "/api/v1/{owner_slug}/workspaces/{slug}/apps/folio/tasks"
            )
 
