@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from "vue"
+import { Link } from "live_vue"
 import {
   AlertTriangle,
   Building2,
@@ -150,10 +151,10 @@ const workspaceRouteLabel = computed(() =>
           <p class="so-font-mono px-1 text-[11px] uppercase tracking-wider text-[hsl(var(--so-muted-foreground))]">
             Personal
           </p>
-          <a
+          <Link
             v-for="workspace in personalWorkspaces"
             :key="workspaceKey(workspace)"
-            :href="workspace.dashboardPath"
+            :patch="workspace.dashboardPath"
             class="flex items-center justify-between rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-[hsl(var(--so-accent))/0.5]"
             @click="onNavigate"
           >
@@ -164,17 +165,17 @@ const workspaceRouteLabel = computed(() =>
             >
               current
             </span>
-          </a>
+          </Link>
         </div>
 
         <div v-if="organizationWorkspaces.length" class="space-y-1">
           <p class="so-font-mono px-1 text-[11px] uppercase tracking-wider text-[hsl(var(--so-muted-foreground))]">
             Organizations
           </p>
-          <a
+          <Link
             v-for="workspace in organizationWorkspaces"
             :key="workspaceKey(workspace)"
-            :href="workspace.dashboardPath"
+            :patch="workspace.dashboardPath"
             class="flex items-center justify-between rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-[hsl(var(--so-accent))/0.5]"
             @click="onNavigate"
           >
@@ -187,7 +188,7 @@ const workspaceRouteLabel = computed(() =>
             >
               current
             </span>
-          </a>
+          </Link>
         </div>
 
         <p
@@ -201,8 +202,8 @@ const workspaceRouteLabel = computed(() =>
 
     <nav class="flex-1 overflow-y-auto py-1.5" :aria-label="workspaceAppTestContracts.sidebarNavigationLabel">
       <div class="py-0.5">
-        <a
-          :href="linkFor('dashboard')"
+        <Link
+          :patch="linkFor('dashboard')"
           class="mx-1.5 flex items-center gap-2 rounded-md px-2 py-[5px] text-sm transition-colors"
           :class="
             isActive('dashboard')
@@ -213,9 +214,9 @@ const workspaceRouteLabel = computed(() =>
         >
           <LayoutDashboard class="h-4 w-4 shrink-0" />
           <span class="flex-1 truncate">Overview</span>
-        </a>
-        <a
-          :href="linkFor('members')"
+        </Link>
+        <Link
+          :patch="linkFor('members')"
           class="mx-1.5 flex items-center gap-2 rounded-md px-2 py-[5px] text-sm transition-colors"
           :class="
             isActive('members')
@@ -227,9 +228,9 @@ const workspaceRouteLabel = computed(() =>
           <Users class="h-4 w-4 shrink-0" />
           <span class="flex-1 truncate">Members</span>
           <span class="so-font-mono min-w-[1.25rem] text-right text-[11px] text-[hsl(var(--so-muted-foreground))]">8</span>
-        </a>
-        <a
-          :href="linkFor('access')"
+        </Link>
+        <Link
+          :patch="linkFor('access')"
           class="mx-1.5 flex items-center gap-2 rounded-md px-2 py-[5px] text-sm transition-colors"
           :class="
             isActive('access')
@@ -241,9 +242,9 @@ const workspaceRouteLabel = computed(() =>
           <Shield class="h-4 w-4 shrink-0" />
           <span class="flex-1 truncate">Access</span>
           <AlertTriangle class="h-3 w-3 shrink-0 text-[hsl(var(--so-warning))]" />
-        </a>
-        <a
-          :href="linkFor('settings')"
+        </Link>
+        <Link
+          :patch="linkFor('settings')"
           class="mx-1.5 flex items-center gap-2 rounded-md px-2 py-[5px] text-sm transition-colors"
           :class="
             isActive('settings')
@@ -254,7 +255,7 @@ const workspaceRouteLabel = computed(() =>
         >
           <Settings class="h-4 w-4 shrink-0" />
           <span class="flex-1 truncate">Settings</span>
-        </a>
+        </Link>
       </div>
 
       <div class="mx-3 my-1 border-t border-[hsl(var(--so-border))]" />
@@ -276,10 +277,10 @@ const workspaceRouteLabel = computed(() =>
         </button>
 
         <div v-if="groups.apps" class="mt-0.5">
-          <a
+          <Link
             v-for="entry in availableApps"
             :key="entry.key"
-            :href="appHref(entry)"
+            :patch="appHref(entry)"
             class="mx-1.5 flex items-center gap-2 rounded-md px-2 py-[5px] text-sm transition-colors"
             :class="
               isCurrentApp(entry.key)
@@ -290,7 +291,7 @@ const workspaceRouteLabel = computed(() =>
           >
             <Puzzle class="h-4 w-4 shrink-0" />
             <span class="flex-1 truncate">{{ currentAppLabel(entry) }}</span>
-          </a>
+          </Link>
         </div>
       </div>
     </nav>

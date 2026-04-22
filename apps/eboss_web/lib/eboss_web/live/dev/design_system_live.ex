@@ -214,6 +214,32 @@ defmodule EBossWeb.Dev.DesignSystemLive do
           </div>
         </section>
 
+        <section id="livevue-runtime" class="ui-dev-preview__section" data-livevue-runtime>
+          <.section_heading
+            eyebrow="LiveVue runtime"
+            title="LiveView owns persisted browser state; Vue renders and enriches it."
+            subtitle="This is the canonical reconciliation map for when to use LiveVue hooks, Phoenix streams, server events, forms, uploads, SSR, and external REST/SSE APIs."
+            title_size="sm"
+          />
+
+          <div class="ui-design-ledger">
+            <.panel
+              :for={pattern <- livevue_runtime_patterns()}
+              as="div"
+              surface="solid"
+              padding="sm"
+              class="space-y-2"
+            >
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <p class="ui-text-meta" data-tone="soft">{pattern.concern}</p>
+                <.badge tone={pattern.tone}>{pattern.owner}</.badge>
+              </div>
+              <p class="ui-text-title" data-size="sm">{pattern.pattern}</p>
+              <p class="ui-text-body" data-size="sm" data-tone="muted">{pattern.copy}</p>
+            </.panel>
+          </div>
+        </section>
+
         <section id="review-matrix" class="ui-dev-preview__section">
           <.section_heading
             eyebrow="Parity review"
@@ -1242,6 +1268,7 @@ defmodule EBossWeb.Dev.DesignSystemLive do
     [
       %{label: "Contract", to: "#contract"},
       %{label: "Vue contract", to: "#vue-contract"},
+      %{label: "LiveVue runtime", to: "#livevue-runtime"},
       %{label: "Matrix", to: "#review-matrix"},
       %{label: "Panels", to: "#panels"},
       %{label: "Public patterns", to: "#public-patterns"},
@@ -1367,6 +1394,75 @@ defmodule EBossWeb.Dev.DesignSystemLive do
         contract:
           "One-off wrappers and transitional so-* styling are allowed only while discovering a pattern.",
         review: "If reused twice, either promote the pattern or remove the class."
+      }
+    ]
+  end
+
+  defp livevue_runtime_patterns do
+    [
+      %{
+        concern: "Navigation",
+        owner: "LiveView",
+        tone: "primary",
+        pattern: "Use Link and useLiveNavigation() instead of manual history state.",
+        copy:
+          "Workspace shell, app links, and deep links should patch or navigate through LiveView so handle_params/3 remains the route source of truth."
+      },
+      %{
+        concern: "Mutations",
+        owner: "LiveView",
+        tone: "primary",
+        pattern: "Use $live.pushEvent() or phx-* bindings for browser UI actions.",
+        copy:
+          "Create, update, transition, archive, mark-read, and preference writes should flow through LiveView events when initiated by the signed-in browser UI."
+      },
+      %{
+        concern: "Live updates",
+        owner: "LiveView",
+        tone: "success",
+        pattern: "Use push_event/3, useLiveEvent(), and Phoenix streams.",
+        copy:
+          "Notifications, chat deltas, activity rows, and changing lists should arrive as LiveView diffs or server events instead of ad-hoc browser polling."
+      },
+      %{
+        concern: "Forms",
+        owner: "LiveView",
+        tone: "warning",
+        pattern: "Use useLiveForm() for server-validated Vue forms.",
+        copy:
+          "Repeated Folio and settings forms should expose Phoenix/Ash form state to Vue so validation, touched state, and submission semantics match HEEx."
+      },
+      %{
+        concern: "Connection state",
+        owner: "Vue",
+        tone: "neutral",
+        pattern: "Use useLiveConnection() for reconnecting and offline affordances.",
+        copy:
+          "Vue may render subtle client-only connection feedback while LiveView remains the owner of persisted state and authorization-sensitive actions."
+      },
+      %{
+        concern: "Uploads",
+        owner: "LiveView",
+        tone: "neutral",
+        pattern: "Use useLiveUpload() when attachments arrive.",
+        copy:
+          "Folio and Chat attachments should reuse Phoenix uploads rather than adding separate browser upload clients."
+      },
+      %{
+        concern: "SSR",
+        owner: "Deferred",
+        tone: "neutral",
+        pattern: "Keep global SSR disabled until a focused public/auth pass.",
+        copy:
+          "Runtime app shells can stay client-hydrated for now; public and auth surfaces can opt into SSR later after hydration behavior is verified."
+      },
+      %{
+        concern: "External API",
+        owner: "API",
+        tone: "warning",
+        pattern: "Keep REST and SSE as external contracts, not default browser UI plumbing.",
+        copy:
+          "Controllers stay available for clients, automation, and tests, while signed-in same-origin UI favors LiveView events and props."
       }
     ]
   end

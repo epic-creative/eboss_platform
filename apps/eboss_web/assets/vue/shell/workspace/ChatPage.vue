@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue"
+import { Link, useLiveNavigation } from "live_vue"
 import { Archive, MessageSquarePlus, Sparkles } from "lucide-vue-next"
 
 import WorkspaceEmptyState from "./WorkspaceEmptyState.vue"
@@ -22,6 +23,7 @@ const props = defineProps<{
   currentPage: AppNavigation
 }>()
 
+const { patch } = useLiveNavigation()
 const scopeRef = computed(() => chatWorkspaceRef(props.currentScope))
 const appBasePath = computed(() => props.currentScope.apps?.chat?.defaultPath || `${props.currentScope.dashboardPath}/apps/chat`)
 const routeSessionId = computed(() =>
@@ -67,10 +69,7 @@ const transcriptSubtitle = computed(() => {
 const composerDisabled = computed(() => sending.value || archiving.value || !scopeRef.value)
 
 const syncPath = (path: string, replace = false) => {
-  if (typeof window === "undefined") return
-
-  const method = replace ? "replaceState" : "pushState"
-  window.history[method]({}, "", path)
+  patch(path, { replace })
 }
 
 const upsertSession = (session: ChatSessionSummary) => {
@@ -155,14 +154,6 @@ const loadSession = async (sessionId: string) => {
   } finally {
     loading.value = false
   }
-}
-
-const selectSession = async (session: ChatSessionSummary) => {
-  draftMode.value = false
-  selectedSessionId.value = session.id
-  currentSession.value = session
-  syncPath(session.path)
-  await loadSession(session.id)
 }
 
 const startNewChat = () => {
@@ -323,14 +314,13 @@ watch(routeSessionId, sessionId => {
             />
           </div>
 
-          <button
+          <Link
             v-for="session in sessions"
             :key="session.id"
-            type="button"
+            :patch="session.path"
             class="ui-workspace-chat__session-row"
             :data-testid="chatSessionRowTestId(session.id)"
             :class="{ 'ui-workspace-chat__session-row--active': session.id === selectedSessionId }"
-            @click="selectSession(session)"
           >
             <div class="ui-workspace-chat__session-row-top">
               <span class="ui-workspace-chat__session-title">{{ session.title }}</span>
@@ -342,7 +332,7 @@ watch(routeSessionId, sessionId => {
               <span>{{ session.created_by_user.username }}</span>
               <span>{{ session.message_count }} messages</span>
             </div>
-          </button>
+          </Link>
         </section>
       </WorkspacePanel>
 

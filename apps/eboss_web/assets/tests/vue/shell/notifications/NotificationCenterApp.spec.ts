@@ -1,5 +1,5 @@
 import { flushPromises } from "@vue/test-utils"
-import { beforeEach, describe, expect, it, vi } from "vitest"
+import { describe, expect, it, vi } from "vitest"
 
 import { mountComponent } from "@/tests/vue/support/mount"
 import NotificationCenterApp from "@/vue/shell/notifications/NotificationCenterApp.vue"
@@ -9,22 +9,6 @@ import type {
   NotificationPreferenceSummary,
   NotificationSummary,
 } from "@/vue/shell/notifications"
-
-const notificationMocks = vi.hoisted(() => ({
-  fetchNotificationBootstrap: vi.fn(),
-  fetchNotifications: vi.fn(),
-  markAllNotificationsRead: vi.fn(),
-  updateNotificationPreferences: vi.fn(),
-  updateNotificationStatus: vi.fn(),
-}))
-
-vi.mock("@/vue/shell/notifications/http", () => ({
-  fetchNotificationBootstrap: notificationMocks.fetchNotificationBootstrap,
-  fetchNotifications: notificationMocks.fetchNotifications,
-  markAllNotificationsRead: notificationMocks.markAllNotificationsRead,
-  updateNotificationPreferences: notificationMocks.updateNotificationPreferences,
-  updateNotificationStatus: notificationMocks.updateNotificationStatus,
-}))
 
 vi.mock("@/vue/shell/shared/ThemeToggleButton.vue", () => ({
   default: {
@@ -137,32 +121,19 @@ const mountCenter = () =>
         email: "operator@example.com",
       },
       notificationBootstrap: bootstrap(),
+      notifications: [notification()],
+      activeStatus: "active",
+      activeScope: "all",
       dashboardPath: "/dashboard",
       signOutPath: "/logout",
       csrfToken: "csrf-token",
     },
-  })
+})
 
 describe("NotificationCenterApp", () => {
-  beforeEach(() => {
-    notificationMocks.fetchNotificationBootstrap.mockReset()
-    notificationMocks.fetchNotificationBootstrap.mockResolvedValue(bootstrap())
-    notificationMocks.fetchNotifications.mockReset()
-    notificationMocks.markAllNotificationsRead.mockReset()
-    notificationMocks.updateNotificationPreferences.mockReset()
-    notificationMocks.updateNotificationStatus.mockReset()
-  })
-
-  it("loads notifications and renders multi-channel future delivery state", async () => {
-    notificationMocks.fetchNotifications.mockResolvedValue({ notifications: [notification()] })
-
+  it("renders server-provided notifications and multi-channel future delivery state", async () => {
     const wrapper = mountCenter()
     await flushPromises()
-
-    expect(notificationMocks.fetchNotifications).toHaveBeenCalledWith({
-      status: "active",
-      scope_type: null,
-    })
 
     expect(wrapper.text()).toContain("Chat run failed")
     expect(wrapper.text()).toContain("In-app delivery is active")
@@ -170,15 +141,20 @@ describe("NotificationCenterApp", () => {
     expect(wrapper.text()).toContain("operator@example.com")
   })
 
-  it("marks notifications read, archives them, and refreshes the list", async () => {
-    notificationMocks.fetchNotifications.mockResolvedValue({ notifications: [notification()] })
-    notificationMocks.updateNotificationStatus
-      .mockResolvedValueOnce({
-        notification: notification({ status: "read", read_at: "2026-04-21T12:01:00Z" }),
+  it("marks notifications read and archives them through LiveView events", async () => {
+    const liveReply = vi
+      .fn()
+      .mockReturnValueOnce({
+        ok: true,
+        bootstrap: bootstrap(),
+        notifications: [notification({ status: "read", read_at: "2026-04-21T12:01:00Z" })],
       })
-      .mockResolvedValueOnce({
-        notification: notification({ status: "archived", archived_at: "2026-04-21T12:02:00Z" }),
+      .mockReturnValueOnce({
+        ok: true,
+        bootstrap: bootstrap(),
+        notifications: [],
       })
+    ;(globalThis as typeof globalThis & { __liveVueEventReply: typeof liveReply }).__liveVueEventReply = liveReply
 
     const wrapper = mountCenter()
     await flushPromises()
@@ -188,28 +164,34 @@ describe("NotificationCenterApp", () => {
     await readButton!.trigger("click")
     await flushPromises()
 
-    expect(notificationMocks.updateNotificationStatus).toHaveBeenCalledWith("recipient-1", "read")
+    expect(liveReply).toHaveBeenCalledWith("notifications:mark_read", { recipient_id: "recipient-1" })
 
     const archiveButton = wrapper.findAll("button").find(button => button.text().includes("Archive"))
     expect(archiveButton).toBeTruthy()
     await archiveButton!.trigger("click")
     await flushPromises()
 
-    expect(notificationMocks.updateNotificationStatus).toHaveBeenCalledWith("recipient-1", "archived")
+    expect(liveReply).toHaveBeenCalledWith("notifications:archive", { recipient_id: "recipient-1" })
   })
 
   it("toggles system channel preferences", async () => {
-    notificationMocks.fetchNotifications.mockResolvedValue({ notifications: [notification()] })
-    notificationMocks.updateNotificationPreferences.mockResolvedValue({
-      preferences: [
-        preference({
-          id: "preference-telegram",
-          channel: "telegram",
-          enabled: true,
-          cadence: "immediate",
-        }),
-      ],
-    })
+    const liveReply = vi.fn(() => ({
+      ok: true,
+      bootstrap: {
+        ...bootstrap(),
+        preferences: [
+          ...bootstrap().preferences,
+          preference({
+            id: "preference-telegram",
+            channel: "telegram",
+            enabled: true,
+            cadence: "immediate",
+          }),
+        ],
+      },
+      notifications: [notification()],
+    }))
+    ;(globalThis as typeof globalThis & { __liveVueEventReply: typeof liveReply }).__liveVueEventReply = liveReply
 
     const wrapper = mountCenter()
     await flushPromises()
@@ -220,22 +202,13 @@ describe("NotificationCenterApp", () => {
     await telegramButton!.trigger("click")
     await flushPromises()
 
-    expect(notificationMocks.updateNotificationPreferences).toHaveBeenCalledWith([
-      {
-        scope_type: "system",
-        scope_id: null,
-        app_key: null,
-        notification_key: null,
-        channel: "telegram",
-        enabled: true,
-        cadence: "immediate",
-      },
-    ])
+    expect(liveReply).toHaveBeenCalledWith("notifications:set_preference", {
+      channel: "telegram",
+      enabled: true,
+    })
   })
 
   it("refreshes the visible default inbox from pushed bootstrap props", async () => {
-    notificationMocks.fetchNotifications.mockResolvedValue({ notifications: [notification()] })
-
     const wrapper = mountCenter()
     await flushPromises()
 
@@ -245,16 +218,16 @@ describe("NotificationCenterApp", () => {
       notificationBootstrap: {
         ...bootstrap(),
         unread_count: 2,
-        recent: [
-          notification({
-            recipient_id: "recipient-2",
-            notification_id: "notification-2",
-            title: "Workspace role changed",
-            body: "Your workspace role changed.",
-            severity: "warning",
-          }),
-        ],
       },
+      notifications: [
+        notification({
+          recipient_id: "recipient-2",
+          notification_id: "notification-2",
+          title: "Workspace role changed",
+          body: "Your workspace role changed.",
+          severity: "warning",
+        }),
+      ],
     })
     await flushPromises()
 

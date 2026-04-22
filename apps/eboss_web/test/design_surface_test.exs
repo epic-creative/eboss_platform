@@ -66,6 +66,9 @@ defmodule EBossWeb.DesignSurfaceTest do
     assert design_system_live =~ "Canonical contract"
     assert design_system_live =~ "Vue implementation rules"
     assert design_system_live =~ "Runtime candidate"
+    assert design_system_live =~ "LiveVue runtime"
+    assert design_system_live =~ "useLiveNavigation()"
+    assert design_system_live =~ "useLiveForm()"
 
     assert ui_panel_story =~ "Default surface"
     assert ui_panel_story =~ "Floating surface"

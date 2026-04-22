@@ -1,15 +1,9 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue"
+import { computed, ref, watch } from "vue"
+import { useEventReply } from "live_vue"
 import { Archive, Bell, Check, Mail, MessageCircle, Radio, Send, Smartphone } from "lucide-vue-next"
 
 import ThemeToggleButton from "../shared/ThemeToggleButton.vue"
-import {
-  fetchNotificationBootstrap,
-  fetchNotifications,
-  markAllNotificationsRead,
-  updateNotificationPreferences,
-  updateNotificationStatus,
-} from "./http"
 import type {
   NotificationBootstrap,
   NotificationChannel,
@@ -24,21 +18,46 @@ const props = defineProps<{
     email: string
   }
   notificationBootstrap: NotificationBootstrap
+  notifications?: NotificationSummary[]
+  activeStatus?: "active" | "unread" | "read" | "archived" | "all"
+  activeScope?: string
   dashboardPath: string
   signOutPath: string
   csrfToken: string
 }>()
 
+interface NotificationLiveReply {
+  ok: boolean
+  bootstrap?: NotificationBootstrap
+  notifications?: NotificationSummary[]
+  filters?: {
+    status: "active" | "unread" | "read" | "archived" | "all"
+    scope: string
+  }
+  error?: string
+}
+
 const bootstrap = ref<NotificationBootstrap>(props.notificationBootstrap)
-const notifications = ref<NotificationSummary[]>(props.notificationBootstrap.recent)
-const activeStatus = ref<"active" | "unread" | "read" | "archived" | "all">("active")
-const activeScope = ref<string>("all")
-const loading = ref(false)
-const saving = ref(false)
+const notifications = ref<NotificationSummary[]>(props.notifications ?? props.notificationBootstrap.recent)
+const activeStatus = ref<"active" | "unread" | "read" | "archived" | "all">(props.activeStatus ?? "active")
+const activeScope = ref<string>(props.activeScope ?? "all")
 const error = ref<string | null>(null)
 const statusTabs = ["active", "unread", "read", "archived", "all"] as const
+const filterEvent = useEventReply<NotificationLiveReply, { status: string; scope: string }>("notifications:filter")
+const markReadEvent = useEventReply<NotificationLiveReply, { recipient_id: string }>("notifications:mark_read")
+const archiveEvent = useEventReply<NotificationLiveReply, { recipient_id: string }>("notifications:archive")
+const markAllReadEvent = useEventReply<NotificationLiveReply, Record<string, never>>("notifications:mark_all_read")
+const preferenceEvent = useEventReply<NotificationLiveReply, { channel: NotificationChannel; enabled: boolean }>("notifications:set_preference")
 
 const unreadCount = computed(() => bootstrap.value.unread_count)
+const loading = computed(() => filterEvent.isLoading.value)
+const saving = computed(
+  () =>
+    markReadEvent.isLoading.value ||
+    archiveEvent.isLoading.value ||
+    markAllReadEvent.isLoading.value ||
+    preferenceEvent.isLoading.value,
+)
 const supportedChannels = computed(() => bootstrap.value.supported_channels)
 const inactiveChannels = computed(() => new Set(bootstrap.value.inactive_external_channels))
 const visibleScopes = computed(() => ["all", "system", "user", "organization", "workspace", "app"])
@@ -74,88 +93,52 @@ const channelEnabled = (channel: NotificationChannel): boolean => {
   return channel === "in_app"
 }
 
-const loadNotifications = async () => {
-  loading.value = true
-  error.value = null
-
-  try {
-    const response = await fetchNotifications({
-      status: activeStatus.value,
-      scope_type: activeScope.value === "all" ? null : activeScope.value,
-    })
-    notifications.value = response.notifications
-  } catch (cause) {
-    error.value = cause instanceof Error ? cause.message : "Unable to load notifications"
-  } finally {
-    loading.value = false
+const applyReply = (reply: NotificationLiveReply) => {
+  if (!reply.ok) {
+    error.value = reply.error || "Unable to update notifications"
+    return
   }
+
+  if (reply.bootstrap) bootstrap.value = reply.bootstrap
+  if (reply.notifications) notifications.value = reply.notifications
+  if (reply.filters) {
+    activeStatus.value = reply.filters.status
+    activeScope.value = reply.filters.scope
+  }
+
+  error.value = null
 }
 
-const loadBootstrap = async () => {
-  bootstrap.value = await fetchNotificationBootstrap()
-}
-
-const replaceNotification = (notification: NotificationSummary) => {
-  notifications.value = notifications.value
-    .map(item => item.recipient_id === notification.recipient_id ? notification : item)
-    .filter(item => {
-      if (activeStatus.value === "all") return true
-      if (activeStatus.value === "active") return item.status !== "archived"
-      return item.status === activeStatus.value
-    })
+const loadNotifications = async () => {
+  applyReply(await filterEvent.execute({ status: activeStatus.value, scope: activeScope.value }))
 }
 
 const markRead = async (notification: NotificationSummary) => {
   if (notification.status !== "unread") return
 
-  const response = await updateNotificationStatus(notification.recipient_id, "read")
-  replaceNotification(response.notification)
-  await loadBootstrap()
+  applyReply(await markReadEvent.execute({ recipient_id: notification.recipient_id }))
 }
 
 const archiveNotification = async (notification: NotificationSummary) => {
-  const response = await updateNotificationStatus(notification.recipient_id, "archived")
-  replaceNotification(response.notification)
-  await loadBootstrap()
+  applyReply(await archiveEvent.execute({ recipient_id: notification.recipient_id }))
 }
 
 const markAllRead = async () => {
-  const response = await markAllNotificationsRead()
-  bootstrap.value = { ...bootstrap.value, unread_count: response.unread_count }
-  await loadNotifications()
+  applyReply(await markAllReadEvent.execute({}))
 }
 
 const toggleChannel = async (channel: NotificationChannel) => {
-  saving.value = true
-  error.value = null
+  applyReply(await preferenceEvent.execute({ channel, enabled: !channelEnabled(channel) }))
+}
 
-  try {
-    const nextEnabled = !channelEnabled(channel)
-    const response = await updateNotificationPreferences([
-      {
-        scope_type: "system",
-        scope_id: null,
-        app_key: null,
-        notification_key: null,
-        channel,
-        enabled: nextEnabled,
-        cadence: nextEnabled ? "immediate" : "disabled",
-      },
-    ])
+const selectStatus = async (status: "active" | "unread" | "read" | "archived" | "all") => {
+  activeStatus.value = status
+  await loadNotifications()
+}
 
-    const otherPreferences = bootstrap.value.preferences.filter(preference =>
-      !response.preferences.some(updated => updated.id === preference.id),
-    )
-
-    bootstrap.value = {
-      ...bootstrap.value,
-      preferences: [...otherPreferences, ...response.preferences],
-    }
-  } catch (cause) {
-    error.value = cause instanceof Error ? cause.message : "Unable to save notification preference"
-  } finally {
-    saving.value = false
-  }
+const selectScope = async (scope: string) => {
+  activeScope.value = scope
+  await loadNotifications()
 }
 
 const severityClass = (severity: NotificationSummary["severity"]) => {
@@ -172,20 +155,18 @@ const formatScope = (notification: NotificationSummary) => {
 
 watch(() => props.notificationBootstrap, value => {
   bootstrap.value = value
-
-  if (activeStatus.value === "active" && activeScope.value === "all") {
-    notifications.value = value.recent
-  } else {
-    void loadNotifications()
-  }
 }, { deep: true })
 
-watch([activeStatus, activeScope], () => {
-  void loadNotifications()
+watch(() => props.notifications, value => {
+  if (value) notifications.value = value
+}, { deep: true })
+
+watch(() => props.activeStatus, value => {
+  if (value) activeStatus.value = value
 })
 
-onMounted(() => {
-  void loadNotifications()
+watch(() => props.activeScope, value => {
+  if (value) activeScope.value = value
 })
 </script>
 
@@ -247,7 +228,7 @@ onMounted(() => {
             type="button"
             class="rounded-md px-3 py-1.5 text-xs font-medium transition-colors"
             :class="activeStatus === status ? 'bg-[hsl(var(--so-accent))] text-[hsl(var(--so-foreground))]' : 'text-[hsl(var(--so-muted-foreground))] hover:bg-[hsl(var(--so-accent))/0.5]'"
-            @click="activeStatus = status"
+            @click="selectStatus(status)"
           >
             {{ status }}
           </button>
@@ -260,7 +241,7 @@ onMounted(() => {
             type="button"
             class="so-font-mono rounded border px-2 py-1 text-[10px] uppercase tracking-wider transition-colors"
             :class="activeScope === scope ? 'border-[hsl(var(--so-primary))/0.35] text-[hsl(var(--so-primary))]' : 'border-[hsl(var(--so-border))] text-[hsl(var(--so-muted-foreground))] hover:bg-[hsl(var(--so-accent))/0.5]'"
-            @click="activeScope = scope"
+            @click="selectScope(scope)"
           >
             {{ scope }}
           </button>

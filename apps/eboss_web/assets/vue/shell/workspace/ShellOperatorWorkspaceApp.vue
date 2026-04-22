@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue"
+import { Link, useLiveConnection } from "live_vue"
 import { Menu, Search } from "lucide-vue-next"
 
 import ThemeToggleButton from "../shared/ThemeToggleButton.vue"
@@ -73,6 +74,8 @@ const props = defineProps<{
   csrfToken: string
 }>()
 
+const { connectionState, isConnected } = useLiveConnection()
+
 const emptyNotificationBootstrap: NotificationBootstrap = {
   unread_count: 0,
   recent: [],
@@ -138,6 +141,7 @@ const basePath = computed(() => props.currentScope.dashboardPath || props.curren
 const dashboardHref = computed(() => props.currentScope.dashboardPath || "/dashboard")
 const avatarInitials = computed(() => props.currentUser.username.slice(0, 2).toUpperCase())
 const resolvedNotificationBootstrap = computed(() => props.notificationBootstrap ?? emptyNotificationBootstrap)
+const connectionLabel = computed(() => (isConnected.value ? "Live" : connectionState.value))
 const isAppNavigation = (page: WorkspaceNavigationContext): page is AppNavigation =>
   page.type === "app"
 const currentAppPage = computed<AppNavigation | null>(() =>
@@ -495,6 +499,18 @@ watch(currentWorkspaceKey, () => {
             </span>
           </span>
 
+          <span
+            class="hidden items-center gap-1.5 rounded-md border border-[hsl(var(--so-border))] px-2 py-1 text-xs text-[hsl(var(--so-muted-foreground))] lg:flex"
+            role="status"
+            aria-label="LiveView connection status"
+          >
+            <span
+              class="h-1.5 w-1.5 rounded-full"
+              :class="isConnected ? 'bg-[hsl(var(--so-success))]' : 'bg-[hsl(var(--so-warning))]'"
+            />
+            <span class="so-font-mono">{{ connectionLabel }}</span>
+          </span>
+
           <ThemeToggleButton />
 
             <NotificationBell :bootstrap="resolvedNotificationBootstrap" />
@@ -517,13 +533,13 @@ watch(currentWorkspaceKey, () => {
                 </div>
 
                 <div class="space-y-1 px-1 py-2">
-                  <a
-                    :href="dashboardHref"
+                  <Link
+                    :patch="dashboardHref"
                     data-testid="workspace-avatar-dashboard-link"
                     class="block rounded-md px-2 py-1.5 text-sm text-[hsl(var(--so-muted-foreground))] transition-colors hover:bg-[hsl(var(--so-accent))/0.5] hover:text-[hsl(var(--so-foreground))]"
                   >
                     Dashboard
-                  </a>
+                  </Link>
                 </div>
 
                 <form :action="signOutPath" method="post" class="border-t border-[hsl(var(--so-border))] pt-2">

@@ -1,22 +1,26 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue"
+import { computed, ref, watch } from "vue"
+import { useEventReply } from "live_vue"
 import { Bell } from "lucide-vue-next"
 
-import {
-  fetchNotificationBootstrap,
-  markAllNotificationsRead,
-  updateNotificationStatus,
-} from "./http"
 import type { NotificationBootstrap, NotificationSummary } from "./types"
 
 const props = defineProps<{
   bootstrap?: NotificationBootstrap
 }>()
 
-const loading = ref(false)
 const error = ref<string | null>(null)
 const bootstrap = ref<NotificationBootstrap | null>(props.bootstrap ?? null)
+const markReadEvent = useEventReply<NotificationLiveReply, { recipient_id: string }>("notifications:mark_read")
+const markAllReadEvent = useEventReply<NotificationLiveReply, Record<string, never>>("notifications:mark_all_read")
 
+interface NotificationLiveReply {
+  ok: boolean
+  bootstrap?: NotificationBootstrap
+  error?: string
+}
+
+const loading = computed(() => markReadEvent.isLoading.value || markAllReadEvent.isLoading.value)
 const unreadCount = computed(() => bootstrap.value?.unread_count ?? 0)
 const recent = computed(() => bootstrap.value?.recent ?? [])
 
@@ -24,48 +28,24 @@ const syncBootstrap = (nextBootstrap?: NotificationBootstrap) => {
   if (nextBootstrap) bootstrap.value = nextBootstrap
 }
 
-const loadBootstrap = async () => {
-  loading.value = true
+const applyReply = (reply: NotificationLiveReply) => {
+  if (!reply.ok) {
+    error.value = reply.error || "Unable to update notifications"
+    return
+  }
+
+  if (reply.bootstrap) bootstrap.value = reply.bootstrap
   error.value = null
-
-  try {
-    bootstrap.value = await fetchNotificationBootstrap()
-  } catch (cause) {
-    error.value = cause instanceof Error ? cause.message : "Unable to load notifications"
-  } finally {
-    loading.value = false
-  }
-}
-
-const replaceRecent = (notification: NotificationSummary) => {
-  if (!bootstrap.value) return
-
-  bootstrap.value = {
-    ...bootstrap.value,
-    unread_count: Math.max(0, bootstrap.value.unread_count - (notification.status === "read" ? 1 : 0)),
-    recent: bootstrap.value.recent.map(item =>
-      item.recipient_id === notification.recipient_id ? notification : item,
-    ),
-  }
 }
 
 const markRead = async (notification: NotificationSummary) => {
   if (notification.status !== "unread") return
 
-  const response = await updateNotificationStatus(notification.recipient_id, "read")
-  replaceRecent(response.notification)
+  applyReply(await markReadEvent.execute({ recipient_id: notification.recipient_id }))
 }
 
 const markAllRead = async () => {
-  const response = await markAllNotificationsRead()
-
-  if (bootstrap.value) {
-    bootstrap.value = {
-      ...bootstrap.value,
-      unread_count: response.unread_count,
-      recent: bootstrap.value.recent.map(item => ({ ...item, status: "read" })),
-    }
-  }
+  applyReply(await markAllReadEvent.execute({}))
 }
 
 const severityClass = (severity: NotificationSummary["severity"]) => {
@@ -76,9 +56,6 @@ const severityClass = (severity: NotificationSummary["severity"]) => {
 }
 
 watch(() => props.bootstrap, syncBootstrap, { deep: true })
-onMounted(() => {
-  if (!bootstrap.value) void loadBootstrap()
-})
 </script>
 
 <template>

@@ -327,8 +327,14 @@ describe("ChatPage", () => {
     await wrapper.get(`[data-testid="${chatSessionRowTestId(sessionOne.id)}"]`).trigger("click")
     await flushPromises()
 
-    expect(chatMocks.fetchChatSession).toHaveBeenCalledWith(workspaceRef, sessionOne.id)
     expect(window.history.pushState).toHaveBeenCalledWith({}, "", sessionOne.path)
+
+    await wrapper.setProps({
+      currentPage: appRoute(["sessions", sessionOne.id]),
+    })
+    await flushPromises()
+
+    expect(chatMocks.fetchChatSession).toHaveBeenCalledWith(workspaceRef, sessionOne.id)
     expect(wrapper.text()).toContain("Launch check-in")
   })
 

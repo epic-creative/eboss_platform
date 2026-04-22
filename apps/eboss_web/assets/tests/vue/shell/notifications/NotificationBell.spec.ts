@@ -1,21 +1,9 @@
 import { flushPromises } from "@vue/test-utils"
-import { beforeEach, describe, expect, it, vi } from "vitest"
+import { describe, expect, it, vi } from "vitest"
 
 import { mountComponent } from "@/tests/vue/support/mount"
 import NotificationBell from "@/vue/shell/notifications/NotificationBell.vue"
 import type { NotificationBootstrap, NotificationSummary } from "@/vue/shell/notifications"
-
-const notificationMocks = vi.hoisted(() => ({
-  fetchNotificationBootstrap: vi.fn(),
-  markAllNotificationsRead: vi.fn(),
-  updateNotificationStatus: vi.fn(),
-}))
-
-vi.mock("@/vue/shell/notifications/http", () => ({
-  fetchNotificationBootstrap: notificationMocks.fetchNotificationBootstrap,
-  markAllNotificationsRead: notificationMocks.markAllNotificationsRead,
-  updateNotificationStatus: notificationMocks.updateNotificationStatus,
-}))
 
 const notification = (overrides: Partial<NotificationSummary> = {}): NotificationSummary => ({
   recipient_id: "recipient-1",
@@ -74,16 +62,12 @@ const bootstrap = (recent: NotificationSummary[] = [notification()]): Notificati
 })
 
 describe("NotificationBell", () => {
-  beforeEach(() => {
-    notificationMocks.fetchNotificationBootstrap.mockReset()
-    notificationMocks.markAllNotificationsRead.mockReset()
-    notificationMocks.updateNotificationStatus.mockReset()
-  })
-
   it("renders unread state and marks a recent notification read", async () => {
-    notificationMocks.updateNotificationStatus.mockResolvedValue({
-      notification: notification({ status: "read", read_at: "2026-04-21T12:01:00Z" }),
-    })
+    const liveReply = vi.fn(() => ({
+      ok: true,
+      bootstrap: bootstrap([notification({ status: "read", read_at: "2026-04-21T12:01:00Z" })]),
+    }))
+    ;(globalThis as typeof globalThis & { __liveVueEventReply: typeof liveReply }).__liveVueEventReply = liveReply
 
     const wrapper = mountComponent(NotificationBell, {
       props: {
@@ -100,15 +84,19 @@ describe("NotificationBell", () => {
     await item!.trigger("click")
     await flushPromises()
 
-    expect(notificationMocks.updateNotificationStatus).toHaveBeenCalledWith("recipient-1", "read")
+    expect(liveReply).toHaveBeenCalledWith("notifications:mark_read", { recipient_id: "recipient-1" })
     expect(wrapper.text()).toContain("0 unread")
   })
 
   it("marks all recent notifications read from the popover", async () => {
-    notificationMocks.markAllNotificationsRead.mockResolvedValue({
-      unread_count: 0,
-      notifications: [],
-    })
+    const liveReply = vi.fn(() => ({
+      ok: true,
+      bootstrap: bootstrap([
+        notification({ status: "read" }),
+        notification({ recipient_id: "recipient-2", status: "read" }),
+      ]),
+    }))
+    ;(globalThis as typeof globalThis & { __liveVueEventReply: typeof liveReply }).__liveVueEventReply = liveReply
 
     const wrapper = mountComponent(NotificationBell, {
       props: {
@@ -122,7 +110,7 @@ describe("NotificationBell", () => {
     await button!.trigger("click")
     await flushPromises()
 
-    expect(notificationMocks.markAllNotificationsRead).toHaveBeenCalled()
+    expect(liveReply).toHaveBeenCalledWith("notifications:mark_all_read", {})
     expect(wrapper.text()).toContain("0 unread")
   })
 })

@@ -28,6 +28,7 @@ defmodule EBossWeb.Dev.DesignSystemLiveTest do
     assert html =~ "EBoss design system"
     assert has_element?(view, "#contract")
     assert has_element?(view, "#vue-contract")
+    assert has_element?(view, "#livevue-runtime")
     assert has_element?(view, "#review-index")
     assert has_element?(view, "#review-matrix")
     assert has_element?(view, "#panels")
@@ -46,6 +47,11 @@ defmodule EBossWeb.Dev.DesignSystemLiveTest do
     assert html =~ "Shared HEEx review index"
     assert html =~ "Review the system here before refining any product surface."
     assert html =~ "Runtime Vue patterns should graduate into shared contracts."
+    assert html =~ "LiveView owns persisted browser state; Vue renders and enriches it."
+    assert html =~ "Use Link and useLiveNavigation() instead of manual history state."
+    assert html =~ "Use $live.pushEvent() or phx-* bindings for browser UI actions."
+    assert html =~ "Use push_event/3, useLiveEvent(), and Phoenix streams."
+    assert html =~ "Keep REST and SSE as external contracts, not default browser UI plumbing."
     assert html =~ "Friction queue"
     assert html =~ "Vue shell components"
     assert html =~ "Theme and density review matrix"

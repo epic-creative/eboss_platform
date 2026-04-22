@@ -40,6 +40,25 @@ defmodule EBossWeb.DashboardLive do
   end
 
   @impl true
+  def handle_params(params, _uri, socket) do
+    case resolve_scope(socket.assigns.current_user, params) do
+      {:redirect, dashboard_path} ->
+        {:noreply, redirect(socket, to: dashboard_path)}
+
+      {:ok, current_scope} ->
+        route = resolve_current_route(current_scope, socket.assigns.live_action, params)
+
+        {:noreply,
+         socket
+         |> assign(:current_scope, current_scope)
+         |> assign(:current_navigation, route)
+         |> assign(:current_path, route.current_path)
+         |> assign(:page_title, route.title)
+         |> assign(:current_scope_props, scope_props(current_scope))}
+    end
+  end
+
+  @impl true
   def handle_info({:notification_created, _recipient}, socket), do: refresh_notifications(socket)
   def handle_info({:notification_updated, _recipient}, socket), do: refresh_notifications(socket)
   def handle_info({:notifications_read_all, _user_id}, socket), do: refresh_notifications(socket)
@@ -49,6 +68,17 @@ defmodule EBossWeb.DashboardLive do
 
   def handle_info({:notification_channels_updated, _user_id}, socket),
     do: refresh_notifications(socket)
+
+  @impl true
+  def handle_event("notifications:mark_read", %{"recipient_id" => recipient_id}, socket) do
+    reply_with_notification_action(socket, fn current_user ->
+      EBossNotify.mark_read(current_user, recipient_id)
+    end)
+  end
+
+  def handle_event("notifications:mark_all_read", _params, socket) do
+    reply_with_notification_action(socket, &EBossNotify.mark_all_read/1)
+  end
 
   @impl true
   def render(assigns) do
@@ -239,12 +269,22 @@ defmodule EBossWeb.DashboardLive do
   end
 
   defp refresh_notifications(socket) do
-    {:noreply,
-     assign(
-       socket,
-       :notification_bootstrap,
-       notification_bootstrap(socket.assigns.current_user)
-     )}
+    {:noreply, assign_notification_bootstrap(socket)}
+  end
+
+  defp reply_with_notification_action(socket, action) do
+    case action.(socket.assigns.current_user) do
+      {:ok, _result} ->
+        socket = assign_notification_bootstrap(socket)
+        {:reply, %{ok: true, bootstrap: socket.assigns.notification_bootstrap}, socket}
+
+      {:error, reason} ->
+        {:reply, %{ok: false, error: notification_error(reason)}, socket}
+    end
+  end
+
+  defp assign_notification_bootstrap(socket) do
+    assign(socket, :notification_bootstrap, notification_bootstrap(socket.assigns.current_user))
   end
 
   defp notification_bootstrap(nil), do: empty_notification_bootstrap()
@@ -255,6 +295,9 @@ defmodule EBossWeb.DashboardLive do
       {:error, _reason} -> empty_notification_bootstrap()
     end
   end
+
+  defp notification_error(reason) when is_binary(reason), do: reason
+  defp notification_error(reason), do: inspect(reason)
 
   defp empty_notification_bootstrap do
     %{
