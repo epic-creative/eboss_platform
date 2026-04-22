@@ -1,3 +1,10 @@
+/**
+ * External Folio HTTP primitives.
+ *
+ * Browser-rendered workspace surfaces should not use this as their default data
+ * path; use LiveVue events/props unless intentionally testing or consuming the
+ * public REST contract.
+ */
 export interface FolioApiErrorPayload {
   error?: {
     code?: string

@@ -1,3 +1,9 @@
+/**
+ * External Folio REST client helpers.
+ *
+ * The signed-in browser UI should prefer LiveVue props and event replies. Keep
+ * this module for external clients, automation, and API contract tests.
+ */
 import { requestJson } from "./http"
 import {
   folioActivityPath,

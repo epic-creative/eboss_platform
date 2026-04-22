@@ -283,6 +283,7 @@ Signed-in browser UI should use LiveVue as a LiveView presentation layer, not as
 - Uploads: use `useLiveUpload()` for future attachment flows instead of separate browser upload clients.
 - SSR: keep global SSR disabled for now; revisit SSR in a focused public/auth-page pass after hydration behavior is verified.
 - External API: keep REST and SSE endpoints available for API clients, automation, external integrations, and focused controller tests. Same-origin signed-in UI should not default to `fetch()` unless the interaction is intentionally outside LiveView.
+- Module boundaries: default Vue barrels such as `./chat` and `./folio` should expose LiveVue-safe types/path helpers only. REST/SSE clients belong in explicit `http.ts` or `queries.ts` imports and must be labeled as external-contract helpers.
 
 ## Component Contracts
 

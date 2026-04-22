@@ -1,3 +1,10 @@
+/**
+ * External Chat HTTP primitives.
+ *
+ * Browser-rendered workspace surfaces should not use this as their default data
+ * path; use LiveVue events/streams unless intentionally testing or consuming
+ * the public REST/SSE contract.
+ */
 export interface ChatApiErrorPayload {
   error?: {
     code?: string

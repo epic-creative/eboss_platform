@@ -1,12 +1,15 @@
+// LiveVue browser UI barrel.
+// Keep REST/SSE helpers out of this entrypoint so workspace surfaces default to
+// LiveView-owned state, event replies, and Phoenix streams. External/API clients
+// that need HTTP contracts should import from ./queries or ./http directly.
 export {
-  archiveChatSession,
-  createChatSession,
-  fetchChatBootstrap,
-  fetchChatSession,
-  streamChatReply,
-} from "./queries"
-export { chatBasePath, chatBootstrapPath, chatSessionPath, chatSessionsPath, chatStreamPath, chatWorkspaceRef } from "./paths"
-export { requestJson, openEventStream, ChatApiError } from "./http"
+  chatBasePath,
+  chatBootstrapPath,
+  chatSessionPath,
+  chatSessionsPath,
+  chatStreamPath,
+  chatWorkspaceRef,
+} from "./paths"
 export type {
   ChatBootstrapResponse,
   ChatLiveState,

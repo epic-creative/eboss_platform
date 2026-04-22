@@ -1,3 +1,10 @@
+/**
+ * External Chat REST/SSE client helpers.
+ *
+ * The signed-in browser UI should prefer LiveVue props, event replies, pushed
+ * events, and Phoenix streams. Keep this module for external clients,
+ * automation, and API contract tests.
+ */
 import { openEventStream, requestJson } from "./http"
 import { chatBootstrapPath, chatSessionPath, chatSessionsPath, chatStreamPath } from "./paths"
 import type {

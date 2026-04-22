@@ -1,3 +1,7 @@
+// LiveVue browser UI barrel.
+// Keep REST helpers out of this entrypoint so workspace surfaces default to
+// LiveView-owned state and event replies. External/API clients that need HTTP
+// contracts should import from ./queries or ./http directly.
 export {
   folioActivityPath,
   folioBasePath,
@@ -8,27 +12,6 @@ export {
   folioTasksPath,
   folioWorkspaceRef,
 } from "./paths"
-export { requestJson, FolioApiError } from "./http"
-export {
-  createFolioTask,
-  createFolioProject,
-  delegateFolioTask,
-  fetchFolioActivity,
-  fetchFolioBootstrap,
-  fetchFolioProjects,
-  fetchFolioTasks,
-  transitionFolioProject,
-  transitionFolioTask,
-  updateFolioProject,
-} from "./queries"
-export {
-  useFolioActivity,
-  useFolioBootstrap,
-  useFolioProjects,
-  useFolioTasks,
-  useFolioWorkspaceScope,
-  type UseFolioReadOptions,
-} from "./composables"
 export type {
   FolioProjectStatus,
   FolioTaskStatus,

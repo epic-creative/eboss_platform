@@ -1,3 +1,10 @@
+/**
+ * External Notifications REST client helpers.
+ *
+ * The authenticated browser UI is LiveView-first and should use event replies
+ * plus notification bootstrap props. Keep this module for external clients and
+ * API contract tests.
+ */
 import type {
   NotificationBootstrap,
   NotificationChannelSummary,
