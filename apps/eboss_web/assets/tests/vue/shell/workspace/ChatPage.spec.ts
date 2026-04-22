@@ -6,10 +6,9 @@ import { mountComponent } from "@/tests/vue/support/mount"
 import ChatPage from "@/vue/shell/workspace/ChatPage.vue"
 import { chatMessageRowTestId, chatSessionRowTestId, chatSurfaceTestContracts } from "@/vue/shell/workspace/testContracts"
 import type {
-  ChatBootstrapResponse,
+  ChatLiveState,
   ChatMessageSummary,
   ChatModelOption,
-  ChatSessionDetailResponse,
   ChatSessionSummary,
   ChatWorkspaceRef,
 } from "@/vue/shell/workspace/chat"
@@ -52,21 +51,6 @@ const chatModels: ChatModelOption[] = [
     model: "openai:gpt-4o-mini",
   },
 ]
-
-const bootstrapResponse = (
-  sessions: ChatSessionSummary[] = [],
-): ChatBootstrapResponse => ({
-  scope: {} as never,
-  default_model_key: "anthropic_haiku_4_5",
-  models: chatModels,
-  usage_totals: {
-    sessions: sessions.length,
-    input_tokens: 0,
-    output_tokens: 0,
-    total_tokens: 0,
-  },
-  sessions,
-})
 
 const scope = (overrides: Partial<WorkspaceScope> = {}): WorkspaceScope => ({
   empty: false,
@@ -162,38 +146,22 @@ const message = (overrides: Partial<ChatMessageSummary> = {}): ChatMessageSummar
   ...overrides,
 })
 
-const sessionDetail = (
-  currentSession: ChatSessionSummary,
-  messages: ChatMessageSummary[],
-): ChatSessionDetailResponse => ({
-  scope: {
-    app_key: "chat",
-    workspace: {
-      id: "workspace-1",
-      name: "Main Workspace",
-      slug: "main-workspace",
-      dashboard_path: "/alpha-team/main-workspace",
-      owner_slug: "alpha-team",
-    },
-    owner: {
-      type: "user",
-      id: "user-1",
-      slug: "alpha-team",
-      display_name: "Alpha Team",
-    },
-    app: {
-      key: "chat",
-      label: "Chat",
-      default_path: "/alpha-team/main-workspace/apps/chat",
-      enabled: true,
-      capabilities: { read: true, manage: true },
-    },
-    capabilities: { read: true, manage: true },
-    workspace_path: "/alpha-team/main-workspace",
-    app_path: currentSession.path,
+const chatState = (overrides: Partial<ChatLiveState> = {}): ChatLiveState => ({
+  surface: "index",
+  sessions: [],
+  current_session: null,
+  messages: [],
+  default_model_key: "anthropic_haiku_4_5",
+  models: chatModels,
+  usage_totals: {
+    sessions: 0,
+    input_tokens: 0,
+    output_tokens: 0,
+    total_tokens: 0,
   },
-  session: currentSession,
-  messages,
+  loading: false,
+  error: null,
+  ...overrides,
 })
 
 describe("ChatPage", () => {
@@ -235,13 +203,7 @@ describe("ChatPage", () => {
       finish_reason: "stop",
     }
 
-    chatMocks.fetchChatBootstrap
-      .mockResolvedValueOnce(bootstrapResponse())
-      .mockResolvedValueOnce(bootstrapResponse([createdSession]))
     chatMocks.createChatSession.mockResolvedValue({ scope: {} as never, session: createdSession })
-    chatMocks.fetchChatSession.mockResolvedValue(
-      sessionDetail(createdSession, [userMessage, assistantCompleted]),
-    )
     chatMocks.streamChatReply.mockImplementation(async (_scope, _sessionId, _payload, handlers) => {
       handlers.onEvent("user_message_committed", {
         session: { id: createdSession.id, workspace_id: "workspace-1" },
@@ -269,6 +231,9 @@ describe("ChatPage", () => {
       props: {
         currentScope: scope(),
         currentPage: appRoute(["new"]),
+        chatState: chatState({
+          surface: "new",
+        }),
       },
     })
 
@@ -281,6 +246,8 @@ describe("ChatPage", () => {
     await nextTick()
 
     expect(chatMocks.createChatSession).toHaveBeenCalledWith(workspaceRef, { title_seed: "We need a launch plan" })
+    expect(chatMocks.fetchChatBootstrap).toHaveBeenCalledTimes(0)
+    expect(chatMocks.fetchChatSession).toHaveBeenCalledTimes(0)
     expect(chatMocks.streamChatReply).toHaveBeenCalledWith(
       workspaceRef,
       createdSession.id,
@@ -307,21 +274,23 @@ describe("ChatPage", () => {
       path: "/alpha-team/main-workspace/apps/chat/sessions/session-2",
     })
 
-    chatMocks.fetchChatBootstrap.mockResolvedValue(bootstrapResponse([sessionOne, sessionTwo]))
-    chatMocks.fetchChatSession
-      .mockResolvedValueOnce(sessionDetail(sessionTwo, [message({ id: "message-2", body: "Ops check-in" })]))
-      .mockResolvedValueOnce(sessionDetail(sessionOne, [message({ body: "Launch check-in" })]))
-
     const wrapper = mountComponent(ChatPage, {
       props: {
         currentScope: scope(),
         currentPage: appRoute(["sessions", sessionTwo.id]),
+        chatState: chatState({
+          surface: "session",
+          sessions: [sessionOne, sessionTwo],
+          current_session: sessionTwo,
+          messages: [message({ id: "message-2", body: "Ops check-in" })],
+        }),
       },
     })
 
     await flushPromises()
 
-    expect(chatMocks.fetchChatSession).toHaveBeenCalledWith(workspaceRef, sessionTwo.id)
+    expect(chatMocks.fetchChatBootstrap).toHaveBeenCalledTimes(0)
+    expect(chatMocks.fetchChatSession).toHaveBeenCalledTimes(0)
     expect(wrapper.text()).toContain("Ops check-in")
 
     await wrapper.get(`[data-testid="${chatSessionRowTestId(sessionOne.id)}"]`).trigger("click")
@@ -331,10 +300,16 @@ describe("ChatPage", () => {
 
     await wrapper.setProps({
       currentPage: appRoute(["sessions", sessionOne.id]),
+      chatState: chatState({
+        surface: "session",
+        sessions: [sessionOne, sessionTwo],
+        current_session: sessionOne,
+        messages: [message({ body: "Launch check-in" })],
+      }),
     })
     await flushPromises()
 
-    expect(chatMocks.fetchChatSession).toHaveBeenCalledWith(workspaceRef, sessionOne.id)
+    expect(chatMocks.fetchChatSession).toHaveBeenCalledTimes(0)
     expect(wrapper.text()).toContain("Launch check-in")
   })
 
@@ -342,11 +317,7 @@ describe("ChatPage", () => {
     const createdSession = session()
     let resolveStream: (() => void) | undefined
 
-    chatMocks.fetchChatBootstrap
-      .mockResolvedValueOnce(bootstrapResponse())
-      .mockResolvedValueOnce(bootstrapResponse([createdSession]))
     chatMocks.createChatSession.mockResolvedValue({ scope: {} as never, session: createdSession })
-    chatMocks.fetchChatSession.mockResolvedValue(sessionDetail(createdSession, []))
     chatMocks.streamChatReply.mockImplementation(
       () =>
         new Promise<void>((resolve) => {
@@ -358,6 +329,9 @@ describe("ChatPage", () => {
       props: {
         currentScope: scope(),
         currentPage: appRoute(["new"]),
+        chatState: chatState({
+          surface: "new",
+        }),
       },
     })
 
@@ -384,8 +358,6 @@ describe("ChatPage", () => {
   it("removes an archived session from the rail and returns to draft mode", async () => {
     const activeSession = session()
 
-    chatMocks.fetchChatBootstrap.mockResolvedValue(bootstrapResponse([activeSession]))
-    chatMocks.fetchChatSession.mockResolvedValue(sessionDetail(activeSession, [message()]))
     chatMocks.archiveChatSession.mockResolvedValue({
       scope: {} as never,
       session: { ...activeSession, status: "archived" },
@@ -395,6 +367,12 @@ describe("ChatPage", () => {
       props: {
         currentScope: scope(),
         currentPage: appRoute(["sessions", activeSession.id]),
+        chatState: chatState({
+          surface: "session",
+          sessions: [activeSession],
+          current_session: activeSession,
+          messages: [message()],
+        }),
       },
     })
 

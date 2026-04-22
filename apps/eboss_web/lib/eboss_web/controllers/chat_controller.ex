@@ -6,6 +6,7 @@ defmodule EBossWeb.ChatController do
   alias EBossChat.Service
   alias EBossNotify
   alias EBossWeb.AppScope
+  alias EBossWeb.ChatPayloads
 
   @stream_conn_key {__MODULE__, :stream_conn}
 
@@ -19,11 +20,11 @@ defmodule EBossWeb.ChatController do
              actor: current_user
            ) do
       json(conn, %{
-        scope: chat_scope_payload(scope),
+        scope: ChatPayloads.scope_summary(scope),
         default_model_key: EBossChat.default_chat_model_key(),
         models: EBossChat.chat_model_options(),
         usage_totals: EBossChat.usage_totals_for_sessions(sessions),
-        sessions: Enum.map(sessions, &session_summary_payload(&1, scope))
+        sessions: Enum.map(sessions, &ChatPayloads.session_summary(&1, scope))
       })
     else
       {:error, reason} -> render_scope_error(conn, reason)
@@ -40,8 +41,8 @@ defmodule EBossWeb.ChatController do
              actor: current_user
            ) do
       json(conn, %{
-        scope: chat_scope_payload(scope),
-        sessions: Enum.map(sessions, &session_summary_payload(&1, scope))
+        scope: ChatPayloads.scope_summary(scope),
+        sessions: Enum.map(sessions, &ChatPayloads.session_summary(&1, scope))
       })
     else
       {:error, reason} -> render_scope_error(conn, reason)
@@ -61,15 +62,15 @@ defmodule EBossWeb.ChatController do
              session.id,
              scope.current_workspace.id,
              actor: current_user,
-             load: session_load()
+             load: ChatPayloads.session_load()
            ) do
       notify_chat_session_created(scope, session, current_user)
 
       conn
       |> put_status(:created)
       |> json(%{
-        scope: chat_scope_payload(scope),
-        session: session_summary_payload(session, scope)
+        scope: ChatPayloads.scope_summary(scope),
+        session: ChatPayloads.session_summary(session, scope)
       })
     else
       {:error, reason} ->
@@ -87,7 +88,7 @@ defmodule EBossWeb.ChatController do
              session_id,
              scope.current_workspace.id,
              actor: current_user,
-             load: session_load()
+             load: ChatPayloads.session_load()
            ),
          {:ok, messages} <-
            EBossChat.list_messages_in_session(
@@ -97,9 +98,9 @@ defmodule EBossWeb.ChatController do
              load: [created_by_user: []]
            ) do
       json(conn, %{
-        scope: chat_scope_payload(scope),
-        session: session_detail_payload(session, scope),
-        messages: Enum.map(messages, &message_payload/1)
+        scope: ChatPayloads.scope_summary(scope),
+        session: ChatPayloads.session_summary(session, scope),
+        messages: Enum.map(messages, &ChatPayloads.message_summary/1)
       })
     else
       {:error, :not_found} ->
@@ -120,13 +121,13 @@ defmodule EBossWeb.ChatController do
              session_id,
              scope.current_workspace.id,
              actor: current_user,
-             load: session_load()
+             load: ChatPayloads.session_load()
            ),
          :ok <- validate_session_update(conn.body_params),
          {:ok, session} <- Service.archive_session(session, actor: current_user) do
       json(conn, %{
-        scope: chat_scope_payload(scope),
-        session: session_summary_payload(session, scope)
+        scope: ChatPayloads.scope_summary(scope),
+        session: ChatPayloads.session_summary(session, scope)
       })
     else
       {:error, :not_found} ->
@@ -161,7 +162,7 @@ defmodule EBossWeb.ChatController do
              session_id,
              scope.current_workspace.id,
              actor: current_user,
-             load: session_load()
+             load: ChatPayloads.session_load()
            ),
          :ok <- validate_message_body(body),
          :ok <- validate_streamable_session(session),
@@ -324,7 +325,7 @@ defmodule EBossWeb.ChatController do
   defp user_label(_actor), do: "A workspace member"
 
   defp chunk_event(conn, event, payload) do
-    encoded = Jason.encode!(serialize_stream_payload(payload))
+    encoded = Jason.encode!(ChatPayloads.serialize_stream_payload(payload))
 
     case chunk(conn, "event: #{event}\ndata: #{encoded}\n\n") do
       {:ok, next_conn} ->
@@ -339,113 +340,6 @@ defmodule EBossWeb.ChatController do
   defp final_conn(_conn) do
     Process.get(@stream_conn_key)
   end
-
-  defp session_load do
-    [
-      :message_count,
-      :total_input_tokens,
-      :total_output_tokens,
-      :total_tokens_sum,
-      created_by_user: []
-    ]
-  end
-
-  defp chat_scope_payload(%AppScope{} = scope) do
-    app = Map.get(scope.apps, "chat", %{})
-
-    %{
-      app_key: "chat",
-      workspace: scope.current_workspace,
-      owner: scope.owner,
-      app: normalize_payload_map(app),
-      capabilities: payload_map_get(app, :capabilities, %{}),
-      workspace_path: Map.get(scope.current_workspace, :dashboard_path),
-      app_path: payload_map_get(app, :default_path)
-    }
-  end
-
-  defp session_summary_payload(session, %AppScope{} = scope) do
-    %{
-      id: session.id,
-      title: session.title,
-      status: session.status,
-      last_message_at: session.last_message_at,
-      last_activity_at: session.last_activity_at,
-      message_count: Map.get(session, :message_count, 0),
-      usage_totals: %{
-        input_tokens: Map.get(session, :total_input_tokens, 0) || 0,
-        output_tokens: Map.get(session, :total_output_tokens, 0) || 0,
-        total_tokens: Map.get(session, :total_tokens_sum, 0) || 0
-      },
-      created_by_user: user_payload(session.created_by_user),
-      path: "#{scope.dashboard_path}/apps/chat/sessions/#{session.id}"
-    }
-  end
-
-  defp session_detail_payload(session, scope) do
-    session_summary_payload(session, scope)
-  end
-
-  defp message_payload(message) do
-    %{
-      id: message.id,
-      role: message.role,
-      body: message.body,
-      status: message.status,
-      sequence: message.sequence,
-      provider: message.provider,
-      model: message.model,
-      input_tokens: message.input_tokens || 0,
-      output_tokens: message.output_tokens || 0,
-      total_tokens: message.total_tokens || 0,
-      finish_reason: message.finish_reason,
-      error_message: message.error_message,
-      inserted_at: message.inserted_at,
-      author: user_payload(message.created_by_user)
-    }
-  end
-
-  defp user_payload(nil), do: nil
-  defp user_payload(%Ash.NotLoaded{}), do: nil
-
-  defp user_payload(user) do
-    %{
-      id: user.id,
-      username: user.username,
-      email: to_string(user.email)
-    }
-  end
-
-  defp serialize_stream_payload(%{session: session, message: message}) do
-    %{
-      session: %{id: session.id, workspace_id: session.workspace_id},
-      message: message_payload(message)
-    }
-  end
-
-  defp serialize_stream_payload(%{session_id: session_id, delta: delta}) do
-    %{session_id: session_id, delta: delta}
-  end
-
-  defp serialize_stream_payload(%{} = payload) do
-    normalize_payload_map(payload)
-  end
-
-  defp serialize_stream_payload(payload), do: payload
-
-  defp payload_map_get(payload, key, default \\ nil) when is_map(payload) do
-    payload
-    |> Map.get(key, Map.get(payload, to_string(key), default))
-    |> normalize_payload_map()
-  end
-
-  defp normalize_payload_map(%{} = payload) do
-    Enum.into(payload, %{}, fn {key, value} ->
-      {to_string(key), normalize_payload_map(value)}
-    end)
-  end
-
-  defp normalize_payload_map(value), do: value
 
   defp parse_title_seed(%{"title_seed" => title_seed}) when is_binary(title_seed),
     do: String.trim(title_seed)

@@ -181,6 +181,9 @@ defmodule EBossWeb.DashboardScopeRoutingTest do
     assert new_shell.props["currentPage"]["app_surface"] == "new"
     assert new_shell.props["currentPage"]["app_path"] == ["new"]
     assert new_shell.props["currentPath"] == chat_new_path
+    assert new_shell.props["chatState"]["surface"] == "new"
+    assert is_list(new_shell.props["chatState"]["sessions"])
+    assert is_list(new_shell.props["chatState"]["models"])
 
     assert {:ok, session_view, _html} = live(context.conn, chat_session_path)
 
@@ -191,6 +194,8 @@ defmodule EBossWeb.DashboardScopeRoutingTest do
     assert session_shell.props["currentPage"]["app_surface"] == "sessions"
     assert session_shell.props["currentPage"]["app_path"] == ["sessions", "session-123"]
     assert session_shell.props["currentPath"] == chat_session_path
+    assert session_shell.props["chatState"]["surface"] == "session"
+    assert session_shell.props["chatState"]["error"] == "Chat session not found."
   end
 
   test "app routes without read capability fall back to workspace routing", %{conn: conn} do

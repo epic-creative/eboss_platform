@@ -93,6 +93,18 @@ export interface ChatBootstrapResponse {
   sessions: ChatSessionSummary[]
 }
 
+export interface ChatLiveState {
+  surface: "index" | "new" | "session" | string | null
+  sessions: ChatSessionSummary[]
+  current_session: ChatSessionSummary | null
+  messages: ChatMessageSummary[]
+  default_model_key: string
+  models: ChatModelOption[]
+  usage_totals: ChatWorkspaceUsageTotals
+  loading: boolean
+  error: string | null
+}
+
 export interface ChatSessionsResponse {
   scope: ChatScope
   sessions: ChatSessionSummary[]

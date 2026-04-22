@@ -11,16 +11,15 @@ import {
   archiveChatSession,
   chatWorkspaceRef,
   createChatSession,
-  fetchChatBootstrap,
-  fetchChatSession,
   streamChatReply,
 } from "./chat"
-import type { ChatMessageSummary, ChatModelOption, ChatSessionSummary } from "./chat"
+import type { ChatLiveState, ChatMessageSummary, ChatModelOption, ChatSessionSummary } from "./chat"
 import type { AppNavigation, WorkspaceScope } from "./types"
 
 const props = defineProps<{
   currentScope: WorkspaceScope
   currentPage: AppNavigation
+  chatState?: ChatLiveState
 }>()
 
 const { patch } = useLiveNavigation()
@@ -112,50 +111,6 @@ const appendAssistantDelta = (delta: string) => {
   messages.value = next
 }
 
-const loadBootstrap = async () => {
-  if (!scopeRef.value) return
-
-  loading.value = true
-  error.value = null
-
-  try {
-    const response = await fetchChatBootstrap(scopeRef.value)
-    sessions.value = response.sessions
-    modelOptions.value = response.models || []
-
-    if (!selectedModelKey.value || !modelOptions.value.some(model => model.key === selectedModelKey.value)) {
-      selectedModelKey.value = response.default_model_key || modelOptions.value[0]?.key || ""
-    }
-
-    if (selectedSessionId.value) {
-      const selected = response.sessions.find(session => session.id === selectedSessionId.value) || null
-      currentSession.value = selected
-    }
-  } catch (cause) {
-    error.value = cause instanceof Error ? cause.message : "Unexpected chat bootstrap error"
-  } finally {
-    loading.value = false
-  }
-}
-
-const loadSession = async (sessionId: string) => {
-  if (!scopeRef.value) return
-
-  loading.value = true
-  error.value = null
-
-  try {
-    const response = await fetchChatSession(scopeRef.value, sessionId)
-    currentSession.value = response.session
-    messages.value = response.messages
-    upsertSession(response.session)
-  } catch (cause) {
-    error.value = cause instanceof Error ? cause.message : "Unexpected chat session error"
-  } finally {
-    loading.value = false
-  }
-}
-
 const startNewChat = () => {
   draftMode.value = true
   selectedSessionId.value = null
@@ -225,11 +180,6 @@ const sendMessage = async () => {
       },
     })
 
-    await loadBootstrap()
-
-    if (session) {
-      await loadSession(session.id)
-    }
   } catch (cause) {
     error.value = cause instanceof Error ? cause.message : "Unexpected chat stream error"
   } finally {
@@ -237,21 +187,49 @@ const sendMessage = async () => {
   }
 }
 
-watch(
-  () => [scopeRef.value?.ownerSlug, scopeRef.value?.workspaceSlug],
-  () => {
-    void loadBootstrap()
+const emptyChatState = (): ChatLiveState => ({
+  surface: null,
+  sessions: [],
+  current_session: null,
+  messages: [],
+  default_model_key: "",
+  models: [],
+  usage_totals: {
+    sessions: 0,
+    input_tokens: 0,
+    output_tokens: 0,
+    total_tokens: 0,
   },
-  { immediate: true },
+  loading: false,
+  error: null,
+})
+
+const applyChatState = (state: ChatLiveState | undefined) => {
+  const nextState = state ?? emptyChatState()
+
+  sessions.value = nextState.sessions
+  modelOptions.value = nextState.models || []
+  currentSession.value = nextState.current_session
+  messages.value = nextState.messages
+  loading.value = nextState.loading
+  error.value = nextState.error
+
+  if (!selectedModelKey.value || !modelOptions.value.some(model => model.key === selectedModelKey.value)) {
+    selectedModelKey.value = nextState.default_model_key || modelOptions.value[0]?.key || ""
+  }
+}
+
+watch(
+  () => props.chatState,
+  nextState => applyChatState(nextState),
+  { deep: true, immediate: true },
 )
 
 watch(routeSessionId, sessionId => {
   selectedSessionId.value = sessionId
   draftMode.value = routeIsDraft.value || !sessionId
 
-  if (sessionId) {
-    void loadSession(sessionId)
-  } else if (routeIsDraft.value) {
+  if (!sessionId && routeIsDraft.value) {
     currentSession.value = null
     messages.value = []
   }

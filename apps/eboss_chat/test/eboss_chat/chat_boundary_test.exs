@@ -243,6 +243,17 @@ defmodule EBossChat.ChatBoundaryTest do
     assert {:ok, []} = EBossChat.list_sessions_in_workspace(workspace.id, actor: outsider)
   end
 
+  test "malformed session ids return not found instead of leaking data layer errors" do
+    owner = TestSupport.register_user()
+    workspace = TestSupport.create_user_workspace(owner)
+
+    assert {:error, :not_found} =
+             EBossChat.get_session_in_workspace("not-a-uuid", workspace.id, actor: owner)
+
+    assert {:error, :not_found} =
+             EBossChat.list_messages_in_session("not-a-uuid", workspace.id, actor: owner)
+  end
+
   defp restore_env(key, nil), do: Application.delete_env(:eboss_chat, key)
   defp restore_env(key, value), do: Application.put_env(:eboss_chat, key, value)
 end

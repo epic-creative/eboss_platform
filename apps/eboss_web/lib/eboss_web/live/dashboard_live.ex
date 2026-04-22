@@ -1,9 +1,11 @@
 defmodule EBossWeb.DashboardLive do
   use EBossWeb, :live_view
 
+  alias EBossChat
   alias EBossFolio
   alias EBossNotify
   alias EBossWeb.AppScope
+  alias EBossWeb.ChatPayloads
   alias EBossWeb.FolioPayloads
   alias EBossWeb.NotificationController
 
@@ -225,6 +227,7 @@ defmodule EBossWeb.DashboardLive do
         currentPath={@current_path}
         notificationBootstrap={@notification_bootstrap}
         folioState={@folio_state}
+        chatState={@chat_state}
         signOutPath={~p"/logout"}
         csrfToken={Plug.CSRFProtection.get_csrf_token()}
       />
@@ -269,6 +272,11 @@ defmodule EBossWeb.DashboardLive do
       :folio_state,
       Map.get(assigns, :folio_state) ||
         folio_state_props(current_scope, Map.get(assigns, :current_user), current_navigation)
+    )
+    |> assign(
+      :chat_state,
+      Map.get(assigns, :chat_state) ||
+        chat_state_props(current_scope, Map.get(assigns, :current_user), current_navigation)
     )
   end
 
@@ -409,6 +417,10 @@ defmodule EBossWeb.DashboardLive do
     |> assign(
       :folio_state,
       folio_state_props(current_scope, socket.assigns.current_user, route)
+    )
+    |> assign(
+      :chat_state,
+      chat_state_props(current_scope, socket.assigns.current_user, route)
     )
   end
 
@@ -572,6 +584,91 @@ defmodule EBossWeb.DashboardLive do
         Map.put(state, :activityError, folio_error(reason))
     end
   end
+
+  defp chat_state_props(
+         %AppScope{} = scope,
+         current_user,
+         %{type: "app", app_key: "chat"} = route
+       ) do
+    surface = chat_route_surface(route)
+    state = empty_chat_state(surface)
+
+    cond do
+      !Map.get(scope.capabilities, :read_chat, false) ->
+        Map.put(state, :error, "Workspace access is forbidden.")
+
+      true ->
+        state
+        |> load_chat_sessions(scope, current_user)
+        |> maybe_load_chat_session(scope, current_user, route)
+    end
+  end
+
+  defp chat_state_props(_scope, _current_user, _route), do: empty_chat_state(nil)
+
+  defp empty_chat_state(surface) do
+    %{
+      surface: surface,
+      sessions: [],
+      current_session: nil,
+      messages: [],
+      default_model_key: EBossChat.default_chat_model_key(),
+      models: EBossChat.chat_model_options(),
+      usage_totals: %{sessions: 0, input_tokens: 0, output_tokens: 0, total_tokens: 0},
+      loading: false,
+      error: nil
+    }
+  end
+
+  defp chat_route_surface(%{app_path: ["new" | _]}), do: "new"
+  defp chat_route_surface(%{app_path: ["sessions", _session_id | _]}), do: "session"
+  defp chat_route_surface(_route), do: "index"
+
+  defp load_chat_sessions(state, %AppScope{} = scope, current_user) do
+    case EBossChat.list_active_sessions_in_workspace(scope.current_workspace.id,
+           actor: current_user
+         ) do
+      {:ok, sessions} ->
+        state
+        |> Map.put(:sessions, Enum.map(sessions, &ChatPayloads.session_summary(&1, scope)))
+        |> Map.put(:usage_totals, EBossChat.usage_totals_for_sessions(sessions))
+
+      {:error, reason} ->
+        Map.put(state, :error, chat_error(reason))
+    end
+  end
+
+  defp maybe_load_chat_session(
+         %{error: nil} = state,
+         %AppScope{} = scope,
+         current_user,
+         %{app_path: ["sessions", session_id | _]}
+       )
+       when is_binary(session_id) do
+    with {:ok, session} <-
+           EBossChat.get_session_in_workspace(
+             session_id,
+             scope.current_workspace.id,
+             actor: current_user,
+             load: ChatPayloads.session_load()
+           ),
+         {:ok, messages} <-
+           EBossChat.list_messages_in_session(
+             session.id,
+             scope.current_workspace.id,
+             actor: current_user,
+             load: [created_by_user: []]
+           ) do
+      state
+      |> Map.put(:current_session, ChatPayloads.session_summary(session, scope))
+      |> Map.put(:messages, Enum.map(messages, &ChatPayloads.message_summary/1))
+    else
+      {:error, reason} ->
+        Map.put(state, :error, chat_error(reason))
+    end
+  end
+
+  defp maybe_load_chat_session(state, _scope, _current_user, _route), do: state
 
   defp project_update_attrs(params) do
     with {:ok, title} <- optional_text(params, :title),
@@ -860,6 +957,13 @@ defmodule EBossWeb.DashboardLive do
   defp folio_error(:not_found), do: "Folio resource was not found."
   defp folio_error(reason) when is_binary(reason), do: reason
   defp folio_error(reason), do: inspect(reason)
+
+  defp chat_error(%Ash.Error.Forbidden{}), do: "Workspace access is forbidden."
+  defp chat_error(%Ash.Error.Invalid{} = error), do: Exception.message(error)
+  defp chat_error(:not_found), do: "Chat session not found."
+  defp chat_error(:forbidden), do: "Workspace access is forbidden."
+  defp chat_error(reason) when is_binary(reason), do: reason
+  defp chat_error(reason), do: inspect(reason)
 
   defp empty_notification_bootstrap do
     %{

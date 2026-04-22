@@ -51,6 +51,7 @@ import type {
   WorkspaceScope,
 } from "./types"
 import type { NotificationBootstrap } from "../notifications"
+import type { ChatLiveState } from "./chat"
 
 interface FolioLiveState {
   surface: string | null
@@ -72,6 +73,7 @@ const props = defineProps<{
   currentPath: string
   notificationBootstrap?: NotificationBootstrap
   folioState?: FolioLiveState
+  chatState?: ChatLiveState
   signOutPath: string
   csrfToken: string
 }>()
@@ -734,6 +736,7 @@ watch(() => props.folioState, (nextState) => {
               v-else-if="isChatAppRoute && currentAppPage"
               :current-scope="currentScope"
               :current-page="currentAppPage"
+              :chat-state="chatState"
             />
 
             <div

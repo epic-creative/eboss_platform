@@ -42,12 +42,16 @@ defmodule EBossChat do
 
   def get_session_in_workspace(session_id, workspace_id, opts \\ [])
       when is_binary(session_id) and is_binary(workspace_id) do
-    case ChatSession
-         |> Ash.Query.for_read(:read)
-         |> Ash.Query.filter(expr(id == ^session_id and workspace_id == ^workspace_id))
-         |> Ash.read_one(opts) do
-      {:ok, nil} -> {:error, :not_found}
-      result -> result
+    if valid_uuid?(session_id) and valid_uuid?(workspace_id) do
+      case ChatSession
+           |> Ash.Query.for_read(:read)
+           |> Ash.Query.filter(expr(id == ^session_id and workspace_id == ^workspace_id))
+           |> Ash.read_one(opts) do
+        {:ok, nil} -> {:error, :not_found}
+        result -> result
+      end
+    else
+      {:error, :not_found}
     end
   end
 
@@ -61,11 +65,15 @@ defmodule EBossChat do
 
   def list_messages_in_session(session_id, workspace_id, opts \\ [])
       when is_binary(session_id) and is_binary(workspace_id) do
-    ChatMessage
-    |> Ash.Query.for_read(:read)
-    |> Ash.Query.filter(expr(session_id == ^session_id and workspace_id == ^workspace_id))
-    |> Ash.Query.sort(sequence: :asc)
-    |> Ash.read(opts)
+    if valid_uuid?(session_id) and valid_uuid?(workspace_id) do
+      ChatMessage
+      |> Ash.Query.for_read(:read)
+      |> Ash.Query.filter(expr(session_id == ^session_id and workspace_id == ^workspace_id))
+      |> Ash.Query.sort(sequence: :asc)
+      |> Ash.read(opts)
+    else
+      {:error, :not_found}
+    end
   end
 
   def next_sequence_for_session(session_id, opts \\ []) when is_binary(session_id) do
@@ -141,4 +149,7 @@ defmodule EBossChat do
   defp normalize_integer(value) when is_integer(value), do: value
   defp normalize_integer(value) when is_float(value), do: trunc(value)
   defp normalize_integer(_value), do: 0
+
+  defp valid_uuid?(value) when is_binary(value), do: match?({:ok, _uuid}, Ecto.UUID.cast(value))
+  defp valid_uuid?(_value), do: false
 end

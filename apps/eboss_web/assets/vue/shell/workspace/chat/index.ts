@@ -9,6 +9,7 @@ export { chatBasePath, chatBootstrapPath, chatSessionPath, chatSessionsPath, cha
 export { requestJson, openEventStream, ChatApiError } from "./http"
 export type {
   ChatBootstrapResponse,
+  ChatLiveState,
   ChatMessageSummary,
   ChatModelOption,
   ChatScope,
