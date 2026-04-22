@@ -28,6 +28,8 @@ defmodule EBossWeb.DesignSurfaceTest do
     assert primitives_css =~ ~s(.ui-panel[data-surface="solid"])
 
     assert patterns_css =~ ".ui-preview-frame"
+    assert patterns_css =~ ".ui-design-contract"
+    assert patterns_css =~ ".ui-design-ledger"
     assert patterns_css =~ "var(--radius-shell)"
     assert patterns_css =~ "var(--radius-card)"
 
@@ -61,6 +63,9 @@ defmodule EBossWeb.DesignSurfaceTest do
     assert design_system_live =~ "Default surface"
     assert design_system_live =~ "Floating surface"
     assert design_system_live =~ "Solid surface"
+    assert design_system_live =~ "Canonical contract"
+    assert design_system_live =~ "Vue implementation rules"
+    assert design_system_live =~ "Runtime candidate"
 
     assert ui_panel_story =~ "Default surface"
     assert ui_panel_story =~ "Floating surface"

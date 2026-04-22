@@ -30,7 +30,7 @@ defmodule EBossWeb.Dev.DesignSystemLive do
         <.section_heading
           eyebrow="Development route"
           title="EBoss design system"
-          subtitle="Use this route as the in-app review surface for shared HEEx primitives, shells, and state treatments instead of checking them page by page across the product."
+          subtitle="/dev/design-system is the canonical in-app patterns page for shared HEEx primitives, runtime Vue shell patterns, state treatments, and theme-density parity."
           title_size="lg"
         >
           <:actions>
@@ -41,6 +41,43 @@ defmodule EBossWeb.Dev.DesignSystemLive do
             </div>
           </:actions>
         </.section_heading>
+
+        <section id="contract" class="ui-dev-preview__section" data-design-system-contract>
+          <.panel tone="inverse" surface="solid" class="ui-design-contract">
+            <div class="space-y-4">
+              <div class="flex flex-wrap gap-2">
+                <.badge tone="primary">Canonical contract</.badge>
+                <.badge tone="neutral">HEEx + Vue</.badge>
+                <.badge tone="neutral">Runtime states</.badge>
+              </div>
+
+              <div class="space-y-3">
+                <h2 class="ui-text-display" data-size="xl">
+                  Review the system here before refining any product surface.
+                </h2>
+                <p class="ui-text-body max-w-3xl" data-size="lg" data-tone="soft">
+                  This page is the first stop for design-system work. If a pattern is meant to be
+                  reused across routes, it should be named, previewed, and stress-tested here before
+                  it spreads through the app.
+                </p>
+              </div>
+            </div>
+
+            <div class="ui-design-contract__grid">
+              <.panel
+                :for={rule <- canonical_contract_rules()}
+                as="div"
+                surface="solid"
+                padding="sm"
+                class="ui-design-contract__rule"
+              >
+                <p class="ui-text-meta" data-tone="primary">{rule.label}</p>
+                <p class="ui-text-title" data-size="sm">{rule.title}</p>
+                <p class="ui-text-body" data-size="sm" data-tone="muted">{rule.copy}</p>
+              </.panel>
+            </div>
+          </.panel>
+        </section>
 
         <section id="review-index" class="ui-dev-preview__section">
           <div class="ui-dev-preview__grid ui-dev-preview__grid--2">
@@ -104,6 +141,75 @@ defmodule EBossWeb.Dev.DesignSystemLive do
                   </p>
                 </.panel>
               </div>
+            </.panel>
+          </div>
+        </section>
+
+        <section id="vue-contract" class="ui-dev-preview__section" data-vue-contract>
+          <.section_heading
+            eyebrow="Vue contract"
+            title="Runtime Vue patterns should graduate into shared contracts."
+            subtitle="Use this section to identify friction before it becomes route-level styling or duplicated state handling."
+            title_size="sm"
+          />
+
+          <div class="ui-dev-preview__grid ui-dev-preview__grid--2">
+            <.panel surface="floating" class="space-y-5">
+              <.header title_size="md">
+                Vue implementation rules
+                <:subtitle>
+                  Vue surfaces can move quickly, but shared behavior needs a named contract instead
+                  of page-local conventions.
+                </:subtitle>
+              </.header>
+
+              <.list>
+                <:item :for={item <- vue_contract_rules()} title={item.title}>
+                  {item.copy}
+                </:item>
+              </.list>
+            </.panel>
+
+            <.panel tone="inverse" surface="solid" class="space-y-5">
+              <div class="space-y-2">
+                <p class="ui-text-meta">Friction queue</p>
+                <h3 class="ui-text-title" data-size="md">
+                  Promote repeated Vue shell decisions into primitives before adding more apps.
+                </h3>
+              </div>
+
+              <div class="grid gap-3">
+                <.panel
+                  :for={item <- vue_friction_queue()}
+                  as="div"
+                  surface="solid"
+                  padding="sm"
+                  class="space-y-2"
+                >
+                  <div class="flex flex-wrap items-center justify-between gap-2">
+                    <p class="ui-text-meta" data-tone="soft">{item.area}</p>
+                    <.badge tone={item.tone}>{item.status}</.badge>
+                  </div>
+                  <p class="ui-text-body" data-size="sm" data-tone="muted">{item.copy}</p>
+                </.panel>
+              </div>
+            </.panel>
+          </div>
+
+          <div class="ui-design-ledger">
+            <.panel
+              :for={item <- component_contract_ledger()}
+              as="div"
+              surface="solid"
+              padding="sm"
+              class="space-y-2"
+            >
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <p class="ui-text-meta" data-tone="soft">{item.layer}</p>
+                <.badge tone={item.tone}>{item.status}</.badge>
+              </div>
+              <p class="ui-text-title" data-size="sm">{item.contract}</p>
+              <p class="ui-text-body" data-size="sm" data-tone="muted">{item.review}</p>
             </.panel>
           </div>
         </section>
@@ -1134,6 +1240,8 @@ defmodule EBossWeb.Dev.DesignSystemLive do
 
   defp review_links do
     [
+      %{label: "Contract", to: "#contract"},
+      %{label: "Vue contract", to: "#vue-contract"},
       %{label: "Matrix", to: "#review-matrix"},
       %{label: "Panels", to: "#panels"},
       %{label: "Public patterns", to: "#public-patterns"},
@@ -1143,6 +1251,123 @@ defmodule EBossWeb.Dev.DesignSystemLive do
       %{label: "Forms", to: "#forms"},
       %{label: "Feedback", to: "#feedback"},
       %{label: "Navigation", to: "#navigation"}
+    ]
+  end
+
+  defp canonical_contract_rules do
+    [
+      %{
+        label: "01",
+        title: "Name the pattern here first.",
+        copy:
+          "Reusable shell, form, feedback, navigation, and state decisions should appear on this page before becoming a product convention."
+      },
+      %{
+        label: "02",
+        title: "Keep HEEx and Vue visually coupled.",
+        copy:
+          "A primitive can be implemented differently in HEEx and Vue, but its tones, density, state names, and visual hierarchy should match."
+      },
+      %{
+        label: "03",
+        title: "Review states, not screenshots.",
+        copy:
+          "Every canonical pattern needs empty, loading, invalid, disabled, success, warning, and danger coverage where those states are meaningful."
+      },
+      %{
+        label: "04",
+        title: "Promote or delete transitional styling.",
+        copy:
+          "Route-level classes and screen-only wrappers are acceptable while exploring, but repeated usage should graduate into shared components or disappear."
+      }
+    ]
+  end
+
+  defp vue_contract_rules do
+    [
+      %{
+        title: "Thin pages, shared primitives",
+        copy:
+          "Page components should orchestrate data and route context; repeated visual structures belong in shared shell, panel, list, composer, or state components."
+      },
+      %{
+        title: "Path and HTTP modules stay boring",
+        copy:
+          "Keep API paths, request payload normalization, and stream handling in small modules so the template stays focused on the interaction model."
+      },
+      %{
+        title: "State names must line up with HEEx",
+        copy:
+          "Use the same state vocabulary across stacks: empty, loading, pending, disabled, read-only, success, warning, danger, and archived."
+      },
+      %{
+        title: "Stories and this route share one source of truth",
+        copy:
+          "Histoire remains the Vue primitive lab; /dev/design-system is the in-app runtime contract that proves those primitives still fit the shell."
+      }
+    ]
+  end
+
+  defp vue_friction_queue do
+    [
+      %{
+        area: "Workspace shell",
+        status: "Promote",
+        tone: "warning",
+        copy:
+          "Sidebar, top bar, search, inspector, section headers, and empty panels are repeating enough to become shared Vue shell components."
+      },
+      %{
+        area: "App surfaces",
+        status: "Converge",
+        tone: "primary",
+        copy:
+          "Folio, Chat, and future workspace apps should share list/detail/pending/error primitives instead of each inventing app-local chrome."
+      },
+      %{
+        area: "Async feedback",
+        status: "Standardize",
+        tone: "neutral",
+        copy:
+          "Composer lockout, stream deltas, notification refresh, and form saves need the same disabled/loading/error rhythm."
+      }
+    ]
+  end
+
+  defp component_contract_ledger do
+    [
+      %{
+        layer: "ui-* CSS primitives",
+        status: "Canonical",
+        tone: "success",
+        contract:
+          "Tokens, surfaces, panels, type, buttons, inputs, alerts, and navigation pills.",
+        review: "Change these only when the design-system contract changes."
+      },
+      %{
+        layer: "HEEx components",
+        status: "Canonical",
+        tone: "success",
+        contract:
+          "Layouts, auth shell, public patterns, dashboard state components, and shared forms.",
+        review: "Every shared HEEx primitive should remain visible on this page."
+      },
+      %{
+        layer: "Vue shell components",
+        status: "Runtime candidate",
+        tone: "warning",
+        contract:
+          "Workspace shell, notifications, chat, and Folio patterns currently prove the real app direction.",
+        review: "Promote repeated decisions into primitives and keep Histoire synchronized."
+      },
+      %{
+        layer: "Route-level classes",
+        status: "Temporary",
+        tone: "danger",
+        contract:
+          "One-off wrappers and transitional so-* styling are allowed only while discovering a pattern.",
+        review: "If reused twice, either promote the pattern or remove the class."
+      }
     ]
   end
 

@@ -26,6 +26,8 @@ defmodule EBossWeb.Dev.DesignSystemLiveTest do
 
     assert view.module == EBossWeb.Dev.DesignSystemLive
     assert html =~ "EBoss design system"
+    assert has_element?(view, "#contract")
+    assert has_element?(view, "#vue-contract")
     assert has_element?(view, "#review-index")
     assert has_element?(view, "#review-matrix")
     assert has_element?(view, "#panels")
@@ -42,6 +44,10 @@ defmodule EBossWeb.Dev.DesignSystemLiveTest do
     html = render(view)
 
     assert html =~ "Shared HEEx review index"
+    assert html =~ "Review the system here before refining any product surface."
+    assert html =~ "Runtime Vue patterns should graduate into shared contracts."
+    assert html =~ "Friction queue"
+    assert html =~ "Vue shell components"
     assert html =~ "Theme and density review matrix"
     assert html =~ "Operator console first, marketing polish second."
     assert html =~ "Runtime shell composition"
