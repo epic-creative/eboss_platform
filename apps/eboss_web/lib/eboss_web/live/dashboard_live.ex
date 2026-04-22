@@ -27,17 +27,13 @@ defmodule EBossWeb.DashboardLive do
         end
 
         route = resolve_current_route(current_scope, socket.assigns.live_action, params)
-        current_path = route.current_path
 
         {:ok,
          socket
-         |> assign(:current_scope, current_scope)
-         |> assign(:current_navigation, route)
-         |> assign(:current_path, current_path)
          |> assign(:page_title, route.title)
          |> assign(:current_user_props, user_props(socket.assigns.current_user))
-         |> assign(:current_scope_props, scope_props(current_scope))
-         |> assign(:notification_bootstrap, notification_bootstrap(socket.assigns.current_user))}
+         |> assign(:notification_bootstrap, notification_bootstrap(socket.assigns.current_user))
+         |> assign_workspace_context(current_scope, route)}
     end
   end
 
@@ -52,11 +48,8 @@ defmodule EBossWeb.DashboardLive do
 
         {:noreply,
          socket
-         |> assign(:current_scope, current_scope)
-         |> assign(:current_navigation, route)
-         |> assign(:current_path, route.current_path)
          |> assign(:page_title, route.title)
-         |> assign(:current_scope_props, scope_props(current_scope))}
+         |> assign_workspace_context(current_scope, route)}
     end
   end
 
@@ -80,6 +73,11 @@ defmodule EBossWeb.DashboardLive do
 
   def handle_event("notifications:mark_all_read", _params, socket) do
     reply_with_notification_action(socket, &EBossNotify.mark_all_read/1)
+  end
+
+  def handle_event("folio:refresh", _params, socket) do
+    socket = assign_folio_state(socket)
+    {:reply, %{ok: true, folio_state: socket.assigns.folio_state}, socket}
   end
 
   def handle_event("folio:create_project", params, socket) do
@@ -226,6 +224,7 @@ defmodule EBossWeb.DashboardLive do
         currentPage={@current_navigation}
         currentPath={@current_path}
         notificationBootstrap={@notification_bootstrap}
+        folioState={@folio_state}
         signOutPath={~p"/logout"}
         csrfToken={Plug.CSRFProtection.get_csrf_token()}
       />
@@ -265,6 +264,11 @@ defmodule EBossWeb.DashboardLive do
       :notification_bootstrap,
       Map.get(assigns, :notification_bootstrap) ||
         notification_bootstrap(Map.get(assigns, :current_user))
+    )
+    |> assign(
+      :folio_state,
+      Map.get(assigns, :folio_state) ||
+        folio_state_props(current_scope, Map.get(assigns, :current_user), current_navigation)
     )
   end
 
@@ -396,6 +400,18 @@ defmodule EBossWeb.DashboardLive do
     |> Enum.filter(&(is_binary(&1) and &1 != ""))
   end
 
+  defp assign_workspace_context(socket, %AppScope{} = current_scope, route) do
+    socket
+    |> assign(:current_scope, current_scope)
+    |> assign(:current_navigation, route)
+    |> assign(:current_path, route.current_path)
+    |> assign(:current_scope_props, scope_props(current_scope))
+    |> assign(
+      :folio_state,
+      folio_state_props(current_scope, socket.assigns.current_user, route)
+    )
+  end
+
   defp refresh_notifications(socket) do
     {:noreply, assign_notification_bootstrap(socket)}
   end
@@ -443,7 +459,12 @@ defmodule EBossWeb.DashboardLive do
       true ->
         case operation.(scope, socket.assigns.current_user) do
           {:ok, payload} ->
-            {:reply, Map.put(payload, :ok, true), socket}
+            socket = assign_folio_state(socket)
+
+            {:reply,
+             payload
+             |> Map.put(:ok, true)
+             |> Map.put(:folio_state, socket.assigns.folio_state), socket}
 
           {:error, reason} ->
             {:reply, %{ok: false, error: folio_error(reason)}, socket}
@@ -451,6 +472,104 @@ defmodule EBossWeb.DashboardLive do
           {:error, reason, message} ->
             {:reply, %{ok: false, error: folio_error({reason, message})}, socket}
         end
+    end
+  end
+
+  defp assign_folio_state(socket) do
+    assign(
+      socket,
+      :folio_state,
+      folio_state_props(
+        socket.assigns.current_scope,
+        socket.assigns.current_user,
+        socket.assigns.current_navigation
+      )
+    )
+  end
+
+  defp folio_state_props(
+         %AppScope{} = scope,
+         current_user,
+         %{type: "app", app_key: "folio"} = route
+       ) do
+    surface = Map.get(route, :app_surface) || "tasks"
+    state = empty_folio_state(surface)
+
+    cond do
+      !Map.get(scope.capabilities, :read_folio, false) ->
+        state
+        |> Map.put(:projectsError, "Workspace access is forbidden.")
+        |> Map.put(:tasksError, "Workspace access is forbidden.")
+        |> Map.put(:activityError, "Workspace access is forbidden.")
+
+      surface == "projects" ->
+        load_folio_projects(state, scope, current_user)
+
+      surface == "activity" ->
+        load_folio_activity(state, scope, current_user)
+
+      true ->
+        state
+        |> maybe_load_task_project_options(scope, current_user)
+        |> load_folio_tasks(scope, current_user)
+    end
+  end
+
+  defp folio_state_props(_scope, _current_user, _route), do: empty_folio_state(nil)
+
+  defp empty_folio_state(surface) do
+    %{
+      surface: surface,
+      projects: [],
+      tasks: [],
+      events: [],
+      projectsLoading: false,
+      tasksLoading: false,
+      activityLoading: false,
+      projectsError: nil,
+      tasksError: nil,
+      activityError: nil
+    }
+  end
+
+  defp maybe_load_task_project_options(state, %AppScope{} = scope, current_user) do
+    if Map.get(scope.capabilities, :manage_folio, false) do
+      load_folio_projects(state, scope, current_user)
+    else
+      state
+    end
+  end
+
+  defp load_folio_projects(state, %AppScope{} = scope, current_user) do
+    case EBossFolio.list_projects_in_workspace(scope.current_workspace.id, actor: current_user) do
+      {:ok, projects} ->
+        Map.put(state, :projects, Enum.map(projects, &FolioPayloads.project_summary/1))
+
+      {:error, reason} ->
+        Map.put(state, :projectsError, folio_error(reason))
+    end
+  end
+
+  defp load_folio_tasks(state, %AppScope{} = scope, current_user) do
+    case EBossFolio.list_tasks_in_workspace(scope.current_workspace.id,
+           actor: current_user,
+           load: [delegations: :contact]
+         ) do
+      {:ok, tasks} ->
+        Map.put(state, :tasks, Enum.map(tasks, &FolioPayloads.task_summary/1))
+
+      {:error, reason} ->
+        Map.put(state, :tasksError, folio_error(reason))
+    end
+  end
+
+  defp load_folio_activity(state, %AppScope{} = scope, current_user) do
+    case EBossFolio.list_activity_feed(scope.current_workspace.id, actor: current_user) do
+      {:ok, events} ->
+        Map.put(state, :events, events)
+
+      {:error, reason} ->
+        Map.put(state, :activityError, folio_error(reason))
     end
   end
 

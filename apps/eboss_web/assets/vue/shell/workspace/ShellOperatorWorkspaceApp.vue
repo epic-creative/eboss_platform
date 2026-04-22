@@ -24,12 +24,6 @@ import TasksPage from "./pages/TasksPage.vue"
 import SettingsPage from "./pages/SettingsPage.vue"
 import ChatPage from "./ChatPage.vue"
 import { workspaceAppTestContracts } from "./testContracts"
-import {
-  useFolioActivity,
-  useFolioProjects,
-  useFolioTasks,
-  useFolioWorkspaceScope,
-} from "./folio"
 import type {
   FolioActivityEvent,
   FolioProjectStatus,
@@ -58,12 +52,26 @@ import type {
 } from "./types"
 import type { NotificationBootstrap } from "../notifications"
 
+interface FolioLiveState {
+  surface: string | null
+  projects: FolioProjectSummary[]
+  tasks: FolioTaskSummary[]
+  events: FolioActivityEvent[]
+  projectsLoading: boolean
+  tasksLoading: boolean
+  activityLoading: boolean
+  projectsError: string | null
+  tasksError: string | null
+  activityError: string | null
+}
+
 const props = defineProps<{
   currentUser: CurrentUser
   currentScope: WorkspaceScope
   currentPage: WorkspaceNavigationContext
   currentPath: string
   notificationBootstrap?: NotificationBootstrap
+  folioState?: FolioLiveState
   signOutPath: string
   csrfToken: string
 }>()
@@ -96,6 +104,8 @@ const transitioningProject = ref(false)
 const creatingTask = ref(false)
 const transitioningTask = ref(false)
 const delegatingTask = ref(false)
+const liveFolioState = ref<FolioLiveState>(props.folioState ?? emptyFolioState())
+const refreshFolioEvent = useEventReply<FolioLiveReply, Record<string, never>>("folio:refresh")
 const createProjectEvent = useEventReply<FolioProjectLiveReply, { title: string }>("folio:create_project")
 const updateProjectEvent = useEventReply<FolioProjectLiveReply, FolioProjectUpdatePayload & { project_id: string }>("folio:update_project")
 const transitionProjectEvent = useEventReply<FolioProjectLiveReply, { project_id: string; status: FolioProjectStatus }>("folio:transition_project")
@@ -109,19 +119,73 @@ const isAppRoute = computed(() => props.currentPage.type === "app")
 interface FolioProjectLiveReply {
   ok: boolean
   project?: FolioProjectSummary
+  folio_state?: FolioLiveState
   error?: string
 }
 
 interface FolioTaskLiveReply {
   ok: boolean
   task?: FolioTaskSummary
+  folio_state?: FolioLiveState
   error?: string
+}
+
+interface FolioLiveReply {
+  ok: boolean
+  folio_state?: FolioLiveState
+  error?: string
+}
+
+function emptyFolioState(surface: string | null = null): FolioLiveState {
+  return {
+    surface,
+    projects: [],
+    tasks: [],
+    events: [],
+    projectsLoading: false,
+    tasksLoading: false,
+    activityLoading: false,
+    projectsError: null,
+    tasksError: null,
+    activityError: null,
+  }
+}
+
+const applyFolioStateReply = (reply: FolioLiveReply) => {
+  if (reply.ok && reply.folio_state) {
+    liveFolioState.value = reply.folio_state
+  }
+}
+
+const upsertFolioProject = (project: FolioProjectSummary) => {
+  const projects = liveFolioState.value.projects
+  const index = projects.findIndex((candidate) => candidate.id === project.id)
+
+  liveFolioState.value = {
+    ...liveFolioState.value,
+    projects: index === -1
+      ? [...projects, project]
+      : projects.map((candidate) => candidate.id === project.id ? project : candidate),
+  }
+}
+
+const upsertFolioTask = (task: FolioTaskSummary) => {
+  const tasks = liveFolioState.value.tasks
+  const index = tasks.findIndex((candidate) => candidate.id === task.id)
+
+  liveFolioState.value = {
+    ...liveFolioState.value,
+    tasks: index === -1
+      ? [...tasks, task]
+      : tasks.map((candidate) => candidate.id === task.id ? task : candidate),
+  }
 }
 
 const requireFolioProjectReply = (
   reply: FolioProjectLiveReply,
   fallback: string,
 ): FolioProjectSummary => {
+  applyFolioStateReply(reply)
   if (reply.ok && reply.project) return reply.project
 
   throw new Error(reply.error || fallback)
@@ -131,9 +195,14 @@ const requireFolioTaskReply = (
   reply: FolioTaskLiveReply,
   fallback: string,
 ): FolioTaskSummary => {
+  applyFolioStateReply(reply)
   if (reply.ok && reply.task) return reply.task
 
   throw new Error(reply.error || fallback)
+}
+
+const refreshFolioState = async () => {
+  applyFolioStateReply(await refreshFolioEvent.execute({}))
 }
 
 const mapFolioProjectStatus = (status: string): Project["status"] => {
@@ -190,28 +259,19 @@ const isFolioActivitySurface = computed(
   () => isFolioAppRoute.value && currentAppPage.value?.app_surface === "activity",
 )
 const isChatAppRoute = computed(() => isAppRoute.value && currentAppPage.value?.app_key === "chat")
-const folioWorkspaceScope = useFolioWorkspaceScope(props.currentScope)
 const shouldLoadFolioProjects = computed(
   () =>
     isFolioProjectsSurface.value ||
     (isFolioTasksSurface.value && props.currentScope.capabilities.manageFolio),
 )
-const folioProjectsQuery = useFolioProjects(folioWorkspaceScope, {
-  autoFetch: true,
-  enabled: shouldLoadFolioProjects,
-})
-const folioProjects = computed(() => folioProjectsQuery.projects.value.map(mapFolioProject))
+const folioProjects = computed(() =>
+  shouldLoadFolioProjects.value ? liveFolioState.value.projects.map(mapFolioProject) : [],
+)
 const taskProjectOptions = computed(() =>
   folioProjects.value.map((project) => ({ id: project.id, title: project.name })),
 )
 
 const createWorkspaceProject = async (title: string): Promise<void> => {
-  const scope = folioWorkspaceScope.value
-
-  if (!scope) {
-    throw new Error("Workspace scope is unavailable.")
-  }
-
   if (!props.currentScope.capabilities.manageFolio) {
     throw new Error("You do not have permission to create projects in this workspace.")
   }
@@ -227,8 +287,8 @@ const createWorkspaceProject = async (title: string): Promise<void> => {
     )
 
     selectedProjectFilter.value = "all"
+    upsertFolioProject(project)
     selectedProject.value = mapFolioProject(project)
-    await folioProjectsQuery.refresh()
   } finally {
     creatingProject.value = false
   }
@@ -238,12 +298,6 @@ const updateWorkspaceProject = async (
   projectId: string,
   payload: FolioProjectUpdatePayload,
 ): Promise<void> => {
-  const scope = folioWorkspaceScope.value
-
-  if (!scope) {
-    throw new Error("Workspace scope is unavailable.")
-  }
-
   if (!props.currentScope.capabilities.manageFolio) {
     throw new Error("You do not have permission to edit projects in this workspace.")
   }
@@ -259,8 +313,8 @@ const updateWorkspaceProject = async (
     )
 
     selectedProjectFilter.value = "all"
+    upsertFolioProject(project)
     selectedProject.value = mapFolioProject(project)
-    await folioProjectsQuery.refresh()
   } finally {
     updatingProject.value = false
   }
@@ -270,12 +324,6 @@ const transitionWorkspaceProject = async (
   projectId: string,
   status: FolioProjectStatus,
 ): Promise<void> => {
-  const scope = folioWorkspaceScope.value
-
-  if (!scope) {
-    throw new Error("Workspace scope is unavailable.")
-  }
-
   if (!props.currentScope.capabilities.manageFolio) {
     throw new Error("You do not have permission to transition projects in this workspace.")
   }
@@ -290,17 +338,12 @@ const transitionWorkspaceProject = async (
       "Project transition failed.",
     )
 
+    upsertFolioProject(project)
     selectedProject.value = mapFolioProject(project)
-    await folioProjectsQuery.refresh()
   } finally {
     transitioningProject.value = false
   }
 }
-
-const folioTasksQuery = useFolioTasks(folioWorkspaceScope, {
-  autoFetch: true,
-  enabled: isFolioTasksSurface,
-})
 
 const mapFolioTaskDelegation = (
   delegation: FolioTaskSummary["active_delegation"],
@@ -333,14 +376,10 @@ const mapFolioTask = (task: FolioTaskSummary): Task => ({
   reviewAt: task.review_at,
   activeDelegation: mapFolioTaskDelegation(task.active_delegation),
 })
-const folioTasks = computed(() => folioTasksQuery.tasks.value.map(mapFolioTask))
+const folioTasks = computed(() =>
+  isFolioTasksSurface.value ? liveFolioState.value.tasks.map(mapFolioTask) : [],
+)
 const createWorkspaceTask = async (title: string, projectId: string | null): Promise<void> => {
-  const scope = folioWorkspaceScope.value
-
-  if (!scope) {
-    throw new Error("Workspace scope is unavailable.")
-  }
-
   if (!props.currentScope.capabilities.manageFolio) {
     throw new Error("You do not have permission to create tasks in this workspace.")
   }
@@ -358,20 +397,14 @@ const createWorkspaceTask = async (title: string, projectId: string | null): Pro
       "Task creation failed.",
     )
 
+    upsertFolioTask(task)
     selectedTask.value = mapFolioTask(task)
-    await folioTasksQuery.refresh()
   } finally {
     creatingTask.value = false
   }
 }
 
 const transitionWorkspaceTask = async (taskId: string, status: FolioTaskStatus): Promise<void> => {
-  const scope = folioWorkspaceScope.value
-
-  if (!scope) {
-    throw new Error("Workspace scope is unavailable.")
-  }
-
   if (!props.currentScope.capabilities.manageFolio) {
     throw new Error("You do not have permission to transition tasks in this workspace.")
   }
@@ -386,8 +419,8 @@ const transitionWorkspaceTask = async (taskId: string, status: FolioTaskStatus):
       "Task transition failed.",
     )
 
+    upsertFolioTask(task)
     selectedTask.value = mapFolioTask(task)
-    await folioTasksQuery.refresh()
   } finally {
     transitioningTask.value = false
   }
@@ -397,12 +430,6 @@ const delegateWorkspaceTask = async (
   taskId: string,
   payload: FolioTaskDelegatePayload,
 ): Promise<void> => {
-  const scope = folioWorkspaceScope.value
-
-  if (!scope) {
-    throw new Error("Workspace scope is unavailable.")
-  }
-
   if (!props.currentScope.capabilities.manageFolio) {
     throw new Error("You do not have permission to delegate tasks in this workspace.")
   }
@@ -417,18 +444,16 @@ const delegateWorkspaceTask = async (
       "Task delegation failed.",
     )
 
+    upsertFolioTask(task)
     selectedTask.value = mapFolioTask(task)
-    await folioTasksQuery.refresh()
   } finally {
     delegatingTask.value = false
   }
 }
 
-const folioActivityQuery = useFolioActivity(folioWorkspaceScope, {
-  autoFetch: true,
-  enabled: isFolioActivitySurface,
-})
-const folioActivities = computed(() => folioActivityQuery.events.value)
+const folioActivities = computed(() =>
+  isFolioActivitySurface.value ? liveFolioState.value.events : [],
+)
 const activeWorkspaceSurface = computed(() =>
   isWorkspaceRoute.value && props.currentPage.type === "workspace" ? props.currentPage.surface : "dashboard"
 )
@@ -480,6 +505,10 @@ watch(currentWorkspaceKey, () => {
   mobileNavOpen.value = false
   resetWorkspaceState()
 })
+
+watch(() => props.folioState, (nextState) => {
+  liveFolioState.value = nextState ?? emptyFolioState()
+}, { deep: true })
 
 </script>
 
@@ -656,15 +685,15 @@ watch(currentWorkspaceKey, () => {
               :project-filter="selectedProjectFilter"
               :projects="folioProjects"
               :selected-project="selectedProject"
-              :loading="folioProjectsQuery.loading.value"
-              :error="folioProjectsQuery.error.value"
+              :loading="liveFolioState.projectsLoading"
+              :error="liveFolioState.projectsError"
               :can-create-project="currentScope.capabilities.manageFolio"
               :can-update-project="currentScope.capabilities.manageFolio"
               :creating-project="creatingProject"
               :updating-project="updatingProject"
               :can-transition-project="currentScope.capabilities.manageFolio"
               :transitioning-project="transitioningProject"
-              :refresh="folioProjectsQuery.refresh"
+              :refresh="refreshFolioState"
               :create-project="createWorkspaceProject"
               :update-project="updateWorkspaceProject"
               :transition-project="transitionWorkspaceProject"
@@ -676,8 +705,8 @@ watch(currentWorkspaceKey, () => {
               :workspace-reference="workspaceReference"
               :tasks="folioTasks"
               :selected-task="selectedTask"
-              :loading="folioTasksQuery.loading.value"
-              :error="folioTasksQuery.error.value"
+              :loading="liveFolioState.tasksLoading"
+              :error="liveFolioState.tasksError"
               :can-create-task="currentScope.capabilities.manageFolio"
               :creating-task="creatingTask"
               :can-transition-task="currentScope.capabilities.manageFolio"
@@ -685,7 +714,7 @@ watch(currentWorkspaceKey, () => {
               :can-delegate-task="currentScope.capabilities.manageFolio"
               :delegating-task="delegatingTask"
               :project-options="taskProjectOptions"
-              :refresh="folioTasksQuery.refresh"
+              :refresh="refreshFolioState"
               :create-task="createWorkspaceTask"
               :transition-task="transitionWorkspaceTask"
               :delegate-task="delegateWorkspaceTask"
@@ -696,9 +725,9 @@ watch(currentWorkspaceKey, () => {
               :workspace-reference="workspaceReference"
               :activity-events="folioActivities"
               :selected-activity="selectedActivity"
-              :loading="folioActivityQuery.loading.value"
-              :error="folioActivityQuery.error.value"
-              :refresh="folioActivityQuery.refresh"
+              :loading="liveFolioState.activityLoading"
+              :error="liveFolioState.activityError"
+              :refresh="refreshFolioState"
               @update:selected-activity="selectedActivity = $event"
             />
             <ChatPage

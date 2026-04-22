@@ -51,6 +51,19 @@ const appRoute = (appKey: string, appSurface: string | null = null, appPath: str
   app_path: appPath,
 })
 const nextMacrotask = () => new Promise((resolve) => setTimeout(resolve, 0))
+const folioState = (overrides: Record<string, unknown> = {}) => ({
+  surface: null,
+  projects: [],
+  tasks: [],
+  events: [],
+  projectsLoading: false,
+  tasksLoading: false,
+  activityLoading: false,
+  projectsError: null,
+  tasksError: null,
+  activityError: null,
+  ...overrides,
+})
 const setLiveReply = (
   handler: (eventName: string, params: Record<string, unknown>) => unknown,
 ) => {
@@ -290,6 +303,31 @@ describe("ShellOperatorWorkspaceApp", () => {
         }),
         currentPage: appRoute("folio"),
         currentPath: "/primary-owner/primary-workspace/apps/folio",
+        folioState: folioState({
+          surface: "tasks",
+          projects: [
+            {
+              id: "project-1",
+              title: "Atlas Service",
+              status: "active",
+              priority_position: 1,
+              due_at: null,
+              review_at: null,
+            },
+          ],
+          tasks: [
+            {
+              id: "task-1",
+              title: "Draft rollout notes",
+              status: "inbox",
+              project_id: "project-1",
+              priority_position: 1,
+              due_at: null,
+              review_at: null,
+              active_delegation: null,
+            },
+          ],
+        }),
         signOutPath: "/sign-out",
         csrfToken: "csrf-token",
       },
@@ -309,14 +347,7 @@ describe("ShellOperatorWorkspaceApp", () => {
     expect(currentAppChip.text()).toContain("Tasks")
     expect(wrapper.find('[data-testid="workspace-page-tasks"]').exists()).toBe(true)
 
-    expect(fetchMock).toHaveBeenCalledWith(
-      "/api/v1/primary-owner/workspaces/primary-workspace/apps/folio/tasks",
-      expect.any(Object),
-    )
-    expect(fetchMock).toHaveBeenCalledWith(
-      "/api/v1/primary-owner/workspaces/primary-workspace/apps/folio/projects",
-      expect.any(Object),
-    )
+    expect(fetchMock).toHaveBeenCalledTimes(0)
   })
 
   it("renders real folio projects on folio app routes", async () => {
@@ -399,6 +430,27 @@ describe("ShellOperatorWorkspaceApp", () => {
         }),
         currentPage: appRoute("folio", "projects"),
         currentPath: "/primary-owner/primary-workspace/apps/folio/projects",
+        folioState: folioState({
+          surface: "projects",
+          projects: [
+            {
+              id: "project-1",
+              title: "Atlas Service",
+              status: "active",
+              priority_position: 1,
+              due_at: "2026-04-01T00:00:00Z",
+              review_at: "2026-04-02T00:00:00Z",
+            },
+            {
+              id: "project-2",
+              title: "Nimbus Engine",
+              status: "on_hold",
+              priority_position: 2,
+              due_at: null,
+              review_at: null,
+            },
+          ],
+        }),
         signOutPath: "/sign-out",
         csrfToken: "csrf-token",
       },
@@ -414,10 +466,7 @@ describe("ShellOperatorWorkspaceApp", () => {
     await nextTick()
     await nextMacrotask()
 
-    expect(global.fetch).toHaveBeenCalledWith(
-      "/api/v1/primary-owner/workspaces/primary-workspace/apps/folio/projects",
-      expect.any(Object),
-    )
+    expect(global.fetch).toHaveBeenCalledTimes(0)
     const projectsView = wrapper.get('[data-testid="workspace-page-projects"]')
     expect(projectsView.text()).toContain("Atlas Service")
     expect(projectsView.text()).toContain("Nimbus Engine")
@@ -518,6 +567,19 @@ describe("ShellOperatorWorkspaceApp", () => {
         }),
         currentPage: appRoute("folio", "projects"),
         currentPath: "/primary-owner/primary-workspace/apps/folio/projects",
+        folioState: folioState({
+          surface: "projects",
+          projects: [
+            {
+              id: "project-1",
+              title: "Atlas Service",
+              status: "active",
+              priority_position: 1,
+              due_at: null,
+              review_at: null,
+            },
+          ],
+        }),
         signOutPath: "/sign-out",
         csrfToken: "csrf-token",
       },
@@ -545,12 +607,7 @@ describe("ShellOperatorWorkspaceApp", () => {
     await nextTick()
     await nextMacrotask()
 
-    expect(fetchMock).toHaveBeenCalledTimes(2)
-    expect(fetchMock).toHaveBeenNthCalledWith(
-      2,
-      "/api/v1/primary-owner/workspaces/primary-workspace/apps/folio/projects",
-      expect.any(Object),
-    )
+    expect(fetchMock).toHaveBeenCalledTimes(0)
     expect(liveReply).toHaveBeenCalledWith("folio:create_project", { title: "Launch Console" })
 
     expect(projectsView.text()).toContain("Launch Console")
@@ -658,6 +715,24 @@ describe("ShellOperatorWorkspaceApp", () => {
         }),
         currentPage: appRoute("folio", "projects"),
         currentPath: "/primary-owner/primary-workspace/apps/folio/projects",
+        folioState: folioState({
+          surface: "projects",
+          projects: [
+            {
+              id: "project-1",
+              title: "Atlas Service",
+              description: "Initial scope",
+              status: "active",
+              priority_position: 1,
+              due_at: "2026-04-01T00:00:00Z",
+              review_at: "2026-04-02T00:00:00Z",
+              notes: "Old notes",
+              metadata: {
+                cadence: "monthly",
+              },
+            },
+          ],
+        }),
         signOutPath: "/sign-out",
         csrfToken: "csrf-token",
       },
@@ -694,7 +769,7 @@ describe("ShellOperatorWorkspaceApp", () => {
     await nextTick()
     await nextMacrotask()
 
-    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(fetchMock).toHaveBeenCalledTimes(0)
     expect(liveReply).toHaveBeenCalledWith("folio:update_project", {
       project_id: "project-1",
       title: "Atlas Service Revamp",
@@ -793,6 +868,20 @@ describe("ShellOperatorWorkspaceApp", () => {
         }),
         currentPage: appRoute("folio", "projects"),
         currentPath: "/primary-owner/primary-workspace/apps/folio/projects",
+        folioState: folioState({
+          surface: "projects",
+          projects: [
+            {
+              id: "project-1",
+              title: "Atlas Service",
+              status: "active",
+              priority_position: 1,
+              due_at: null,
+              review_at: null,
+              metadata: {},
+            },
+          ],
+        }),
         signOutPath: "/sign-out",
         csrfToken: "csrf-token",
       },
@@ -821,7 +910,7 @@ describe("ShellOperatorWorkspaceApp", () => {
     await nextTick()
     await nextMacrotask()
 
-    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(fetchMock).toHaveBeenCalledTimes(0)
     expect(liveReply).toHaveBeenCalledWith("folio:transition_project", {
       project_id: "project-1",
       status: "completed",
@@ -884,6 +973,20 @@ describe("ShellOperatorWorkspaceApp", () => {
         }),
         currentPage: appRoute("folio", "projects"),
         currentPath: "/primary-owner/primary-workspace/apps/folio/projects",
+        folioState: folioState({
+          surface: "projects",
+          projects: [
+            {
+              id: "project-1",
+              title: "Completed rollout",
+              status: "completed",
+              priority_position: 1,
+              due_at: null,
+              review_at: null,
+              metadata: {},
+            },
+          ],
+        }),
         signOutPath: "/sign-out",
         csrfToken: "csrf-token",
       },
@@ -910,7 +1013,7 @@ describe("ShellOperatorWorkspaceApp", () => {
     await nextMacrotask()
     await nextTick()
 
-    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(fetchMock).toHaveBeenCalledTimes(0)
     expect(projectsView.get('[data-testid="projects-transition-error"]').text()).toContain(
       "cannot transition project from completed to active",
     )
@@ -1058,6 +1161,29 @@ describe("ShellOperatorWorkspaceApp", () => {
         }),
         currentPage: appRoute("folio", "tasks"),
         currentPath: "/primary-owner/primary-workspace/apps/folio/tasks",
+        folioState: folioState({
+          surface: "tasks",
+          tasks: [
+            {
+              id: "task-1",
+              title: "Refine queueing",
+              status: "scheduled",
+              project_id: "project-1",
+              priority_position: 7,
+              due_at: "2026-05-01T00:00:00Z",
+              review_at: null,
+            },
+            {
+              id: "task-2",
+              title: "Archive old notes",
+              status: "done",
+              project_id: null,
+              priority_position: null,
+              due_at: null,
+              review_at: "2026-04-02T00:00:00Z",
+            },
+          ],
+        }),
         signOutPath: "/sign-out",
         csrfToken: "csrf-token",
       },
@@ -1073,10 +1199,7 @@ describe("ShellOperatorWorkspaceApp", () => {
     await nextTick()
     await nextMacrotask()
 
-    expect(global.fetch).toHaveBeenCalledWith(
-      "/api/v1/primary-owner/workspaces/primary-workspace/apps/folio/tasks",
-      expect.any(Object),
-    )
+    expect(global.fetch).toHaveBeenCalledTimes(0)
 
     const tasksView = wrapper.get('[data-testid="workspace-page-tasks"]')
     expect(tasksView.text()).toContain("Refine queueing")
@@ -1199,6 +1322,30 @@ describe("ShellOperatorWorkspaceApp", () => {
         }),
         currentPage: appRoute("folio", "tasks"),
         currentPath: "/primary-owner/primary-workspace/apps/folio/tasks",
+        folioState: folioState({
+          surface: "tasks",
+          projects: [
+            {
+              id: "project-1",
+              title: "Atlas Service",
+              status: "active",
+              priority_position: null,
+              due_at: null,
+              review_at: null,
+            },
+          ],
+          tasks: [
+            {
+              id: "task-1",
+              title: "Existing task",
+              status: "inbox",
+              project_id: null,
+              priority_position: null,
+              due_at: null,
+              review_at: null,
+            },
+          ],
+        }),
         signOutPath: "/sign-out",
         csrfToken: "csrf-token",
       },
@@ -1228,12 +1375,7 @@ describe("ShellOperatorWorkspaceApp", () => {
     await nextTick()
     await nextMacrotask()
 
-    expect(fetchMock).toHaveBeenCalledTimes(3)
-    expect(fetchMock).toHaveBeenNthCalledWith(
-      3,
-      "/api/v1/primary-owner/workspaces/primary-workspace/apps/folio/tasks",
-      expect.any(Object),
-    )
+    expect(fetchMock).toHaveBeenCalledTimes(0)
     expect(liveReply).toHaveBeenCalledWith("folio:create_task", {
       title: "Draft rollout notes",
       project_id: "project-1",
@@ -1330,6 +1472,21 @@ describe("ShellOperatorWorkspaceApp", () => {
         }),
         currentPage: appRoute("folio", "tasks"),
         currentPath: "/primary-owner/primary-workspace/apps/folio/tasks",
+        folioState: folioState({
+          surface: "tasks",
+          projects: [],
+          tasks: [
+            {
+              id: "task-1",
+              title: "Review rollout notes",
+              status: "inbox",
+              project_id: null,
+              priority_position: null,
+              due_at: null,
+              review_at: null,
+            },
+          ],
+        }),
         signOutPath: "/sign-out",
         csrfToken: "csrf-token",
       },
@@ -1359,7 +1516,7 @@ describe("ShellOperatorWorkspaceApp", () => {
     await nextTick()
     await nextMacrotask()
 
-    expect(fetchMock).toHaveBeenCalledTimes(3)
+    expect(fetchMock).toHaveBeenCalledTimes(0)
     expect(liveReply).toHaveBeenCalledWith("folio:transition_task", {
       task_id: "task-1",
       status: "done",
@@ -1370,67 +1527,7 @@ describe("ShellOperatorWorkspaceApp", () => {
   })
 
   it("delegates a folio task from the tasks inspector and refreshes delegated waiting-for state", async () => {
-    const fetchMock = vi
-      .spyOn(global, "fetch")
-      .mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        json: async () => ({
-          scope: {},
-          projects: [],
-        }),
-      } as Response)
-      .mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        json: async () => ({
-          scope: {},
-          tasks: [
-            {
-              id: "task-1",
-              title: "Collect approval notes",
-              status: "inbox",
-              project_id: null,
-              priority_position: null,
-              due_at: null,
-              review_at: null,
-              active_delegation: null,
-            },
-          ],
-        }),
-      } as Response)
-      .mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        json: async () => ({
-          scope: {},
-          tasks: [
-            {
-              id: "task-1",
-              title: "Collect approval notes",
-              status: "waiting_for",
-              project_id: null,
-              priority_position: null,
-              due_at: null,
-              review_at: null,
-              active_delegation: {
-                id: "delegation-1",
-                status: "active",
-                delegated_at: "2026-04-20T12:00:00Z",
-                delegated_summary: "Send updated approval notes",
-                quality_expectations: "Include legal and billing caveats",
-                follow_up_at: "2026-05-01T00:00:00Z",
-                deadline_expectations_at: "2026-05-07T00:00:00Z",
-                contact: {
-                  id: "contact-1",
-                  name: "Avery Partner",
-                  email: null,
-                },
-              },
-            },
-          ],
-        }),
-      } as Response)
+    const fetchMock = vi.spyOn(global, "fetch")
     const liveReply = setLiveReply((eventName, params) => {
       expect(eventName).toBe("folio:delegate_task")
       expect(params).toEqual({
@@ -1493,6 +1590,22 @@ describe("ShellOperatorWorkspaceApp", () => {
         }),
         currentPage: appRoute("folio", "tasks"),
         currentPath: "/primary-owner/primary-workspace/apps/folio/tasks",
+        folioState: folioState({
+          surface: "tasks",
+          projects: [],
+          tasks: [
+            {
+              id: "task-1",
+              title: "Collect approval notes",
+              status: "inbox",
+              project_id: null,
+              priority_position: null,
+              due_at: null,
+              review_at: null,
+              active_delegation: null,
+            },
+          ],
+        }),
         signOutPath: "/sign-out",
         csrfToken: "csrf-token",
       },
@@ -1530,7 +1643,7 @@ describe("ShellOperatorWorkspaceApp", () => {
     await nextTick()
     await nextMacrotask()
 
-    expect(fetchMock).toHaveBeenCalledTimes(3)
+    expect(fetchMock).toHaveBeenCalledTimes(0)
     expect(liveReply).toHaveBeenCalledWith("folio:delegate_task", {
       task_id: "task-1",
       intent: "delegate",
@@ -1547,34 +1660,7 @@ describe("ShellOperatorWorkspaceApp", () => {
   })
 
   it("shows transition validation errors from the folio task endpoint", async () => {
-    const fetchMock = vi
-      .spyOn(global, "fetch")
-      .mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        json: async () => ({
-          scope: {},
-          projects: [],
-        }),
-      } as Response)
-      .mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        json: async () => ({
-          scope: {},
-          tasks: [
-            {
-              id: "task-1",
-              title: "Waiting dependency",
-              status: "inbox",
-              project_id: null,
-              priority_position: null,
-              due_at: null,
-              review_at: null,
-            },
-          ],
-        }),
-      } as Response)
+    const fetchMock = vi.spyOn(global, "fetch")
     setLiveReply((eventName, params) => {
       expect(eventName).toBe("folio:transition_task")
       expect(params).toEqual({ task_id: "task-1", status: "waiting_for" })
@@ -1607,6 +1693,21 @@ describe("ShellOperatorWorkspaceApp", () => {
         }),
         currentPage: appRoute("folio", "tasks"),
         currentPath: "/primary-owner/primary-workspace/apps/folio/tasks",
+        folioState: folioState({
+          surface: "tasks",
+          projects: [],
+          tasks: [
+            {
+              id: "task-1",
+              title: "Waiting dependency",
+              status: "inbox",
+              project_id: null,
+              priority_position: null,
+              due_at: null,
+              review_at: null,
+            },
+          ],
+        }),
         signOutPath: "/sign-out",
         csrfToken: "csrf-token",
       },
@@ -1635,21 +1736,14 @@ describe("ShellOperatorWorkspaceApp", () => {
     await nextMacrotask()
     await nextTick()
 
-    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(fetchMock).toHaveBeenCalledTimes(0)
     expect(tasksView.get('[data-testid="tasks-transition-error"]').text()).toContain(
       "waiting_for tasks require notes or an active delegation",
     )
   })
 
   it("hides task creation controls when folio manage access is not granted", async () => {
-    vi.spyOn(global, "fetch").mockResolvedValue({
-      ok: true,
-      status: 200,
-      json: async () => ({
-        scope: {},
-        tasks: [],
-      }),
-    } as Response)
+    vi.spyOn(global, "fetch")
 
     const wrapper = mountComponent(ShellOperatorWorkspaceApp, {
       props: {
@@ -1681,6 +1775,10 @@ describe("ShellOperatorWorkspaceApp", () => {
         }),
         currentPage: appRoute("folio", "tasks"),
         currentPath: "/primary-owner/primary-workspace/apps/folio/tasks",
+        folioState: folioState({
+          surface: "tasks",
+          tasks: [],
+        }),
         signOutPath: "/sign-out",
         csrfToken: "csrf-token",
       },
@@ -1702,74 +1800,7 @@ describe("ShellOperatorWorkspaceApp", () => {
   })
 
   it("renders real folio activity on folio activity surface", async () => {
-    vi.spyOn(global, "fetch").mockResolvedValue({
-      ok: true,
-      status: 200,
-      json: async () => ({
-        scope: {
-          app_key: "folio",
-          workspace: {
-            id: "workspace-1",
-            name: "Primary Workspace",
-            slug: "primary-workspace",
-            full_path: "/primary-owner/primary-workspace",
-            visibility: "private",
-            owner_type: "user",
-            owner_id: "owner-1",
-            owner_slug: "primary-owner",
-            owner_display_name: "Primary Owner",
-            dashboard_path: "/primary-owner/primary-workspace",
-            "current?": true,
-          },
-          owner: {
-            type: "user",
-            id: "owner-1",
-            slug: "primary-owner",
-            display_name: "Primary Owner",
-          },
-          app: {
-            key: "folio",
-            label: "Folio",
-            default_path: "/primary-owner/primary-workspace/apps/folio",
-            enabled: true,
-            capabilities: { read: true, manage: true },
-          },
-          capabilities: { read: true, manage: true },
-          workspace_path: "/primary-owner/primary-workspace",
-          app_path: "/primary-owner/primary-workspace/apps/folio",
-        },
-        events: [
-          {
-            id: "event-001",
-            app_key: "folio",
-            provider_key: "activity",
-            provider_event_id: "evt-20260419",
-            occurred_at: "2026-04-19T12:00:00Z",
-            actor: {
-              type: "system",
-              id: "system-operator",
-              label: "Builder",
-            },
-            action: "created",
-            summary: "Project Atlas was created",
-            subject: {
-              type: "project",
-              id: "project-1",
-              label: "Atlas Service",
-            },
-            details: "A new project has been provisioned.",
-            status: "success",
-            changes: {
-              status: { before: "pending", after: "active" },
-            },
-            metadata: {
-              source: "bootstrap",
-            },
-            resource_path: "/primary-owner/primary-workspace/projects/project-1",
-          },
-        ],
-      }),
-    } as Response)
+    vi.spyOn(global, "fetch")
 
     const wrapper = mountComponent(ShellOperatorWorkspaceApp, {
       props: {
@@ -1793,6 +1824,39 @@ describe("ShellOperatorWorkspaceApp", () => {
         }),
         currentPage: appRoute("folio", "activity"),
         currentPath: "/primary-owner/primary-workspace/apps/folio/activity",
+        folioState: folioState({
+          surface: "activity",
+          events: [
+            {
+              id: "event-001",
+              app_key: "folio",
+              provider_key: "activity",
+              provider_event_id: "evt-20260419",
+              occurred_at: "2026-04-19T12:00:00Z",
+              actor: {
+                type: "system",
+                id: "system-operator",
+                label: "Builder",
+              },
+              action: "created",
+              summary: "Project Atlas was created",
+              subject: {
+                type: "project",
+                id: "project-1",
+                label: "Atlas Service",
+              },
+              details: "A new project has been provisioned.",
+              status: "success",
+              changes: {
+                status: { before: "pending", after: "active" },
+              },
+              metadata: {
+                source: "bootstrap",
+              },
+              resource_path: "/primary-owner/primary-workspace/projects/project-1",
+            },
+          ],
+        }),
         signOutPath: "/sign-out",
         csrfToken: "csrf-token",
       },
@@ -1808,10 +1872,7 @@ describe("ShellOperatorWorkspaceApp", () => {
     await nextTick()
     await nextMacrotask()
 
-    expect(global.fetch).toHaveBeenCalledWith(
-      "/api/v1/primary-owner/workspaces/primary-workspace/apps/folio/activity",
-      expect.any(Object),
-    )
+    expect(global.fetch).toHaveBeenCalledTimes(0)
     expect(wrapper.get('[data-testid="workspace-page-activity"]').text()).toContain("Project Atlas was created")
 
     await wrapper.get('[data-testid="activity-row-event-001"]').trigger("click")
@@ -1822,12 +1883,7 @@ describe("ShellOperatorWorkspaceApp", () => {
   })
 
   it("shows loading and empty states on folio projects surface", async () => {
-    let resolveFetch: (response: Response) => void = () => {}
-    vi.spyOn(global, "fetch").mockImplementation(() =>
-      new Promise((resolve) => {
-        resolveFetch = resolve
-      }) as Promise<Response>,
-    )
+    vi.spyOn(global, "fetch")
 
     const wrapper = mountComponent(ShellOperatorWorkspaceApp, {
       props: {
@@ -1851,6 +1907,10 @@ describe("ShellOperatorWorkspaceApp", () => {
         }),
         currentPage: appRoute("folio", "projects"),
         currentPath: "/primary-owner/primary-workspace/apps/folio/projects",
+        folioState: folioState({
+          surface: "projects",
+          projectsLoading: true,
+        }),
         signOutPath: "/sign-out",
         csrfToken: "csrf-token",
       },
@@ -1866,62 +1926,33 @@ describe("ShellOperatorWorkspaceApp", () => {
     await nextTick()
     expect(wrapper.find('[data-testid="projects-state-loading"]').exists()).toBe(true)
 
-    resolveFetch({
-      ok: true,
-      status: 200,
-      json: async () => ({
-        scope: {
-          app_key: "folio",
-          workspace: {
-            id: "workspace-1",
-            name: "Primary Workspace",
-            slug: "primary-workspace",
-            full_path: "/primary-owner/primary-workspace",
-            visibility: "private",
-            owner_type: "user",
-            owner_id: "owner-1",
-            owner_slug: "primary-owner",
-            owner_display_name: "Primary Owner",
-            dashboard_path: "/primary-owner/primary-workspace",
-            "current?": true,
-          },
-          owner: {
-            type: "user",
-            id: "owner-1",
-            slug: "primary-owner",
-            display_name: "Primary Owner",
-          },
-          app: {
-            key: "folio",
-            label: "Folio",
-            default_path: "/primary-owner/primary-workspace/apps/folio",
-            enabled: true,
-            capabilities: { read: true, manage: true },
-          },
-          capabilities: { read: true, manage: true },
-          workspace_path: "/primary-owner/primary-workspace",
-          app_path: "/primary-owner/primary-workspace/apps/folio",
-        },
+    await wrapper.setProps({
+      folioState: folioState({
+        surface: "projects",
         projects: [],
       }),
-    } as Response)
-
-    await nextMacrotask()
+    })
     await nextTick()
 
+    expect(global.fetch).toHaveBeenCalledTimes(0)
     expect(wrapper.find('[data-testid="projects-state-empty"]').exists()).toBe(true)
     expect(wrapper.get('[data-testid="projects-state-empty"]').text()).toContain("No projects yet")
   })
 
   it("shows an actionable error state on folio tasks surface", async () => {
-    vi.spyOn(global, "fetch").mockResolvedValue({
-      ok: false,
-      status: 502,
-      statusText: "Bad Gateway",
-      json: async () => ({
-        error: { message: "Unable to load tasks from Folio" },
-      }),
-    } as Response)
+    const fetchMock = vi.spyOn(global, "fetch")
+    const liveReply = setLiveReply((eventName, params) => {
+      expect(eventName).toBe("folio:refresh")
+      expect(params).toEqual({})
+
+      return {
+        ok: true,
+        folio_state: folioState({
+          surface: "tasks",
+          tasks: [],
+        }),
+      }
+    })
 
     const wrapper = mountComponent(ShellOperatorWorkspaceApp, {
       props: {
@@ -1945,6 +1976,10 @@ describe("ShellOperatorWorkspaceApp", () => {
         }),
         currentPage: appRoute("folio", "tasks"),
         currentPath: "/primary-owner/primary-workspace/apps/folio/tasks",
+        folioState: folioState({
+          surface: "tasks",
+          tasksError: "Unable to load tasks from Folio",
+        }),
         signOutPath: "/sign-out",
         csrfToken: "csrf-token",
       },
@@ -1965,50 +2000,15 @@ describe("ShellOperatorWorkspaceApp", () => {
     expect(errorState.text()).toContain("Unable to load tasks from Folio")
 
     await errorState.get("button").trigger("click")
+    await nextTick()
+    await nextMacrotask()
 
-    expect(global.fetch).toHaveBeenCalledTimes(3)
+    expect(fetchMock).toHaveBeenCalledTimes(0)
+    expect(liveReply).toHaveBeenCalledWith("folio:refresh", {})
   })
 
   it("shows an empty state on folio activity surface", async () => {
-    vi.spyOn(global, "fetch").mockResolvedValue({
-      ok: true,
-      status: 200,
-      json: async () => ({
-        scope: {
-          app_key: "folio",
-          workspace: {
-            id: "workspace-1",
-            name: "Primary Workspace",
-            slug: "primary-workspace",
-            full_path: "/primary-owner/primary-workspace",
-            visibility: "private",
-            owner_type: "user",
-            owner_id: "owner-1",
-            owner_slug: "primary-owner",
-            owner_display_name: "Primary Owner",
-            dashboard_path: "/primary-owner/primary-workspace",
-            "current?": true,
-          },
-          owner: {
-            type: "user",
-            id: "owner-1",
-            slug: "primary-owner",
-            display_name: "Primary Owner",
-          },
-          app: {
-            key: "folio",
-            label: "Folio",
-            default_path: "/primary-owner/primary-workspace/apps/folio",
-            enabled: true,
-            capabilities: { read: true, manage: true },
-          },
-          capabilities: { read: true, manage: true },
-          workspace_path: "/primary-owner/primary-workspace",
-          app_path: "/primary-owner/primary-workspace/apps/folio",
-        },
-        events: [],
-      }),
-    } as Response)
+    vi.spyOn(global, "fetch")
 
     const wrapper = mountComponent(ShellOperatorWorkspaceApp, {
       props: {
@@ -2032,6 +2032,10 @@ describe("ShellOperatorWorkspaceApp", () => {
         }),
         currentPage: appRoute("folio", "activity"),
         currentPath: "/primary-owner/primary-workspace/apps/folio/activity",
+        folioState: folioState({
+          surface: "activity",
+          events: [],
+        }),
         signOutPath: "/sign-out",
         csrfToken: "csrf-token",
       },
@@ -2047,6 +2051,7 @@ describe("ShellOperatorWorkspaceApp", () => {
     await nextTick()
     await nextMacrotask()
 
+    expect(global.fetch).toHaveBeenCalledTimes(0)
     expect(wrapper.find('[data-testid="activity-state-empty"]').exists()).toBe(true)
     expect(wrapper.get('[data-testid="activity-state-empty"]').text()).toContain("No activity yet")
   })
