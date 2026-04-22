@@ -261,12 +261,28 @@ It should not answer: “What business process owns this?”
 LiveView owns server state and application flow.
 Vue should enhance presentation, composition, and controlled client interactions.
 
+- Treat `/dev/design-system` as the canonical in-app patterns page for shared HEEx, shell, and LiveVue runtime review.
 - Prefer HEEx for server-driven forms, auth flows, and content that closely tracks assigns.
 - Prefer Vue where richer interaction, structured client composition, or component-driven presentation adds value.
 - Keep the contract between LiveView and Vue explicit through props and events.
 - Do not bury application-critical behavior inside opaque client-side component state.
+- Route state, persisted state, authorization-sensitive actions, validation, and real-time updates belong to LiveView.
+- Presentation, local-only UI state, panel open/closed state, draft text, popovers, small transitions, and connection affordances may live in Vue.
 
 When in doubt, put truth on the server and presentation in the component layer.
+
+### LiveVue Runtime Patterns
+
+Signed-in browser UI should use LiveVue as a LiveView presentation layer, not as a standalone SPA.
+
+- Navigation: use `Link` and `useLiveNavigation()` instead of manual `window.history` edits so `handle_params/3` remains the route source of truth.
+- Mutations: use `$live.pushEvent()`, `useEventReply()`, or `phx-*` bindings for browser UI writes such as create, update, transition, archive, mark-read, and preference actions.
+- Live updates: use `push_event/3`, `useLiveEvent()`, LiveView assigns, and Phoenix streams for changing rows, notifications, activity, and chat deltas.
+- Forms: use `useLiveForm()` for repeated Vue forms that need server validation or Ash/Phoenix form semantics.
+- Connection state: use `useLiveConnection()` for subtle reconnecting/offline affordances and to disable sensitive actions when appropriate.
+- Uploads: use `useLiveUpload()` for future attachment flows instead of separate browser upload clients.
+- SSR: keep global SSR disabled for now; revisit SSR in a focused public/auth-page pass after hydration behavior is verified.
+- External API: keep REST and SSE endpoints available for API clients, automation, external integrations, and focused controller tests. Same-origin signed-in UI should not default to `fetch()` unless the interaction is intentionally outside LiveView.
 
 ## Component Contracts
 
