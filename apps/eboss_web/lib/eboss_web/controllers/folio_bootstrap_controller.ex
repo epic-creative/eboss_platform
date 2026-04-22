@@ -4,6 +4,7 @@ defmodule EBossWeb.FolioBootstrapController do
   alias Ash.PlugHelpers
   alias EBossFolio
   alias EBossWeb.AppScope
+  alias EBossWeb.FolioPayloads
 
   def show(conn, %{"owner_slug" => owner_slug, "slug" => slug}) do
     current_user = conn.assigns[:current_user] || PlugHelpers.get_actor(conn)
@@ -236,7 +237,7 @@ defmodule EBossWeb.FolioBootstrapController do
            EBossFolio.list_projects_in_workspace(scope.current_workspace.id, actor: current_user) do
       json(conn, %{
         scope: folio_scope_payload(scope),
-        projects: Enum.map(projects, &project_summary_payload/1)
+        projects: Enum.map(projects, &FolioPayloads.project_summary/1)
       })
     else
       {:error, _reason} ->
@@ -255,7 +256,7 @@ defmodule EBossWeb.FolioBootstrapController do
       |> put_status(:created)
       |> json(%{
         scope: folio_scope_payload(scope),
-        project: project_summary_payload(project)
+        project: FolioPayloads.project_summary(project)
       })
     else
       {:error, _reason} ->
@@ -305,7 +306,7 @@ defmodule EBossWeb.FolioBootstrapController do
          {:ok, project} <- EBossFolio.update_project_details(project, params, actor: current_user) do
       json(conn, %{
         scope: folio_scope_payload(scope),
-        project: project_summary_payload(project)
+        project: FolioPayloads.project_summary(project)
       })
     else
       {:error, :not_found} ->
@@ -343,7 +344,7 @@ defmodule EBossWeb.FolioBootstrapController do
          {:ok, project} <- transition_project(project, target_status, current_user) do
       json(conn, %{
         scope: folio_scope_payload(scope),
-        project: project_summary_payload(project)
+        project: FolioPayloads.project_summary(project)
       })
     else
       {:error, :not_found} ->
@@ -375,7 +376,7 @@ defmodule EBossWeb.FolioBootstrapController do
            ) do
       json(conn, %{
         scope: folio_scope_payload(scope),
-        tasks: Enum.map(tasks, &task_summary_payload/1)
+        tasks: Enum.map(tasks, &FolioPayloads.task_summary/1)
       })
     else
       {:error, _reason} ->
@@ -394,7 +395,7 @@ defmodule EBossWeb.FolioBootstrapController do
       |> put_status(:created)
       |> json(%{
         scope: folio_scope_payload(scope),
-        task: task_summary_payload(task)
+        task: FolioPayloads.task_summary(task)
       })
     else
       {:error, _reason} ->
@@ -417,7 +418,7 @@ defmodule EBossWeb.FolioBootstrapController do
          {:ok, task} <- apply_task_update_intent(task, intent, scope, current_user) do
       json(conn, %{
         scope: folio_scope_payload(scope),
-        task: task_summary_payload(task)
+        task: FolioPayloads.task_summary(task)
       })
     else
       {:error, :not_found} ->
@@ -501,20 +502,6 @@ defmodule EBossWeb.FolioBootstrapController do
   end
 
   defp normalize_payload_map(value), do: value
-
-  defp project_summary_payload(%EBossFolio.Project{} = project) do
-    %{
-      id: project.id,
-      title: project.title,
-      description: project.description,
-      status: project.status,
-      priority_position: project.priority_position,
-      due_at: project.due_at,
-      review_at: project.review_at,
-      notes: project.notes,
-      metadata: project.metadata
-    }
-  end
 
   defp parse_project_create_params(%{"title" => title}) when is_binary(title) do
     parse_project_create_params(%{title: String.trim(title)})
@@ -1147,59 +1134,6 @@ defmodule EBossWeb.FolioBootstrapController do
   defp maybe_put(attrs, field, {:set, value}), do: Map.put(attrs, field, value)
   defp maybe_put_value(attrs, _field, :missing), do: attrs
   defp maybe_put_value(attrs, field, value), do: Map.put(attrs, field, value)
-
-  defp task_summary_payload(%EBossFolio.Task{} = task) do
-    %{
-      id: task.id,
-      title: task.title,
-      status: task.status,
-      project_id: task.project_id,
-      priority_position: task.priority_position,
-      due_at: task.due_at,
-      review_at: task.review_at,
-      active_delegation: active_delegation_payload(task)
-    }
-  end
-
-  defp active_delegation_payload(%EBossFolio.Task{delegations: delegations})
-       when is_list(delegations) do
-    case Enum.find(delegations, &(&1.status == :active)) do
-      nil ->
-        nil
-
-      delegation ->
-        %{
-          id: delegation.id,
-          status: delegation.status,
-          delegated_at: delegation.delegated_at,
-          delegated_summary: delegation.delegated_summary,
-          quality_expectations: delegation.quality_expectations,
-          deadline_expectations_at: delegation.deadline_expectations_at,
-          follow_up_at: delegation.follow_up_at,
-          contact: delegation_contact_payload(delegation)
-        }
-    end
-  end
-
-  defp active_delegation_payload(_task), do: nil
-
-  defp delegation_contact_payload(%EBossFolio.Delegation{
-         contact: %EBossFolio.Contact{} = contact
-       }) do
-    %{
-      id: contact.id,
-      name: contact.name,
-      email: contact.email
-    }
-  end
-
-  defp delegation_contact_payload(%EBossFolio.Delegation{contact_id: contact_id}) do
-    %{
-      id: contact_id,
-      name: nil,
-      email: nil
-    }
-  end
 
   defp error_json(conn, status, code, message) do
     conn

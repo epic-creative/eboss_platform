@@ -1,8 +1,10 @@
 defmodule EBossWeb.DashboardLive do
   use EBossWeb, :live_view
 
+  alias EBossFolio
   alias EBossNotify
   alias EBossWeb.AppScope
+  alias EBossWeb.FolioPayloads
   alias EBossWeb.NotificationController
 
   @workspace_routes %{
@@ -78,6 +80,132 @@ defmodule EBossWeb.DashboardLive do
 
   def handle_event("notifications:mark_all_read", _params, socket) do
     reply_with_notification_action(socket, &EBossNotify.mark_all_read/1)
+  end
+
+  def handle_event("folio:create_project", params, socket) do
+    reply_with_folio_manage(socket, fn scope, current_user ->
+      with {:ok, title} <- required_text(params, :title),
+           {:ok, project} <-
+             EBossFolio.create_project(
+               %{workspace_id: scope.current_workspace.id, title: title},
+               actor: current_user
+             ) do
+        {:ok, %{project: FolioPayloads.project_summary(project)}}
+      end
+    end)
+  end
+
+  def handle_event("folio:update_project", params, socket) do
+    reply_with_folio_manage(socket, fn scope, current_user ->
+      with {:ok, project_id} <- required_text(params, :project_id),
+           {:ok, attrs} <- project_update_attrs(params),
+           {:ok, project} <-
+             EBossFolio.get_project_in_workspace(project_id, scope.current_workspace.id,
+               actor: current_user
+             ),
+           {:ok, project} <-
+             EBossFolio.update_project_details(project, attrs, actor: current_user) do
+        {:ok, %{project: FolioPayloads.project_summary(project)}}
+      end
+    end)
+  end
+
+  def handle_event("folio:transition_project", params, socket) do
+    reply_with_folio_manage(socket, fn scope, current_user ->
+      with {:ok, project_id} <- required_text(params, :project_id),
+           {:ok, status} <-
+             required_status(params, :status, [
+               :active,
+               :on_hold,
+               :completed,
+               :canceled,
+               :archived
+             ]),
+           {:ok, project} <-
+             EBossFolio.get_project_in_workspace(project_id, scope.current_workspace.id,
+               actor: current_user
+             ),
+           {:ok, project} <- transition_project(project, status, current_user) do
+        {:ok, %{project: FolioPayloads.project_summary(project)}}
+      end
+    end)
+  end
+
+  def handle_event("folio:create_task", params, socket) do
+    reply_with_folio_manage(socket, fn scope, current_user ->
+      with {:ok, title} <- required_text(params, :title),
+           {:ok, project_id} <- optional_text(params, :project_id),
+           {:ok, task} <-
+             EBossFolio.create_task(
+               %{}
+               |> Map.put(:workspace_id, scope.current_workspace.id)
+               |> Map.put(:title, title)
+               |> maybe_put_value(:project_id, project_id),
+               actor: current_user
+             ) do
+        {:ok, %{task: FolioPayloads.task_summary(task)}}
+      end
+    end)
+  end
+
+  def handle_event("folio:transition_task", params, socket) do
+    reply_with_folio_manage(socket, fn scope, current_user ->
+      with {:ok, task_id} <- required_text(params, :task_id),
+           {:ok, status} <-
+             required_status(params, :status, [
+               :inbox,
+               :next_action,
+               :waiting_for,
+               :scheduled,
+               :someday_maybe,
+               :done,
+               :canceled,
+               :archived
+             ]),
+           {:ok, task} <-
+             EBossFolio.get_task_in_workspace(task_id, scope.current_workspace.id,
+               actor: current_user,
+               load: [delegations: :contact]
+             ),
+           {:ok, task} <- transition_task(task, status, current_user),
+           {:ok, task} <-
+             load_task_with_delegations(task, scope.current_workspace.id, current_user) do
+        {:ok, %{task: FolioPayloads.task_summary(task)}}
+      end
+    end)
+  end
+
+  def handle_event("folio:delegate_task", params, socket) do
+    reply_with_folio_manage(socket, fn scope, current_user ->
+      workspace_id = scope.current_workspace.id
+
+      with {:ok, task_id} <- required_text(params, :task_id),
+           {:ok, delegation_attrs} <- task_delegation_attrs(params),
+           {:ok, task} <-
+             EBossFolio.get_task_in_workspace(task_id, workspace_id,
+               actor: current_user,
+               load: [delegations: :contact]
+             ),
+           :ok <- ensure_task_can_be_marked_waiting_for(task),
+           {:ok, contact} <-
+             resolve_delegation_contact(
+               delegation_attrs.contact_reference,
+               workspace_id,
+               current_user
+             ),
+           {:ok, _delegation} <-
+             create_task_delegation(
+               task,
+               workspace_id,
+               contact.id,
+               delegation_attrs,
+               current_user
+             ),
+           {:ok, task} <- transition_task(task, :waiting_for, current_user),
+           {:ok, task} <- load_task_with_delegations(task, workspace_id, current_user) do
+        {:ok, %{task: FolioPayloads.task_summary(task)}}
+      end
+    end)
   end
 
   @impl true
@@ -298,6 +426,321 @@ defmodule EBossWeb.DashboardLive do
 
   defp notification_error(reason) when is_binary(reason), do: reason
   defp notification_error(reason), do: inspect(reason)
+
+  defp reply_with_folio_manage(socket, operation) do
+    scope = socket.assigns.current_scope
+
+    cond do
+      !match?(
+        %AppScope{current_workspace: %{id: workspace_id}} when is_binary(workspace_id),
+        scope
+      ) ->
+        {:reply, %{ok: false, error: "Workspace scope is unavailable."}, socket}
+
+      !Map.get(scope.capabilities, :manage_folio, false) ->
+        {:reply, %{ok: false, error: "Workspace access is forbidden."}, socket}
+
+      true ->
+        case operation.(scope, socket.assigns.current_user) do
+          {:ok, payload} ->
+            {:reply, Map.put(payload, :ok, true), socket}
+
+          {:error, reason} ->
+            {:reply, %{ok: false, error: folio_error(reason)}, socket}
+
+          {:error, reason, message} ->
+            {:reply, %{ok: false, error: folio_error({reason, message})}, socket}
+        end
+    end
+  end
+
+  defp project_update_attrs(params) do
+    with {:ok, title} <- optional_text(params, :title),
+         {:ok, description} <- optional_text(params, :description),
+         {:ok, notes} <- optional_text(params, :notes),
+         {:ok, due_at} <- optional_datetime(params, :due_at),
+         {:ok, review_at} <- optional_datetime(params, :review_at),
+         {:ok, metadata} <- optional_metadata(params, :metadata) do
+      attrs =
+        %{}
+        |> maybe_put_value(:title, title)
+        |> maybe_put_value(:description, description)
+        |> maybe_put_value(:notes, notes)
+        |> maybe_put_value(:due_at, due_at)
+        |> maybe_put_value(:review_at, review_at)
+        |> maybe_put_value(:metadata, metadata)
+
+      if map_size(attrs) == 0, do: {:error, :invalid_payload}, else: {:ok, attrs}
+    end
+  end
+
+  defp task_delegation_attrs(params) do
+    with {:ok, contact_reference} <- delegation_contact_reference(params),
+         {:ok, delegated_summary} <- required_text(params, :delegated_summary),
+         {:ok, quality_expectations} <- optional_text(params, :quality_expectations),
+         {:ok, deadline_expectations_at} <- optional_datetime(params, :deadline_expectations_at),
+         {:ok, follow_up_at} <- optional_datetime(params, :follow_up_at) do
+      attrs =
+        %{
+          contact_reference: contact_reference,
+          delegated_summary: delegated_summary
+        }
+        |> maybe_put_value(:quality_expectations, quality_expectations)
+        |> maybe_put_value(:deadline_expectations_at, deadline_expectations_at)
+        |> maybe_put_value(:follow_up_at, follow_up_at)
+
+      {:ok, attrs}
+    end
+  end
+
+  defp delegation_contact_reference(params) do
+    case optional_text(params, :contact_id) do
+      {:ok, contact_id} when contact_id in [nil, :missing] ->
+        with {:ok, contact_name} <- required_text(params, :contact_name) do
+          {:ok, {:new, contact_name}}
+        end
+
+      {:ok, contact_id} ->
+        {:ok, {:existing, contact_id}}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  defp required_text(params, field) do
+    case fetch_payload_field(params, field) do
+      :missing ->
+        {:error, :invalid_payload}
+
+      {:present, value} ->
+        normalize_required_text(value)
+    end
+  end
+
+  defp optional_text(params, field) do
+    case fetch_payload_field(params, field) do
+      :missing ->
+        {:ok, :missing}
+
+      {:present, value} ->
+        normalize_optional_text(value)
+    end
+  end
+
+  defp optional_datetime(params, field) do
+    case fetch_payload_field(params, field) do
+      :missing -> {:ok, :missing}
+      {:present, value} -> normalize_optional_datetime(value)
+    end
+  end
+
+  defp optional_metadata(params, field) do
+    case fetch_payload_field(params, field) do
+      :missing -> {:ok, :missing}
+      {:present, nil} -> {:ok, %{}}
+      {:present, value} when is_map(value) -> {:ok, value}
+      {:present, value} when is_binary(value) -> decode_metadata(value)
+      {:present, _value} -> {:error, :invalid_payload}
+    end
+  end
+
+  defp required_status(params, field, allowed_statuses) do
+    case fetch_payload_field(params, field) do
+      :missing ->
+        {:error, :invalid_payload}
+
+      {:present, value} ->
+        normalize_status(value, allowed_statuses)
+    end
+  end
+
+  defp fetch_payload_field(params, field) when is_map(params) do
+    string_field = to_string(field)
+
+    cond do
+      Map.has_key?(params, string_field) -> {:present, Map.get(params, string_field)}
+      Map.has_key?(params, field) -> {:present, Map.get(params, field)}
+      true -> :missing
+    end
+  end
+
+  defp normalize_required_text(value) when is_binary(value) do
+    value
+    |> String.trim()
+    |> case do
+      "" -> {:error, :invalid_payload}
+      text -> {:ok, text}
+    end
+  end
+
+  defp normalize_required_text(value) when is_atom(value),
+    do: value |> to_string() |> normalize_required_text()
+
+  defp normalize_required_text(_value), do: {:error, :invalid_payload}
+
+  defp normalize_optional_text(nil), do: {:ok, nil}
+
+  defp normalize_optional_text(value) when is_binary(value) do
+    value
+    |> String.trim()
+    |> case do
+      "" -> {:ok, nil}
+      text -> {:ok, text}
+    end
+  end
+
+  defp normalize_optional_text(value) when is_atom(value),
+    do: value |> to_string() |> normalize_optional_text()
+
+  defp normalize_optional_text(_value), do: {:error, :invalid_payload}
+
+  defp normalize_optional_datetime(nil), do: {:ok, nil}
+
+  defp normalize_optional_datetime(value) when is_binary(value) do
+    value
+    |> String.trim()
+    |> case do
+      "" ->
+        {:ok, nil}
+
+      trimmed ->
+        case parse_datetime_value(trimmed) do
+          {:ok, datetime} -> {:ok, datetime}
+          {:error, :invalid_format} -> parse_date_value(trimmed)
+        end
+    end
+  end
+
+  defp normalize_optional_datetime(value) when is_atom(value),
+    do: value |> to_string() |> normalize_optional_datetime()
+
+  defp normalize_optional_datetime(_value), do: {:error, :invalid_payload}
+
+  defp parse_datetime_value(value) do
+    case DateTime.from_iso8601(value) do
+      {:ok, datetime, _offset} -> {:ok, datetime}
+      {:error, _reason} -> {:error, :invalid_format}
+    end
+  end
+
+  defp parse_date_value(value) do
+    with {:ok, date} <- Date.from_iso8601(value),
+         {:ok, datetime} <- DateTime.new(date, ~T[00:00:00], "Etc/UTC") do
+      {:ok, datetime}
+    else
+      _ -> {:error, :invalid_payload}
+    end
+  end
+
+  defp decode_metadata(value) do
+    case String.trim(value) do
+      "" ->
+        {:ok, %{}}
+
+      json ->
+        case Jason.decode(json) do
+          {:ok, decoded} when is_map(decoded) -> {:ok, decoded}
+          _ -> {:error, :invalid_payload}
+        end
+    end
+  end
+
+  defp normalize_status(value, allowed_statuses) when is_binary(value) do
+    status = String.trim(value)
+
+    case Enum.find(allowed_statuses, &(to_string(&1) == status)) do
+      nil -> {:error, :invalid_payload}
+      status -> {:ok, status}
+    end
+  end
+
+  defp normalize_status(value, allowed_statuses) when is_atom(value) do
+    if value in allowed_statuses, do: {:ok, value}, else: {:error, :invalid_payload}
+  end
+
+  defp normalize_status(_value, _allowed_statuses), do: {:error, :invalid_payload}
+
+  defp maybe_put_value(attrs, _field, :missing), do: attrs
+  defp maybe_put_value(attrs, field, value), do: Map.put(attrs, field, value)
+
+  defp transition_project(project, :active, actor),
+    do: EBossFolio.activate_project(project, actor: actor)
+
+  defp transition_project(project, :on_hold, actor),
+    do: EBossFolio.put_project_on_hold(project, actor: actor)
+
+  defp transition_project(project, :completed, actor),
+    do: EBossFolio.complete_project(project, actor: actor)
+
+  defp transition_project(project, :canceled, actor),
+    do: EBossFolio.cancel_project(project, actor: actor)
+
+  defp transition_project(project, :archived, actor),
+    do: EBossFolio.archive_project(project, actor: actor)
+
+  defp transition_task(task, :inbox, actor), do: EBossFolio.move_task_to_inbox(task, actor: actor)
+
+  defp transition_task(task, :next_action, actor),
+    do: EBossFolio.mark_task_next_action(task, actor: actor)
+
+  defp transition_task(task, :waiting_for, actor),
+    do: EBossFolio.mark_task_waiting_for(task, actor: actor)
+
+  defp transition_task(task, :scheduled, actor), do: EBossFolio.schedule_task(task, actor: actor)
+
+  defp transition_task(task, :someday_maybe, actor),
+    do: EBossFolio.mark_task_someday_maybe(task, actor: actor)
+
+  defp transition_task(task, :done, actor), do: EBossFolio.complete_task(task, actor: actor)
+  defp transition_task(task, :canceled, actor), do: EBossFolio.cancel_task(task, actor: actor)
+  defp transition_task(task, :archived, actor), do: EBossFolio.archive_task(task, actor: actor)
+
+  defp ensure_task_can_be_marked_waiting_for(%EBossFolio.Task{status: status}) do
+    if status in [:inbox, :next_action, :waiting_for, :scheduled, :someday_maybe] do
+      :ok
+    else
+      {:error, {:invalid_task_workflow, "cannot delegate task from #{status} status"}}
+    end
+  end
+
+  defp resolve_delegation_contact({:existing, contact_id}, workspace_id, actor) do
+    EBossFolio.get_contact_in_workspace(contact_id, workspace_id, actor: actor)
+  end
+
+  defp resolve_delegation_contact({:new, contact_name}, workspace_id, actor) do
+    EBossFolio.create_contact(%{workspace_id: workspace_id, name: contact_name}, actor: actor)
+  end
+
+  defp create_task_delegation(task, workspace_id, contact_id, attrs, actor) do
+    %{
+      workspace_id: workspace_id,
+      task_id: task.id,
+      contact_id: contact_id,
+      delegated_summary: attrs.delegated_summary
+    }
+    |> maybe_put_value(:quality_expectations, Map.get(attrs, :quality_expectations, :missing))
+    |> maybe_put_value(
+      :deadline_expectations_at,
+      Map.get(attrs, :deadline_expectations_at, :missing)
+    )
+    |> maybe_put_value(:follow_up_at, Map.get(attrs, :follow_up_at, :missing))
+    |> EBossFolio.delegate_task(actor: actor)
+  end
+
+  defp load_task_with_delegations(task, workspace_id, actor) do
+    EBossFolio.get_task_in_workspace(task.id, workspace_id,
+      actor: actor,
+      load: [delegations: :contact]
+    )
+  end
+
+  defp folio_error(%Ash.Error.Invalid{} = error), do: Exception.message(error)
+  defp folio_error({:invalid_task_workflow, message}), do: message
+  defp folio_error(:invalid_payload), do: "Folio payload could not be processed."
+  defp folio_error(:not_found), do: "Folio resource was not found."
+  defp folio_error(reason) when is_binary(reason), do: reason
+  defp folio_error(reason), do: inspect(reason)
 
   defp empty_notification_bootstrap do
     %{

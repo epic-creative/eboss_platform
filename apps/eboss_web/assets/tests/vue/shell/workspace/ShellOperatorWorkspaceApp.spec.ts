@@ -51,22 +51,17 @@ const appRoute = (appKey: string, appSurface: string | null = null, appPath: str
   app_path: appPath,
 })
 const nextMacrotask = () => new Promise((resolve) => setTimeout(resolve, 0))
-const expectJsonRequest = (
-  request: RequestInit | undefined,
-  method: string,
-  body?: unknown,
+const setLiveReply = (
+  handler: (eventName: string, params: Record<string, unknown>) => unknown,
 ) => {
-  expect(request?.method).toBe(method)
-  expect(request?.credentials).toBe("same-origin")
-  expect(new Headers(request?.headers as HeadersInit | undefined).get("Content-Type")).toBe(
-    "application/json",
-  )
+  const liveReply = vi.fn(handler)
 
-  if (body !== undefined) {
-    expect(request?.body).toBe(JSON.stringify(body))
-  }
+  ;(globalThis as typeof globalThis & {
+    __liveVueEventReply?: (eventName: string, params: Record<string, unknown>) => unknown
+  }).__liveVueEventReply = liveReply
+
+  return liveReply
 }
-
 describe("ShellOperatorWorkspaceApp", () => {
   afterEach(() => {
     vi.restoreAllMocks()
@@ -461,21 +456,6 @@ describe("ShellOperatorWorkspaceApp", () => {
       } as Response)
       .mockResolvedValueOnce({
         ok: true,
-        status: 201,
-        json: async () => ({
-          scope: {},
-          project: {
-            id: "project-2",
-            title: "Launch Console",
-            status: "active",
-            priority_position: null,
-            due_at: null,
-            review_at: null,
-          },
-        }),
-      } as Response)
-      .mockResolvedValueOnce({
-        ok: true,
         status: 200,
         json: async () => ({
           scope: {},
@@ -499,6 +479,22 @@ describe("ShellOperatorWorkspaceApp", () => {
           ],
         }),
       } as Response)
+    const liveReply = setLiveReply((eventName, params) => {
+      expect(eventName).toBe("folio:create_project")
+      expect(params).toEqual({ title: "Launch Console" })
+
+      return {
+        ok: true,
+        project: {
+          id: "project-2",
+          title: "Launch Console",
+          status: "active",
+          priority_position: null,
+          due_at: null,
+          review_at: null,
+        },
+      }
+    })
 
     const wrapper = mountComponent(ShellOperatorWorkspaceApp, {
       props: {
@@ -549,13 +545,13 @@ describe("ShellOperatorWorkspaceApp", () => {
     await nextTick()
     await nextMacrotask()
 
-    expect(fetchMock).toHaveBeenCalledTimes(3)
+    expect(fetchMock).toHaveBeenCalledTimes(2)
     expect(fetchMock).toHaveBeenNthCalledWith(
       2,
       "/api/v1/primary-owner/workspaces/primary-workspace/apps/folio/projects",
       expect.any(Object),
     )
-    expectJsonRequest(fetchMock.mock.calls[1]?.[1], "POST", { title: "Launch Console" })
+    expect(liveReply).toHaveBeenCalledWith("folio:create_project", { title: "Launch Console" })
 
     expect(projectsView.text()).toContain("Launch Console")
     expect(projectsView.find('[data-testid="projects-create-form"]').exists()).toBe(false)
@@ -591,27 +587,6 @@ describe("ShellOperatorWorkspaceApp", () => {
         status: 200,
         json: async () => ({
           scope: {},
-          project: {
-            id: "project-1",
-            title: "Atlas Service Revamp",
-            description: "Refined project scope",
-            status: "active",
-            priority_position: 1,
-            due_at: "2026-05-10T00:00:00Z",
-            review_at: "2026-05-15T00:00:00Z",
-            notes: "Updated notes",
-            metadata: {
-              cadence: "weekly",
-              owner: "ops",
-            },
-          },
-        }),
-      } as Response)
-      .mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        json: async () => ({
-          scope: {},
           projects: [
             {
               id: "project-1",
@@ -630,6 +605,36 @@ describe("ShellOperatorWorkspaceApp", () => {
           ],
         }),
       } as Response)
+    const liveReply = setLiveReply((eventName, params) => {
+      expect(eventName).toBe("folio:update_project")
+      expect(params).toEqual({
+        project_id: "project-1",
+        title: "Atlas Service Revamp",
+        description: "Refined project scope",
+        due_at: "2026-05-10",
+        review_at: "2026-05-15",
+        notes: "Updated notes",
+        metadata: { cadence: "weekly", owner: "ops" },
+      })
+
+      return {
+        ok: true,
+        project: {
+          id: "project-1",
+          title: "Atlas Service Revamp",
+          description: "Refined project scope",
+          status: "active",
+          priority_position: 1,
+          due_at: "2026-05-10T00:00:00Z",
+          review_at: "2026-05-15T00:00:00Z",
+          notes: "Updated notes",
+          metadata: {
+            cadence: "weekly",
+            owner: "ops",
+          },
+        },
+      }
+    })
 
     const wrapper = mountComponent(ShellOperatorWorkspaceApp, {
       props: {
@@ -689,16 +694,9 @@ describe("ShellOperatorWorkspaceApp", () => {
     await nextTick()
     await nextMacrotask()
 
-    expect(fetchMock).toHaveBeenCalledTimes(3)
-    const patchCall = fetchMock.mock.calls[1]
-
-    expect(fetchMock).toHaveBeenNthCalledWith(
-      2,
-      "/api/v1/primary-owner/workspaces/primary-workspace/apps/folio/projects/project-1",
-      expect.any(Object),
-    )
-    expectJsonRequest(patchCall[1], "PATCH")
-    expect(JSON.parse(String(patchCall[1]?.body))).toEqual({
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(liveReply).toHaveBeenCalledWith("folio:update_project", {
+      project_id: "project-1",
       title: "Atlas Service Revamp",
       description: "Refined project scope",
       due_at: "2026-05-10",
@@ -742,22 +740,6 @@ describe("ShellOperatorWorkspaceApp", () => {
         status: 200,
         json: async () => ({
           scope: {},
-          project: {
-            id: "project-1",
-            title: "Atlas Service",
-            status: "completed",
-            priority_position: 1,
-            due_at: null,
-            review_at: null,
-            metadata: {},
-          },
-        }),
-      } as Response)
-      .mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        json: async () => ({
-          scope: {},
           projects: [
             {
               id: "project-1",
@@ -771,6 +753,23 @@ describe("ShellOperatorWorkspaceApp", () => {
           ],
         }),
       } as Response)
+    const liveReply = setLiveReply((eventName, params) => {
+      expect(eventName).toBe("folio:transition_project")
+      expect(params).toEqual({ project_id: "project-1", status: "completed" })
+
+      return {
+        ok: true,
+        project: {
+          id: "project-1",
+          title: "Atlas Service",
+          status: "completed",
+          priority_position: 1,
+          due_at: null,
+          review_at: null,
+          metadata: {},
+        },
+      }
+    })
 
     const wrapper = mountComponent(ShellOperatorWorkspaceApp, {
       props: {
@@ -822,13 +821,11 @@ describe("ShellOperatorWorkspaceApp", () => {
     await nextTick()
     await nextMacrotask()
 
-    expect(fetchMock).toHaveBeenCalledTimes(3)
-    expect(fetchMock).toHaveBeenNthCalledWith(
-      2,
-      "/api/v1/primary-owner/workspaces/primary-workspace/apps/folio/projects/project-1",
-      expect.any(Object),
-    )
-    expectJsonRequest(fetchMock.mock.calls[1]?.[1], "PATCH", { status: "completed" })
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(liveReply).toHaveBeenCalledWith("folio:transition_project", {
+      project_id: "project-1",
+      status: "completed",
+    })
 
     expect(projectsView.find('[data-testid="projects-state-empty-filtered"]').exists()).toBe(true)
     expect(projectsView.find('[data-testid="projects-transition-error"]').exists()).toBe(false)
@@ -855,17 +852,15 @@ describe("ShellOperatorWorkspaceApp", () => {
           ],
         }),
       } as Response)
-      .mockResolvedValueOnce({
+    setLiveReply((eventName, params) => {
+      expect(eventName).toBe("folio:transition_project")
+      expect(params).toEqual({ project_id: "project-1", status: "active" })
+
+      return {
         ok: false,
-        status: 400,
-        statusText: "Bad Request",
-        json: async () => ({
-          error: {
-            code: "invalid_project_transition",
-            message: "cannot transition project from completed to active",
-          },
-        }),
-      } as Response)
+        error: "cannot transition project from completed to active",
+      }
+    })
 
     const wrapper = mountComponent(ShellOperatorWorkspaceApp, {
       props: {
@@ -915,7 +910,7 @@ describe("ShellOperatorWorkspaceApp", () => {
     await nextMacrotask()
     await nextTick()
 
-    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(fetchMock).toHaveBeenCalledTimes(1)
     expect(projectsView.get('[data-testid="projects-transition-error"]').text()).toContain(
       "cannot transition project from completed to active",
     )
@@ -1136,22 +1131,6 @@ describe("ShellOperatorWorkspaceApp", () => {
       } as Response)
       .mockResolvedValueOnce({
         ok: true,
-        status: 201,
-        json: async () => ({
-          scope: {},
-          task: {
-            id: "task-2",
-            title: "Draft rollout notes",
-            status: "inbox",
-            project_id: "project-1",
-            priority_position: null,
-            due_at: null,
-            review_at: null,
-          },
-        }),
-      } as Response)
-      .mockResolvedValueOnce({
-        ok: true,
         status: 200,
         json: async () => ({
           scope: {},
@@ -1177,6 +1156,26 @@ describe("ShellOperatorWorkspaceApp", () => {
           ],
         }),
       } as Response)
+    const liveReply = setLiveReply((eventName, params) => {
+      expect(eventName).toBe("folio:create_task")
+      expect(params).toEqual({
+        title: "Draft rollout notes",
+        project_id: "project-1",
+      })
+
+      return {
+        ok: true,
+        task: {
+          id: "task-2",
+          title: "Draft rollout notes",
+          status: "inbox",
+          project_id: "project-1",
+          priority_position: null,
+          due_at: null,
+          review_at: null,
+        },
+      }
+    })
 
     const wrapper = mountComponent(ShellOperatorWorkspaceApp, {
       props: {
@@ -1229,13 +1228,13 @@ describe("ShellOperatorWorkspaceApp", () => {
     await nextTick()
     await nextMacrotask()
 
-    expect(fetchMock).toHaveBeenCalledTimes(4)
+    expect(fetchMock).toHaveBeenCalledTimes(3)
     expect(fetchMock).toHaveBeenNthCalledWith(
       3,
       "/api/v1/primary-owner/workspaces/primary-workspace/apps/folio/tasks",
       expect.any(Object),
     )
-    expectJsonRequest(fetchMock.mock.calls[2]?.[1], "POST", {
+    expect(liveReply).toHaveBeenCalledWith("folio:create_task", {
       title: "Draft rollout notes",
       project_id: "project-1",
     })
@@ -1278,22 +1277,6 @@ describe("ShellOperatorWorkspaceApp", () => {
         status: 200,
         json: async () => ({
           scope: {},
-          task: {
-            id: "task-1",
-            title: "Review rollout notes",
-            status: "done",
-            project_id: null,
-            priority_position: null,
-            due_at: null,
-            review_at: null,
-          },
-        }),
-      } as Response)
-      .mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        json: async () => ({
-          scope: {},
           tasks: [
             {
               id: "task-1",
@@ -1307,6 +1290,23 @@ describe("ShellOperatorWorkspaceApp", () => {
           ],
         }),
       } as Response)
+    const liveReply = setLiveReply((eventName, params) => {
+      expect(eventName).toBe("folio:transition_task")
+      expect(params).toEqual({ task_id: "task-1", status: "done" })
+
+      return {
+        ok: true,
+        task: {
+          id: "task-1",
+          title: "Review rollout notes",
+          status: "done",
+          project_id: null,
+          priority_position: null,
+          due_at: null,
+          review_at: null,
+        },
+      }
+    })
 
     const wrapper = mountComponent(ShellOperatorWorkspaceApp, {
       props: {
@@ -1359,13 +1359,11 @@ describe("ShellOperatorWorkspaceApp", () => {
     await nextTick()
     await nextMacrotask()
 
-    expect(fetchMock).toHaveBeenCalledTimes(4)
-    expect(fetchMock).toHaveBeenNthCalledWith(
-      3,
-      "/api/v1/primary-owner/workspaces/primary-workspace/apps/folio/tasks/task-1",
-      expect.any(Object),
-    )
-    expectJsonRequest(fetchMock.mock.calls[2]?.[1], "PATCH", { status: "done" })
+    expect(fetchMock).toHaveBeenCalledTimes(3)
+    expect(liveReply).toHaveBeenCalledWith("folio:transition_task", {
+      task_id: "task-1",
+      status: "done",
+    })
 
     expect(tasksView.text()).toContain("Done")
     expect(tasksView.find('[data-testid="tasks-transition-error"]').exists()).toBe(false)
@@ -1406,36 +1404,6 @@ describe("ShellOperatorWorkspaceApp", () => {
         status: 200,
         json: async () => ({
           scope: {},
-          task: {
-            id: "task-1",
-            title: "Collect approval notes",
-            status: "waiting_for",
-            project_id: null,
-            priority_position: null,
-            due_at: null,
-            review_at: null,
-            active_delegation: {
-              id: "delegation-1",
-              status: "active",
-              delegated_at: "2026-04-20T12:00:00Z",
-              delegated_summary: "Send updated approval notes",
-              quality_expectations: "Include legal and billing caveats",
-              follow_up_at: "2026-05-01T00:00:00Z",
-              deadline_expectations_at: "2026-05-07T00:00:00Z",
-              contact: {
-                id: "contact-1",
-                name: "Avery Partner",
-                email: null,
-              },
-            },
-          },
-        }),
-      } as Response)
-      .mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        json: async () => ({
-          scope: {},
           tasks: [
             {
               id: "task-1",
@@ -1463,6 +1431,45 @@ describe("ShellOperatorWorkspaceApp", () => {
           ],
         }),
       } as Response)
+    const liveReply = setLiveReply((eventName, params) => {
+      expect(eventName).toBe("folio:delegate_task")
+      expect(params).toEqual({
+        task_id: "task-1",
+        intent: "delegate",
+        contact_name: "Avery Partner",
+        delegated_summary: "Send updated approval notes",
+        quality_expectations: "Include legal and billing caveats",
+        follow_up_at: "2026-05-01",
+        deadline_expectations_at: "2026-05-07",
+      })
+
+      return {
+        ok: true,
+        task: {
+          id: "task-1",
+          title: "Collect approval notes",
+          status: "waiting_for",
+          project_id: null,
+          priority_position: null,
+          due_at: null,
+          review_at: null,
+          active_delegation: {
+            id: "delegation-1",
+            status: "active",
+            delegated_at: "2026-04-20T12:00:00Z",
+            delegated_summary: "Send updated approval notes",
+            quality_expectations: "Include legal and billing caveats",
+            follow_up_at: "2026-05-01T00:00:00Z",
+            deadline_expectations_at: "2026-05-07T00:00:00Z",
+            contact: {
+              id: "contact-1",
+              name: "Avery Partner",
+              email: null,
+            },
+          },
+        },
+      }
+    })
 
     const wrapper = mountComponent(ShellOperatorWorkspaceApp, {
       props: {
@@ -1523,13 +1530,9 @@ describe("ShellOperatorWorkspaceApp", () => {
     await nextTick()
     await nextMacrotask()
 
-    expect(fetchMock).toHaveBeenCalledTimes(4)
-    expect(fetchMock).toHaveBeenNthCalledWith(
-      3,
-      "/api/v1/primary-owner/workspaces/primary-workspace/apps/folio/tasks/task-1",
-      expect.any(Object),
-    )
-    expectJsonRequest(fetchMock.mock.calls[2]?.[1], "PATCH", {
+    expect(fetchMock).toHaveBeenCalledTimes(3)
+    expect(liveReply).toHaveBeenCalledWith("folio:delegate_task", {
+      task_id: "task-1",
       intent: "delegate",
       contact_name: "Avery Partner",
       delegated_summary: "Send updated approval notes",
@@ -1572,17 +1575,15 @@ describe("ShellOperatorWorkspaceApp", () => {
           ],
         }),
       } as Response)
-      .mockResolvedValueOnce({
+    setLiveReply((eventName, params) => {
+      expect(eventName).toBe("folio:transition_task")
+      expect(params).toEqual({ task_id: "task-1", status: "waiting_for" })
+
+      return {
         ok: false,
-        status: 400,
-        statusText: "Bad Request",
-        json: async () => ({
-          error: {
-            code: "invalid_task_transition",
-            message: "waiting_for tasks require notes or an active delegation",
-          },
-        }),
-      } as Response)
+        error: "waiting_for tasks require notes or an active delegation",
+      }
+    })
 
     const wrapper = mountComponent(ShellOperatorWorkspaceApp, {
       props: {
@@ -1634,7 +1635,7 @@ describe("ShellOperatorWorkspaceApp", () => {
     await nextMacrotask()
     await nextTick()
 
-    expect(fetchMock).toHaveBeenCalledTimes(3)
+    expect(fetchMock).toHaveBeenCalledTimes(2)
     expect(tasksView.get('[data-testid="tasks-transition-error"]').text()).toContain(
       "waiting_for tasks require notes or an active delegation",
     )

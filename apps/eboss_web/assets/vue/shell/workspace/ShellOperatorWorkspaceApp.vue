@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue"
-import { Link, useLiveConnection } from "live_vue"
+import { Link, useEventReply, useLiveConnection } from "live_vue"
 import { Menu, Search } from "lucide-vue-next"
 
 import ThemeToggleButton from "../shared/ThemeToggleButton.vue"
@@ -25,12 +25,6 @@ import SettingsPage from "./pages/SettingsPage.vue"
 import ChatPage from "./ChatPage.vue"
 import { workspaceAppTestContracts } from "./testContracts"
 import {
-  createFolioTask,
-  createFolioProject,
-  delegateFolioTask,
-  transitionFolioProject,
-  transitionFolioTask,
-  updateFolioProject,
   useFolioActivity,
   useFolioProjects,
   useFolioTasks,
@@ -102,9 +96,45 @@ const transitioningProject = ref(false)
 const creatingTask = ref(false)
 const transitioningTask = ref(false)
 const delegatingTask = ref(false)
+const createProjectEvent = useEventReply<FolioProjectLiveReply, { title: string }>("folio:create_project")
+const updateProjectEvent = useEventReply<FolioProjectLiveReply, FolioProjectUpdatePayload & { project_id: string }>("folio:update_project")
+const transitionProjectEvent = useEventReply<FolioProjectLiveReply, { project_id: string; status: FolioProjectStatus }>("folio:transition_project")
+const createTaskEvent = useEventReply<FolioTaskLiveReply, { title: string; project_id: string | null }>("folio:create_task")
+const transitionTaskEvent = useEventReply<FolioTaskLiveReply, { task_id: string; status: FolioTaskStatus }>("folio:transition_task")
+const delegateTaskEvent = useEventReply<FolioTaskLiveReply, FolioTaskDelegatePayload & { task_id: string }>("folio:delegate_task")
 const projectFilters = ["all", "active", "on_hold", "completed", "canceled", "archived"] satisfies ProjectFilter[]
 const isWorkspaceRoute = computed(() => props.currentPage.type === "workspace")
 const isAppRoute = computed(() => props.currentPage.type === "app")
+
+interface FolioProjectLiveReply {
+  ok: boolean
+  project?: FolioProjectSummary
+  error?: string
+}
+
+interface FolioTaskLiveReply {
+  ok: boolean
+  task?: FolioTaskSummary
+  error?: string
+}
+
+const requireFolioProjectReply = (
+  reply: FolioProjectLiveReply,
+  fallback: string,
+): FolioProjectSummary => {
+  if (reply.ok && reply.project) return reply.project
+
+  throw new Error(reply.error || fallback)
+}
+
+const requireFolioTaskReply = (
+  reply: FolioTaskLiveReply,
+  fallback: string,
+): FolioTaskSummary => {
+  if (reply.ok && reply.task) return reply.task
+
+  throw new Error(reply.error || fallback)
+}
 
 const mapFolioProjectStatus = (status: string): Project["status"] => {
   if (
@@ -191,10 +221,13 @@ const createWorkspaceProject = async (title: string): Promise<void> => {
   creatingProject.value = true
 
   try {
-    const response = await createFolioProject(scope, { title })
+    const project = requireFolioProjectReply(
+      await createProjectEvent.execute({ title }),
+      "Project creation failed.",
+    )
 
     selectedProjectFilter.value = "all"
-    selectedProject.value = mapFolioProject(response.project)
+    selectedProject.value = mapFolioProject(project)
     await folioProjectsQuery.refresh()
   } finally {
     creatingProject.value = false
@@ -220,10 +253,13 @@ const updateWorkspaceProject = async (
   updatingProject.value = true
 
   try {
-    const response = await updateFolioProject(scope, projectId, payload)
+    const project = requireFolioProjectReply(
+      await updateProjectEvent.execute({ project_id: projectId, ...payload }),
+      "Project details could not be saved.",
+    )
 
     selectedProjectFilter.value = "all"
-    selectedProject.value = mapFolioProject(response.project)
+    selectedProject.value = mapFolioProject(project)
     await folioProjectsQuery.refresh()
   } finally {
     updatingProject.value = false
@@ -249,9 +285,12 @@ const transitionWorkspaceProject = async (
   transitioningProject.value = true
 
   try {
-    const response = await transitionFolioProject(scope, projectId, { status })
+    const project = requireFolioProjectReply(
+      await transitionProjectEvent.execute({ project_id: projectId, status }),
+      "Project transition failed.",
+    )
 
-    selectedProject.value = mapFolioProject(response.project)
+    selectedProject.value = mapFolioProject(project)
     await folioProjectsQuery.refresh()
   } finally {
     transitioningProject.value = false
@@ -311,12 +350,15 @@ const createWorkspaceTask = async (title: string, projectId: string | null): Pro
   creatingTask.value = true
 
   try {
-    const response = await createFolioTask(scope, {
-      title,
-      project_id: projectId,
-    })
+    const task = requireFolioTaskReply(
+      await createTaskEvent.execute({
+        title,
+        project_id: projectId,
+      }),
+      "Task creation failed.",
+    )
 
-    selectedTask.value = mapFolioTask(response.task)
+    selectedTask.value = mapFolioTask(task)
     await folioTasksQuery.refresh()
   } finally {
     creatingTask.value = false
@@ -339,9 +381,12 @@ const transitionWorkspaceTask = async (taskId: string, status: FolioTaskStatus):
   transitioningTask.value = true
 
   try {
-    const response = await transitionFolioTask(scope, taskId, { status })
+    const task = requireFolioTaskReply(
+      await transitionTaskEvent.execute({ task_id: taskId, status }),
+      "Task transition failed.",
+    )
 
-    selectedTask.value = mapFolioTask(response.task)
+    selectedTask.value = mapFolioTask(task)
     await folioTasksQuery.refresh()
   } finally {
     transitioningTask.value = false
@@ -367,9 +412,12 @@ const delegateWorkspaceTask = async (
   delegatingTask.value = true
 
   try {
-    const response = await delegateFolioTask(scope, taskId, payload)
+    const task = requireFolioTaskReply(
+      await delegateTaskEvent.execute({ task_id: taskId, ...payload }),
+      "Task delegation failed.",
+    )
 
-    selectedTask.value = mapFolioTask(response.task)
+    selectedTask.value = mapFolioTask(task)
     await folioTasksQuery.refresh()
   } finally {
     delegatingTask.value = false
