@@ -5,7 +5,7 @@ import {
   updateNotificationChannel,
   updateNotificationPreferences,
   updateNotificationStatus,
-} from "@/vue/shell/notifications"
+} from "@/vue/shell/notifications/http"
 
 const jsonResponse = (payload: unknown, init: ResponseInit = {}) =>
   new Response(JSON.stringify(payload), {
