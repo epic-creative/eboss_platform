@@ -35,6 +35,8 @@ defmodule EBossWeb.DashboardLive do
          |> assign(:page_title, route.title)
          |> assign(:current_user_props, user_props(socket.assigns.current_user))
          |> assign(:notification_bootstrap, notification_bootstrap(socket.assigns.current_user))
+         |> stream(:chat_sessions, [])
+         |> stream(:chat_messages, [])
          |> assign_workspace_context(current_scope, route)}
     end
   end
@@ -210,7 +212,17 @@ defmodule EBossWeb.DashboardLive do
 
   @impl true
   def render(assigns) do
-    assigns = ensure_workspace_assigns(assigns)
+    assigns =
+      assigns
+      |> ensure_workspace_assigns()
+      |> assign(
+        :chat_sessions_stream,
+        get_in(assigns, [:streams, :chat_sessions]) || []
+      )
+      |> assign(
+        :chat_messages_stream,
+        get_in(assigns, [:streams, :chat_messages]) || []
+      )
 
     ~H"""
     <Layouts.app
@@ -228,6 +240,8 @@ defmodule EBossWeb.DashboardLive do
         notificationBootstrap={@notification_bootstrap}
         folioState={@folio_state}
         chatState={@chat_state}
+        chatSessions={@chat_sessions_stream}
+        chatMessages={@chat_messages_stream}
         signOutPath={~p"/logout"}
         csrfToken={Plug.CSRFProtection.get_csrf_token()}
       />
@@ -409,6 +423,8 @@ defmodule EBossWeb.DashboardLive do
   end
 
   defp assign_workspace_context(socket, %AppScope{} = current_scope, route) do
+    chat_context = chat_context(current_scope, socket.assigns.current_user, route)
+
     socket
     |> assign(:current_scope, current_scope)
     |> assign(:current_navigation, route)
@@ -420,8 +436,10 @@ defmodule EBossWeb.DashboardLive do
     )
     |> assign(
       :chat_state,
-      chat_state_props(current_scope, socket.assigns.current_user, route)
+      chat_context.state
     )
+    |> stream(:chat_sessions, chat_context.sessions, reset: true)
+    |> stream(:chat_messages, chat_context.messages, reset: true)
   end
 
   defp refresh_notifications(socket) do
@@ -585,7 +603,7 @@ defmodule EBossWeb.DashboardLive do
     end
   end
 
-  defp chat_state_props(
+  defp chat_context(
          %AppScope{} = scope,
          current_user,
          %{type: "app", app_key: "chat"} = route
@@ -595,23 +613,31 @@ defmodule EBossWeb.DashboardLive do
 
     cond do
       !Map.get(scope.capabilities, :read_chat, false) ->
-        Map.put(state, :error, "Workspace access is forbidden.")
+        %{
+          state: Map.put(state, :error, "Workspace access is forbidden."),
+          sessions: [],
+          messages: []
+        }
 
       true ->
-        state
-        |> load_chat_sessions(scope, current_user)
-        |> maybe_load_chat_session(scope, current_user, route)
+        load_chat_context(state, scope, current_user, route)
     end
   end
 
-  defp chat_state_props(_scope, _current_user, _route), do: empty_chat_state(nil)
+  defp chat_context(_scope, _current_user, _route) do
+    %{state: empty_chat_state(nil), sessions: [], messages: []}
+  end
+
+  defp chat_state_props(scope, current_user, route) do
+    scope
+    |> chat_context(current_user, route)
+    |> Map.fetch!(:state)
+  end
 
   defp empty_chat_state(surface) do
     %{
       surface: surface,
-      sessions: [],
       current_session: nil,
-      messages: [],
       default_model_key: EBossChat.default_chat_model_key(),
       models: EBossChat.chat_model_options(),
       usage_totals: %{sessions: 0, input_tokens: 0, output_tokens: 0, total_tokens: 0},
@@ -624,22 +650,27 @@ defmodule EBossWeb.DashboardLive do
   defp chat_route_surface(%{app_path: ["sessions", _session_id | _]}), do: "session"
   defp chat_route_surface(_route), do: "index"
 
-  defp load_chat_sessions(state, %AppScope{} = scope, current_user) do
+  defp load_chat_context(state, %AppScope{} = scope, current_user, route) do
     case EBossChat.list_active_sessions_in_workspace(scope.current_workspace.id,
            actor: current_user
          ) do
       {:ok, sessions} ->
-        state
-        |> Map.put(:sessions, Enum.map(sessions, &ChatPayloads.session_summary(&1, scope)))
-        |> Map.put(:usage_totals, EBossChat.usage_totals_for_sessions(sessions))
+        session_summaries = Enum.map(sessions, &ChatPayloads.session_summary(&1, scope))
+        state = Map.put(state, :usage_totals, EBossChat.usage_totals_for_sessions(sessions))
+        load_chat_session_context(state, session_summaries, scope, current_user, route)
 
       {:error, reason} ->
-        Map.put(state, :error, chat_error(reason))
+        %{
+          state: Map.put(state, :error, chat_error(reason)),
+          sessions: [],
+          messages: []
+        }
     end
   end
 
-  defp maybe_load_chat_session(
+  defp load_chat_session_context(
          %{error: nil} = state,
+         session_summaries,
          %AppScope{} = scope,
          current_user,
          %{app_path: ["sessions", session_id | _]}
@@ -661,14 +692,26 @@ defmodule EBossWeb.DashboardLive do
            ) do
       state
       |> Map.put(:current_session, ChatPayloads.session_summary(session, scope))
-      |> Map.put(:messages, Enum.map(messages, &ChatPayloads.message_summary/1))
+      |> then(fn state ->
+        %{
+          state: state,
+          sessions: session_summaries,
+          messages: Enum.map(messages, &ChatPayloads.message_summary/1)
+        }
+      end)
     else
       {:error, reason} ->
-        Map.put(state, :error, chat_error(reason))
+        %{
+          state: Map.put(state, :error, chat_error(reason)),
+          sessions: session_summaries,
+          messages: []
+        }
     end
   end
 
-  defp maybe_load_chat_session(state, _scope, _current_user, _route), do: state
+  defp load_chat_session_context(state, session_summaries, _scope, _current_user, _route) do
+    %{state: state, sessions: session_summaries, messages: []}
+  end
 
   defp project_update_attrs(params) do
     with {:ok, title} <- optional_text(params, :title),

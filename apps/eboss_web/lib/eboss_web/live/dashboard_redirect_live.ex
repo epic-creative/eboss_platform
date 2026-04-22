@@ -14,7 +14,9 @@ defmodule EBossWeb.DashboardRedirectLive do
         {:ok,
          socket
          |> assign(:current_scope, scope)
-         |> assign(:page_title, "Dashboard")}
+         |> assign(:page_title, "Dashboard")
+         |> stream(:chat_sessions, [])
+         |> stream(:chat_messages, [])}
     end
   end
 

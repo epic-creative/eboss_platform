@@ -20,6 +20,8 @@ const props = defineProps<{
   currentScope: WorkspaceScope
   currentPage: AppNavigation
   chatState?: ChatLiveState
+  chatSessions?: ChatSessionSummary[]
+  chatMessages?: ChatMessageSummary[]
 }>()
 
 const { patch } = useLiveNavigation()
@@ -189,9 +191,7 @@ const sendMessage = async () => {
 
 const emptyChatState = (): ChatLiveState => ({
   surface: null,
-  sessions: [],
   current_session: null,
-  messages: [],
   default_model_key: "",
   models: [],
   usage_totals: {
@@ -207,10 +207,10 @@ const emptyChatState = (): ChatLiveState => ({
 const applyChatState = (state: ChatLiveState | undefined) => {
   const nextState = state ?? emptyChatState()
 
-  sessions.value = nextState.sessions
+  sessions.value = props.chatSessions ?? []
   modelOptions.value = nextState.models || []
   currentSession.value = nextState.current_session
-  messages.value = nextState.messages
+  messages.value = props.chatMessages ?? []
   loading.value = nextState.loading
   error.value = nextState.error
 
@@ -220,8 +220,8 @@ const applyChatState = (state: ChatLiveState | undefined) => {
 }
 
 watch(
-  () => props.chatState,
-  nextState => applyChatState(nextState),
+  () => [props.chatState, props.chatSessions, props.chatMessages],
+  () => applyChatState(props.chatState),
   { deep: true, immediate: true },
 )
 

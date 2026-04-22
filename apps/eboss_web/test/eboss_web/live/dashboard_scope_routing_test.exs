@@ -168,9 +168,20 @@ defmodule EBossWeb.DashboardScopeRoutingTest do
     workspace =
       create_user_workspace(context.current_user, %{name: "Chat Route Workspace"})
 
+    {:ok, chat_session} =
+      EBossChat.Service.create_session(workspace.id, "Route stream session",
+        actor: context.current_user
+      )
+
+    {:ok, _reply} =
+      EBossChat.Service.stream_session_reply(chat_session, "Seed a route transcript",
+        actor: context.current_user
+      )
+
     base_path = dashboard_path(context.current_user.owner_slug, workspace.slug)
     chat_new_path = "#{base_path}/apps/chat/new"
-    chat_session_path = "#{base_path}/apps/chat/sessions/session-123"
+    chat_session_path = "#{base_path}/apps/chat/sessions/#{chat_session.id}"
+    missing_chat_session_path = "#{base_path}/apps/chat/sessions/session-123"
 
     assert {:ok, new_view, _html} = live(context.conn, chat_new_path)
 
@@ -182,8 +193,9 @@ defmodule EBossWeb.DashboardScopeRoutingTest do
     assert new_shell.props["currentPage"]["app_path"] == ["new"]
     assert new_shell.props["currentPath"] == chat_new_path
     assert new_shell.props["chatState"]["surface"] == "new"
-    assert is_list(new_shell.props["chatState"]["sessions"])
     assert is_list(new_shell.props["chatState"]["models"])
+    assert stream_diff(new_shell) =~ "/chatSessions"
+    assert stream_diff(new_shell) =~ chat_session.id
 
     assert {:ok, session_view, _html} = live(context.conn, chat_session_path)
 
@@ -192,10 +204,19 @@ defmodule EBossWeb.DashboardScopeRoutingTest do
     assert session_shell.props["currentPage"]["type"] == "app"
     assert session_shell.props["currentPage"]["app_key"] == "chat"
     assert session_shell.props["currentPage"]["app_surface"] == "sessions"
-    assert session_shell.props["currentPage"]["app_path"] == ["sessions", "session-123"]
+    assert session_shell.props["currentPage"]["app_path"] == ["sessions", chat_session.id]
     assert session_shell.props["currentPath"] == chat_session_path
     assert session_shell.props["chatState"]["surface"] == "session"
-    assert session_shell.props["chatState"]["error"] == "Chat session not found."
+    assert session_shell.props["chatState"]["current_session"]["id"] == chat_session.id
+    assert stream_diff(session_shell) =~ "/chatMessages"
+    assert stream_diff(session_shell) =~ "Seed a route transcript"
+
+    assert {:ok, missing_session_view, _html} = live(context.conn, missing_chat_session_path)
+
+    missing_session_shell = get_vue(missing_session_view, name: "ShellOperatorWorkspaceApp")
+
+    assert missing_session_shell.props["chatState"]["surface"] == "session"
+    assert missing_session_shell.props["chatState"]["error"] == "Chat session not found."
   end
 
   test "app routes without read capability fall back to workspace routing", %{conn: conn} do
@@ -407,4 +428,10 @@ defmodule EBossWeb.DashboardScopeRoutingTest do
 
   defp assert_redirect_path({:error, {:live_redirect, %{to: to}}}, expected_path),
     do: assert(to == expected_path)
+
+  defp stream_diff(%{doc: {_tag, attrs, _children}}) do
+    attrs
+    |> Map.new()
+    |> Map.fetch!("data-streams-diff")
+  end
 end

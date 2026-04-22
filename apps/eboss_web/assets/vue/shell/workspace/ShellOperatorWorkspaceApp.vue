@@ -51,7 +51,7 @@ import type {
   WorkspaceScope,
 } from "./types"
 import type { NotificationBootstrap } from "../notifications"
-import type { ChatLiveState } from "./chat"
+import type { ChatLiveState, ChatMessageSummary, ChatSessionSummary } from "./chat"
 
 interface FolioLiveState {
   surface: string | null
@@ -74,6 +74,8 @@ const props = defineProps<{
   notificationBootstrap?: NotificationBootstrap
   folioState?: FolioLiveState
   chatState?: ChatLiveState
+  chatSessions?: ChatSessionSummary[]
+  chatMessages?: ChatMessageSummary[]
   signOutPath: string
   csrfToken: string
 }>()
@@ -737,6 +739,8 @@ watch(() => props.folioState, (nextState) => {
               :current-scope="currentScope"
               :current-page="currentAppPage"
               :chat-state="chatState"
+              :chat-sessions="chatSessions"
+              :chat-messages="chatMessages"
             />
 
             <div

@@ -148,9 +148,7 @@ const message = (overrides: Partial<ChatMessageSummary> = {}): ChatMessageSummar
 
 const chatState = (overrides: Partial<ChatLiveState> = {}): ChatLiveState => ({
   surface: "index",
-  sessions: [],
   current_session: null,
-  messages: [],
   default_model_key: "anthropic_haiku_4_5",
   models: chatModels,
   usage_totals: {
@@ -280,10 +278,10 @@ describe("ChatPage", () => {
         currentPage: appRoute(["sessions", sessionTwo.id]),
         chatState: chatState({
           surface: "session",
-          sessions: [sessionOne, sessionTwo],
           current_session: sessionTwo,
-          messages: [message({ id: "message-2", body: "Ops check-in" })],
         }),
+        chatSessions: [sessionOne, sessionTwo],
+        chatMessages: [message({ id: "message-2", body: "Ops check-in" })],
       },
     })
 
@@ -302,10 +300,10 @@ describe("ChatPage", () => {
       currentPage: appRoute(["sessions", sessionOne.id]),
       chatState: chatState({
         surface: "session",
-        sessions: [sessionOne, sessionTwo],
         current_session: sessionOne,
-        messages: [message({ body: "Launch check-in" })],
       }),
+      chatSessions: [sessionOne, sessionTwo],
+      chatMessages: [message({ body: "Launch check-in" })],
     })
     await flushPromises()
 
@@ -369,10 +367,10 @@ describe("ChatPage", () => {
         currentPage: appRoute(["sessions", activeSession.id]),
         chatState: chatState({
           surface: "session",
-          sessions: [activeSession],
           current_session: activeSession,
-          messages: [message()],
         }),
+        chatSessions: [activeSession],
+        chatMessages: [message()],
       },
     })
 
