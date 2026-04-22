@@ -1,7 +1,9 @@
 defmodule EBossWeb.DashboardLive do
   use EBossWeb, :live_view
 
+  alias EBossNotify
   alias EBossWeb.AppScope
+  alias EBossWeb.NotificationController
 
   @workspace_routes %{
     "dashboard" => %{surface: "dashboard", title: "Overview"},
@@ -18,6 +20,10 @@ defmodule EBossWeb.DashboardLive do
         {:ok, redirect(socket, to: dashboard_path)}
 
       {:ok, current_scope} ->
+        if connected?(socket) do
+          :ok = EBossNotify.subscribe(socket.assigns.current_user)
+        end
+
         route = resolve_current_route(current_scope, socket.assigns.live_action, params)
         current_path = route.current_path
 
@@ -28,9 +34,21 @@ defmodule EBossWeb.DashboardLive do
          |> assign(:current_path, current_path)
          |> assign(:page_title, route.title)
          |> assign(:current_user_props, user_props(socket.assigns.current_user))
-         |> assign(:current_scope_props, scope_props(current_scope))}
+         |> assign(:current_scope_props, scope_props(current_scope))
+         |> assign(:notification_bootstrap, notification_bootstrap(socket.assigns.current_user))}
     end
   end
+
+  @impl true
+  def handle_info({:notification_created, _recipient}, socket), do: refresh_notifications(socket)
+  def handle_info({:notification_updated, _recipient}, socket), do: refresh_notifications(socket)
+  def handle_info({:notifications_read_all, _user_id}, socket), do: refresh_notifications(socket)
+
+  def handle_info({:notification_preferences_updated, _user_id}, socket),
+    do: refresh_notifications(socket)
+
+  def handle_info({:notification_channels_updated, _user_id}, socket),
+    do: refresh_notifications(socket)
 
   @impl true
   def render(assigns) do
@@ -49,6 +67,7 @@ defmodule EBossWeb.DashboardLive do
         currentScope={@current_scope_props}
         currentPage={@current_navigation}
         currentPath={@current_path}
+        notificationBootstrap={@notification_bootstrap}
         signOutPath={~p"/logout"}
         csrfToken={Plug.CSRFProtection.get_csrf_token()}
       />
@@ -84,6 +103,11 @@ defmodule EBossWeb.DashboardLive do
       :current_scope_props,
       Map.get(assigns, :current_scope_props) || scope_props(current_scope)
     )
+    |> assign(
+      :notification_bootstrap,
+      Map.get(assigns, :notification_bootstrap) ||
+        notification_bootstrap(Map.get(assigns, :current_user))
+    )
   end
 
   defp resolve_current_route(current_scope, :workspace_root, _params) do
@@ -98,7 +122,19 @@ defmodule EBossWeb.DashboardLive do
     do: resolve_workspace_route(current_scope, @default_workspace_page)
 
   defp resolve_current_route(current_scope, :workspace_app, %{"app_key" => app_key} = params) do
-    resolve_app_route(current_scope, app_key, Map.get(params, "app_surface"))
+    app_path =
+      case Map.get(params, "app_path") do
+        path when is_list(path) ->
+          path
+
+        nil ->
+          case Map.get(params, "app_surface") do
+            surface when is_binary(surface) and surface != "" -> [surface]
+            _ -> []
+          end
+      end
+
+    resolve_app_route(current_scope, app_key, app_path)
   end
 
   defp resolve_current_route(current_scope, _live_action, _params) do
@@ -119,21 +155,23 @@ defmodule EBossWeb.DashboardLive do
     }
   end
 
-  defp resolve_app_route(%AppScope{apps: apps} = current_scope, app_key, app_surface)
-       when is_binary(app_key) do
+  defp resolve_app_route(%AppScope{apps: apps} = current_scope, app_key, app_path)
+       when is_binary(app_key) and is_list(app_path) do
     case fetch_map_field(apps, app_key) do
       app when is_map(app) ->
         if fetch_map_field(app, :enabled, false) do
           app_label = fetch_map_field(app, :label, to_string(app_key))
-          normalized_surface = normalize_app_surface(app_surface)
+          normalized_path = normalize_app_path(app_path)
+          normalized_surface = List.first(normalized_path)
           app_key_string = to_string(app_key)
 
           %{
             type: "app",
             app_key: app_key_string,
             app_surface: normalized_surface,
-            title: app_title(app_label, normalized_surface),
-            current_path: app_path(current_scope, app, app_key_string, normalized_surface)
+            app_path: normalized_path,
+            title: app_title(app_label, app_key_string, normalized_path),
+            current_path: app_path(current_scope, app, app_key_string, normalized_path)
           }
         else
           resolve_workspace_route(current_scope, @default_workspace_page)
@@ -144,7 +182,7 @@ defmodule EBossWeb.DashboardLive do
     end
   end
 
-  defp resolve_app_route(%AppScope{} = current_scope, _app_key, _app_surface) do
+  defp resolve_app_route(%AppScope{} = current_scope, _app_key, _app_path) do
     resolve_workspace_route(current_scope, @default_workspace_page)
   end
 
@@ -176,22 +214,58 @@ defmodule EBossWeb.DashboardLive do
     fetch_map_field(app, :default_path, "#{dashboard_path}/apps/#{app_key}")
   end
 
-  defp app_path(%AppScope{dashboard_path: dashboard_path}, app, app_key, app_surface)
-       when is_binary(app_surface) do
-    base_path = fetch_map_field(app, :default_path, "#{dashboard_path}/apps/#{app_key}")
-    "#{base_path}/#{app_surface}"
+  defp app_path(%AppScope{dashboard_path: dashboard_path}, app, app_key, []) do
+    fetch_map_field(app, :default_path, "#{dashboard_path}/apps/#{app_key}")
   end
 
-  defp app_title(app_label, nil), do: app_label
+  defp app_path(%AppScope{dashboard_path: dashboard_path}, app, app_key, app_path_segments)
+       when is_list(app_path_segments) do
+    base_path = fetch_map_field(app, :default_path, "#{dashboard_path}/apps/#{app_key}")
+    Enum.reduce(app_path_segments, base_path, fn segment, path -> "#{path}/#{segment}" end)
+  end
 
-  defp app_title(app_label, app_surface) do
+  defp app_title(app_label, _app_key, []), do: app_label
+
+  defp app_title(app_label, "chat", ["new"]), do: "#{app_label} · New"
+  defp app_title(app_label, "chat", ["sessions", _session_id]), do: app_label
+
+  defp app_title(app_label, _app_key, [app_surface | _rest]) do
     "#{app_label} · #{String.capitalize(app_surface)}"
   end
 
-  defp normalize_app_surface(surface) when is_binary(surface) and byte_size(surface) > 0,
-    do: surface
+  defp normalize_app_path(path) when is_list(path) do
+    path
+    |> Enum.filter(&(is_binary(&1) and &1 != ""))
+  end
 
-  defp normalize_app_surface(_), do: nil
+  defp refresh_notifications(socket) do
+    {:noreply,
+     assign(
+       socket,
+       :notification_bootstrap,
+       notification_bootstrap(socket.assigns.current_user)
+     )}
+  end
+
+  defp notification_bootstrap(nil), do: empty_notification_bootstrap()
+
+  defp notification_bootstrap(current_user) do
+    case EBossNotify.bootstrap(current_user) do
+      {:ok, bootstrap} -> NotificationController.bootstrap_payload(bootstrap)
+      {:error, _reason} -> empty_notification_bootstrap()
+    end
+  end
+
+  defp empty_notification_bootstrap do
+    %{
+      unread_count: 0,
+      recent: [],
+      preferences: [],
+      channels: [],
+      supported_channels: Enum.map(EBossNotify.supported_channels(), &to_string/1),
+      inactive_external_channels: Enum.map(EBossNotify.inactive_external_channels(), &to_string/1)
+    }
+  end
 
   defp user_props(nil), do: %{username: "guest", email: ""}
 
@@ -246,7 +320,9 @@ defmodule EBossWeb.DashboardLive do
       readWorkspace: Map.get(capabilities, :read_workspace, false),
       manageWorkspace: Map.get(capabilities, :manage_workspace, false),
       readFolio: Map.get(capabilities, :read_folio, false),
-      manageFolio: Map.get(capabilities, :manage_folio, false)
+      manageFolio: Map.get(capabilities, :manage_folio, false),
+      readChat: Map.get(capabilities, :read_chat, false),
+      manageChat: Map.get(capabilities, :manage_chat, false)
     }
   end
 

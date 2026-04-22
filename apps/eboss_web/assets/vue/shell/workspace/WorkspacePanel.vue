@@ -11,7 +11,7 @@ defineProps({
     default: "",
   },
   icon: {
-    type: Object as PropType<Component | null>,
+    type: [Object, Function] as PropType<Component | null>,
     default: null,
   },
   bodyClass: {

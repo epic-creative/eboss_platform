@@ -6,8 +6,12 @@ defmodule EBossWeb.ApiSpec do
     |> normalize()
     |> merge_paths(bootstrap_paths())
     |> merge_paths(folio_app_paths())
+    |> merge_paths(chat_app_paths())
+    |> merge_paths(notification_paths())
     |> merge_components(bootstrap_components())
     |> merge_components(folio_app_components())
+    |> merge_components(chat_app_components())
+    |> merge_components(notification_components())
   end
 
   defp merge_paths(spec, extra_paths) do
@@ -135,9 +139,18 @@ defmodule EBossWeb.ApiSpec do
             "read_workspace" => %{"type" => "boolean"},
             "manage_workspace" => %{"type" => "boolean"},
             "read_folio" => %{"type" => "boolean"},
-            "manage_folio" => %{"type" => "boolean"}
+            "manage_folio" => %{"type" => "boolean"},
+            "read_chat" => %{"type" => "boolean"},
+            "manage_chat" => %{"type" => "boolean"}
           },
-          "required" => ["read_workspace", "manage_workspace", "read_folio", "manage_folio"]
+          "required" => [
+            "read_workspace",
+            "manage_workspace",
+            "read_folio",
+            "manage_folio",
+            "read_chat",
+            "manage_chat"
+          ]
         },
         "WorkspaceAppCapabilities" => %{
           "type" => "object",
@@ -198,6 +211,250 @@ defmodule EBossWeb.ApiSpec do
       "/api/v1/{owner_slug}/workspaces/{slug}/apps/folio/tasks/{task_id}" =>
         folio_task_path_item(),
       "/api/v1/{owner_slug}/workspaces/{slug}/apps/folio/activity" => folio_activity_path_item()
+    }
+  end
+
+  defp chat_app_paths do
+    %{
+      "/api/v1/{owner_slug}/workspaces/{slug}/apps/chat/bootstrap" => chat_bootstrap_path_item(),
+      "/api/v1/{owner_slug}/workspaces/{slug}/apps/chat/sessions" => chat_sessions_path_item(),
+      "/api/v1/{owner_slug}/workspaces/{slug}/apps/chat/sessions/{session_id}" =>
+        chat_session_path_item(),
+      "/api/v1/{owner_slug}/workspaces/{slug}/apps/chat/sessions/{session_id}/messages/stream" =>
+        chat_stream_path_item()
+    }
+  end
+
+  defp notification_paths do
+    %{
+      "/api/v1/notifications/bootstrap" => notification_bootstrap_path_item(),
+      "/api/v1/notifications" => notification_index_path_item(),
+      "/api/v1/notifications/{recipient_id}" => notification_recipient_path_item(),
+      "/api/v1/notifications/read-all" => notification_read_all_path_item(),
+      "/api/v1/notifications/preferences" => notification_preferences_path_item(),
+      "/api/v1/notifications/channels" => notification_channels_path_item(),
+      "/api/v1/notifications/channels/{endpoint_id}" => notification_channel_path_item()
+    }
+  end
+
+  defp notification_bootstrap_path_item do
+    %{
+      "get" => %{
+        "summary" => "Get notification bootstrap payload",
+        "description" => "Returns unread count, recent notifications, preferences, and channels.",
+        "responses" => notification_json_response("NotificationBootstrap")
+      }
+    }
+  end
+
+  defp notification_index_path_item do
+    %{
+      "get" => %{
+        "summary" => "List notifications",
+        "description" => "Returns recipient-scoped notifications for the authenticated user.",
+        "parameters" => [
+          query_parameter("status"),
+          query_parameter("scope_type"),
+          query_parameter("workspace_id"),
+          query_parameter("app_key")
+        ],
+        "responses" => notification_json_response("NotificationListResponse")
+      }
+    }
+  end
+
+  defp notification_recipient_path_item do
+    %{
+      "patch" => %{
+        "summary" => "Update notification recipient state",
+        "description" => "Marks a notification recipient as read or archived.",
+        "parameters" => [recipient_id_parameter()],
+        "requestBody" => json_request_body("NotificationRecipientUpdateRequest"),
+        "responses" => notification_json_response("NotificationUpdateResponse")
+      }
+    }
+  end
+
+  defp notification_read_all_path_item do
+    %{
+      "post" => %{
+        "summary" => "Mark all notifications read",
+        "description" => "Marks every unread notification for the authenticated user as read.",
+        "responses" => notification_json_response("NotificationReadAllResponse")
+      }
+    }
+  end
+
+  defp notification_preferences_path_item do
+    %{
+      "get" => %{
+        "summary" => "List notification preferences",
+        "responses" => notification_json_response("NotificationPreferencesResponse")
+      },
+      "patch" => %{
+        "summary" => "Upsert notification preferences",
+        "requestBody" => json_request_body("NotificationPreferencesUpdateRequest"),
+        "responses" => notification_json_response("NotificationPreferencesResponse")
+      }
+    }
+  end
+
+  defp notification_channels_path_item do
+    %{
+      "get" => %{
+        "summary" => "List notification channel endpoints",
+        "responses" => notification_json_response("NotificationChannelsResponse")
+      }
+    }
+  end
+
+  defp notification_channel_path_item do
+    %{
+      "patch" => %{
+        "summary" => "Update a notification channel endpoint",
+        "parameters" => [endpoint_id_parameter()],
+        "requestBody" => json_request_body("NotificationChannelUpdateRequest"),
+        "responses" => notification_json_response("NotificationChannelUpdateResponse")
+      }
+    }
+  end
+
+  defp chat_bootstrap_path_item do
+    %{
+      "get" => %{
+        "summary" => "Get workspace-scoped chat app bootstrap payload",
+        "description" =>
+          "Returns the authenticated workspace chat scope, sessions, and token usage totals.",
+        "parameters" => workspace_path_parameters(),
+        "responses" => %{
+          "200" => %{
+            "description" => "Chat bootstrap payload",
+            "content" => %{
+              "application/json" => %{
+                "schema" => %{"$ref" => "#/components/schemas/ChatBootstrapResponse"}
+              }
+            }
+          },
+          "401" => %{"description" => "Authentication required"},
+          "403" => %{"description" => "Workspace access is forbidden"},
+          "404" => %{"description" => "Workspace not found"}
+        }
+      }
+    }
+  end
+
+  defp chat_sessions_path_item do
+    %{
+      "get" => %{
+        "summary" => "List workspace chat sessions",
+        "description" => "Returns active chat sessions for the workspace.",
+        "parameters" => workspace_path_parameters(),
+        "responses" => %{
+          "200" => %{
+            "description" => "Chat sessions payload",
+            "content" => %{
+              "application/json" => %{
+                "schema" => %{"$ref" => "#/components/schemas/ChatSessionsResponse"}
+              }
+            }
+          }
+        }
+      },
+      "post" => %{
+        "summary" => "Create a workspace chat session",
+        "description" => "Creates a new shared workspace chat session.",
+        "parameters" => workspace_path_parameters(),
+        "requestBody" => %{
+          "required" => true,
+          "content" => %{
+            "application/json" => %{
+              "schema" => %{"$ref" => "#/components/schemas/ChatSessionCreateRequest"}
+            }
+          }
+        },
+        "responses" => %{
+          "201" => %{
+            "description" => "Created chat session payload",
+            "content" => %{
+              "application/json" => %{
+                "schema" => %{"$ref" => "#/components/schemas/ChatSessionResponse"}
+              }
+            }
+          }
+        }
+      }
+    }
+  end
+
+  defp chat_session_path_item do
+    %{
+      "get" => %{
+        "summary" => "Get a workspace chat session with messages",
+        "description" => "Returns a shared chat session and its persisted transcript.",
+        "parameters" => workspace_path_parameters() ++ chat_session_parameters(),
+        "responses" => %{
+          "200" => %{
+            "description" => "Chat session detail payload",
+            "content" => %{
+              "application/json" => %{
+                "schema" => %{"$ref" => "#/components/schemas/ChatSessionDetailResponse"}
+              }
+            }
+          }
+        }
+      },
+      "patch" => %{
+        "summary" => "Archive a workspace chat session",
+        "description" => "Archives an existing shared chat session.",
+        "parameters" => workspace_path_parameters() ++ chat_session_parameters(),
+        "requestBody" => %{
+          "required" => true,
+          "content" => %{
+            "application/json" => %{
+              "schema" => %{"$ref" => "#/components/schemas/ChatSessionUpdateRequest"}
+            }
+          }
+        },
+        "responses" => %{
+          "200" => %{
+            "description" => "Updated chat session payload",
+            "content" => %{
+              "application/json" => %{
+                "schema" => %{"$ref" => "#/components/schemas/ChatSessionResponse"}
+              }
+            }
+          }
+        }
+      }
+    }
+  end
+
+  defp chat_stream_path_item do
+    %{
+      "post" => %{
+        "summary" => "Stream a reply into a workspace chat session",
+        "description" =>
+          "Creates a new user turn and streams the assistant reply as server-sent events.",
+        "parameters" => workspace_path_parameters() ++ chat_session_parameters(),
+        "requestBody" => %{
+          "required" => true,
+          "content" => %{
+            "application/json" => %{
+              "schema" => %{"$ref" => "#/components/schemas/ChatStreamRequest"}
+            }
+          }
+        },
+        "responses" => %{
+          "200" => %{
+            "description" => "Chat stream response",
+            "content" => %{
+              "text/event-stream" => %{
+                "schema" => %{"type" => "string"}
+              }
+            }
+          }
+        }
+      }
     }
   end
 
@@ -458,6 +715,69 @@ defmodule EBossWeb.ApiSpec do
           "schema" => %{"type" => "string"}
         }
       ]
+  end
+
+  defp chat_session_parameters do
+    [
+      %{
+        "name" => "session_id",
+        "in" => "path",
+        "required" => true,
+        "schema" => %{"type" => "string"}
+      }
+    ]
+  end
+
+  defp recipient_id_parameter do
+    %{
+      "name" => "recipient_id",
+      "in" => "path",
+      "required" => true,
+      "schema" => %{"type" => "string"}
+    }
+  end
+
+  defp endpoint_id_parameter do
+    %{
+      "name" => "endpoint_id",
+      "in" => "path",
+      "required" => true,
+      "schema" => %{"type" => "string"}
+    }
+  end
+
+  defp query_parameter(name) do
+    %{
+      "name" => name,
+      "in" => "query",
+      "required" => false,
+      "schema" => %{"type" => "string"}
+    }
+  end
+
+  defp json_request_body(schema_name) do
+    %{
+      "required" => true,
+      "content" => %{
+        "application/json" => %{
+          "schema" => %{"$ref" => "#/components/schemas/#{schema_name}"}
+        }
+      }
+    }
+  end
+
+  defp notification_json_response(schema_name) do
+    %{
+      "200" => %{
+        "description" => schema_name,
+        "content" => %{
+          "application/json" => %{
+            "schema" => %{"$ref" => "#/components/schemas/#{schema_name}"}
+          }
+        }
+      },
+      "401" => %{"description" => "Authentication required"}
+    }
   end
 
   defp folio_app_components do
@@ -808,6 +1128,397 @@ defmodule EBossWeb.ApiSpec do
             }
           },
           "required" => ["scope", "events"]
+        }
+      }
+    }
+  end
+
+  defp chat_app_components do
+    %{
+      "schemas" => %{
+        "ChatAppScope" => %{
+          "type" => "object",
+          "properties" => %{
+            "app_key" => %{"type" => "string", "enum" => ["chat"]},
+            "workspace" => %{"$ref" => "#/components/schemas/WorkspaceSummary"},
+            "owner" => %{"$ref" => "#/components/schemas/OwnerSummary"},
+            "app" => %{"$ref" => "#/components/schemas/WorkspaceApp"},
+            "capabilities" => %{"$ref" => "#/components/schemas/WorkspaceAppCapabilities"},
+            "workspace_path" => %{"type" => "string"},
+            "app_path" => %{"type" => "string"}
+          },
+          "required" => ["app_key", "workspace", "owner", "app", "capabilities", "app_path"]
+        },
+        "ChatSessionUser" => %{
+          "type" => "object",
+          "properties" => %{
+            "id" => %{"type" => "string"},
+            "username" => %{"type" => "string"},
+            "email" => %{"type" => "string"}
+          },
+          "required" => ["id", "username", "email"]
+        },
+        "ChatUsageTotals" => %{
+          "type" => "object",
+          "properties" => %{
+            "input_tokens" => %{"type" => "integer"},
+            "output_tokens" => %{"type" => "integer"},
+            "total_tokens" => %{"type" => "integer"}
+          },
+          "required" => ["input_tokens", "output_tokens", "total_tokens"]
+        },
+        "ChatWorkspaceUsageTotals" => %{
+          "type" => "object",
+          "properties" => %{
+            "sessions" => %{"type" => "integer"},
+            "input_tokens" => %{"type" => "integer"},
+            "output_tokens" => %{"type" => "integer"},
+            "total_tokens" => %{"type" => "integer"}
+          },
+          "required" => ["sessions", "input_tokens", "output_tokens", "total_tokens"]
+        },
+        "ChatSessionSummary" => %{
+          "type" => "object",
+          "properties" => %{
+            "id" => %{"type" => "string"},
+            "title" => %{"type" => "string"},
+            "status" => %{"type" => "string", "enum" => ["active", "archived"]},
+            "last_message_at" => %{
+              "type" => "string",
+              "format" => "date-time",
+              "nullable" => true
+            },
+            "last_activity_at" => %{
+              "type" => "string",
+              "format" => "date-time",
+              "nullable" => true
+            },
+            "message_count" => %{"type" => "integer"},
+            "usage_totals" => %{"$ref" => "#/components/schemas/ChatUsageTotals"},
+            "created_by_user" => %{"$ref" => "#/components/schemas/ChatSessionUser"},
+            "path" => %{"type" => "string"}
+          },
+          "required" => [
+            "id",
+            "title",
+            "status",
+            "message_count",
+            "usage_totals",
+            "created_by_user",
+            "path"
+          ]
+        },
+        "ChatMessageSummary" => %{
+          "type" => "object",
+          "properties" => %{
+            "id" => %{"type" => "string"},
+            "role" => %{"type" => "string", "enum" => ["user", "assistant", "system"]},
+            "body" => %{"type" => "string"},
+            "status" => %{"type" => "string", "enum" => ["pending", "complete", "error"]},
+            "sequence" => %{"type" => "integer"},
+            "provider" => %{"type" => "string", "nullable" => true},
+            "model" => %{"type" => "string", "nullable" => true},
+            "input_tokens" => %{"type" => "integer"},
+            "output_tokens" => %{"type" => "integer"},
+            "total_tokens" => %{"type" => "integer"},
+            "finish_reason" => %{"type" => "string", "nullable" => true},
+            "error_message" => %{"type" => "string", "nullable" => true},
+            "inserted_at" => %{"type" => "string", "format" => "date-time"},
+            "author" => %{"$ref" => "#/components/schemas/ChatSessionUser", "nullable" => true}
+          },
+          "required" => [
+            "id",
+            "role",
+            "body",
+            "status",
+            "sequence",
+            "input_tokens",
+            "output_tokens",
+            "total_tokens",
+            "inserted_at"
+          ]
+        },
+        "ChatBootstrapResponse" => %{
+          "type" => "object",
+          "properties" => %{
+            "scope" => %{"$ref" => "#/components/schemas/ChatAppScope"},
+            "default_model_key" => %{"type" => "string"},
+            "models" => %{
+              "type" => "array",
+              "items" => %{"$ref" => "#/components/schemas/ChatModelOption"}
+            },
+            "usage_totals" => %{"$ref" => "#/components/schemas/ChatWorkspaceUsageTotals"},
+            "sessions" => %{
+              "type" => "array",
+              "items" => %{"$ref" => "#/components/schemas/ChatSessionSummary"}
+            }
+          },
+          "required" => ["scope", "default_model_key", "models", "usage_totals", "sessions"]
+        },
+        "ChatModelOption" => %{
+          "type" => "object",
+          "properties" => %{
+            "key" => %{"type" => "string"},
+            "label" => %{"type" => "string"},
+            "provider" => %{"type" => "string", "enum" => ["anthropic", "openai"]},
+            "model" => %{"type" => "string"}
+          },
+          "required" => ["key", "label", "provider", "model"]
+        },
+        "ChatSessionsResponse" => %{
+          "type" => "object",
+          "properties" => %{
+            "scope" => %{"$ref" => "#/components/schemas/ChatAppScope"},
+            "sessions" => %{
+              "type" => "array",
+              "items" => %{"$ref" => "#/components/schemas/ChatSessionSummary"}
+            }
+          },
+          "required" => ["scope", "sessions"]
+        },
+        "ChatSessionResponse" => %{
+          "type" => "object",
+          "properties" => %{
+            "scope" => %{"$ref" => "#/components/schemas/ChatAppScope"},
+            "session" => %{"$ref" => "#/components/schemas/ChatSessionSummary"}
+          },
+          "required" => ["scope", "session"]
+        },
+        "ChatSessionDetailResponse" => %{
+          "type" => "object",
+          "properties" => %{
+            "scope" => %{"$ref" => "#/components/schemas/ChatAppScope"},
+            "session" => %{"$ref" => "#/components/schemas/ChatSessionSummary"},
+            "messages" => %{
+              "type" => "array",
+              "items" => %{"$ref" => "#/components/schemas/ChatMessageSummary"}
+            }
+          },
+          "required" => ["scope", "session", "messages"]
+        },
+        "ChatSessionCreateRequest" => %{
+          "type" => "object",
+          "properties" => %{
+            "title_seed" => %{"type" => "string", "nullable" => true}
+          }
+        },
+        "ChatSessionUpdateRequest" => %{
+          "type" => "object",
+          "properties" => %{
+            "status" => %{"type" => "string", "enum" => ["archived"]}
+          },
+          "required" => ["status"]
+        },
+        "ChatStreamRequest" => %{
+          "type" => "object",
+          "properties" => %{
+            "body" => %{"type" => "string", "minLength" => 1},
+            "model_key" => %{
+              "type" => "string",
+              "enum" => ["anthropic_haiku_4_5", "openai_gpt_4o_mini"],
+              "nullable" => true
+            }
+          },
+          "required" => ["body"]
+        }
+      }
+    }
+  end
+
+  defp notification_components do
+    %{
+      "schemas" => %{
+        "NotificationBootstrap" => %{
+          "type" => "object",
+          "properties" => %{
+            "unread_count" => %{"type" => "integer"},
+            "recent" => %{
+              "type" => "array",
+              "items" => %{"$ref" => "#/components/schemas/NotificationSummary"}
+            },
+            "preferences" => %{
+              "type" => "array",
+              "items" => %{"$ref" => "#/components/schemas/NotificationPreferenceSummary"}
+            },
+            "channels" => %{
+              "type" => "array",
+              "items" => %{"$ref" => "#/components/schemas/NotificationChannelSummary"}
+            },
+            "supported_channels" => %{
+              "type" => "array",
+              "items" => %{"type" => "string"}
+            },
+            "inactive_external_channels" => %{
+              "type" => "array",
+              "items" => %{"type" => "string"}
+            }
+          },
+          "required" => [
+            "unread_count",
+            "recent",
+            "preferences",
+            "channels",
+            "supported_channels",
+            "inactive_external_channels"
+          ]
+        },
+        "NotificationSummary" => %{
+          "type" => "object",
+          "properties" => %{
+            "recipient_id" => %{"type" => "string"},
+            "notification_id" => %{"type" => "string"},
+            "status" => %{"type" => "string", "enum" => ["unread", "read", "archived"]},
+            "title" => %{"type" => "string"},
+            "body" => %{"type" => "string", "nullable" => true},
+            "severity" => %{
+              "type" => "string",
+              "enum" => ["info", "success", "warning", "error"]
+            },
+            "scope" => %{"type" => "object"},
+            "app_key" => %{"type" => "string", "nullable" => true},
+            "actor" => %{"type" => "object"},
+            "subject" => %{"type" => "object"},
+            "action_url" => %{"type" => "string", "nullable" => true},
+            "metadata" => %{"type" => "object"},
+            "occurred_at" => %{"type" => "string", "format" => "date-time", "nullable" => true},
+            "deliveries" => %{
+              "type" => "array",
+              "items" => %{"$ref" => "#/components/schemas/NotificationDeliverySummary"}
+            }
+          },
+          "required" => ["recipient_id", "notification_id", "status", "title", "severity"]
+        },
+        "NotificationDeliverySummary" => %{
+          "type" => "object",
+          "properties" => %{
+            "id" => %{"type" => "string"},
+            "channel" => %{"type" => "string"},
+            "endpoint_id" => %{"type" => "string", "nullable" => true},
+            "status" => %{"type" => "string"},
+            "provider" => %{"type" => "string", "nullable" => true},
+            "provider_message_id" => %{"type" => "string", "nullable" => true},
+            "attempt_count" => %{"type" => "integer"},
+            "last_attempt_at" => %{
+              "type" => "string",
+              "format" => "date-time",
+              "nullable" => true
+            },
+            "delivered_at" => %{"type" => "string", "format" => "date-time", "nullable" => true},
+            "error_message" => %{"type" => "string", "nullable" => true},
+            "metadata" => %{"type" => "object"}
+          },
+          "required" => ["id", "channel", "status", "attempt_count"]
+        },
+        "NotificationPreferenceSummary" => %{
+          "type" => "object",
+          "properties" => %{
+            "id" => %{"type" => "string"},
+            "scope_type" => %{"type" => "string"},
+            "scope_id" => %{"type" => "string", "nullable" => true},
+            "app_key" => %{"type" => "string", "nullable" => true},
+            "notification_key" => %{"type" => "string", "nullable" => true},
+            "channel" => %{"type" => "string"},
+            "enabled" => %{"type" => "boolean"},
+            "cadence" => %{"type" => "string", "enum" => ["immediate", "digest", "disabled"]}
+          },
+          "required" => ["id", "scope_type", "channel", "enabled", "cadence"]
+        },
+        "NotificationChannelSummary" => %{
+          "type" => "object",
+          "properties" => %{
+            "id" => %{"type" => "string", "nullable" => true},
+            "channel" => %{"type" => "string"},
+            "address" => %{"type" => "string", "nullable" => true},
+            "external_id" => %{"type" => "string", "nullable" => true},
+            "status" => %{"type" => "string", "enum" => ["unverified", "verified", "disabled"]},
+            "primary" => %{"type" => "boolean"},
+            "verified_at" => %{"type" => "string", "format" => "date-time", "nullable" => true},
+            "metadata" => %{"type" => "object"},
+            "operational" => %{"type" => "boolean"}
+          },
+          "required" => ["channel", "status", "primary", "operational"]
+        },
+        "NotificationListResponse" => %{
+          "type" => "object",
+          "properties" => %{
+            "notifications" => %{
+              "type" => "array",
+              "items" => %{"$ref" => "#/components/schemas/NotificationSummary"}
+            }
+          },
+          "required" => ["notifications"]
+        },
+        "NotificationUpdateResponse" => %{
+          "type" => "object",
+          "properties" => %{
+            "notification" => %{"$ref" => "#/components/schemas/NotificationSummary"}
+          },
+          "required" => ["notification"]
+        },
+        "NotificationReadAllResponse" => %{
+          "type" => "object",
+          "properties" => %{
+            "unread_count" => %{"type" => "integer"},
+            "notifications" => %{
+              "type" => "array",
+              "items" => %{"$ref" => "#/components/schemas/NotificationSummary"}
+            }
+          },
+          "required" => ["unread_count", "notifications"]
+        },
+        "NotificationPreferencesResponse" => %{
+          "type" => "object",
+          "properties" => %{
+            "preferences" => %{
+              "type" => "array",
+              "items" => %{"$ref" => "#/components/schemas/NotificationPreferenceSummary"}
+            }
+          },
+          "required" => ["preferences"]
+        },
+        "NotificationChannelsResponse" => %{
+          "type" => "object",
+          "properties" => %{
+            "channels" => %{
+              "type" => "array",
+              "items" => %{"$ref" => "#/components/schemas/NotificationChannelSummary"}
+            }
+          },
+          "required" => ["channels"]
+        },
+        "NotificationChannelUpdateResponse" => %{
+          "type" => "object",
+          "properties" => %{
+            "channel" => %{"$ref" => "#/components/schemas/NotificationChannelSummary"}
+          },
+          "required" => ["channel"]
+        },
+        "NotificationRecipientUpdateRequest" => %{
+          "type" => "object",
+          "properties" => %{
+            "status" => %{"type" => "string", "enum" => ["read", "archived"]}
+          },
+          "required" => ["status"]
+        },
+        "NotificationPreferencesUpdateRequest" => %{
+          "type" => "object",
+          "properties" => %{
+            "preferences" => %{
+              "type" => "array",
+              "items" => %{"$ref" => "#/components/schemas/NotificationPreferenceSummary"}
+            }
+          },
+          "required" => ["preferences"]
+        },
+        "NotificationChannelUpdateRequest" => %{
+          "type" => "object",
+          "properties" => %{
+            "address" => %{"type" => "string", "nullable" => true},
+            "external_id" => %{"type" => "string", "nullable" => true},
+            "status" => %{"type" => "string", "enum" => ["unverified", "verified", "disabled"]},
+            "primary" => %{"type" => "boolean"},
+            "metadata" => %{"type" => "object"}
+          }
         }
       }
     }

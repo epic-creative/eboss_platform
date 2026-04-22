@@ -46,6 +46,8 @@ describe("workspace and folio test contracts", () => {
             manageWorkspace: true,
             readFolio: true,
             manageFolio: true,
+            readChat: true,
+            manageChat: true,
           },
           apps: {
             folio: {
@@ -65,6 +67,7 @@ describe("workspace and folio test contracts", () => {
           type: "app",
           app_key: "folio",
           app_surface: "files",
+          app_path: ["files"],
         },
         currentPath: "/primary-owner/primary-workspace/apps/folio/files",
         signOutPath: "/sign-out",

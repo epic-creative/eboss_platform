@@ -15,13 +15,15 @@ const emptyScope = (): WorkspaceScope => ({
     manageWorkspace: false,
     readFolio: false,
     manageFolio: false,
+    readChat: false,
+    manageChat: false,
   },
   accessibleWorkspaces: [],
 })
 
 describe("WorkspaceSidebar", () => {
   const workspaceRoute = { type: "workspace", surface: "dashboard" }
-  const appRoute = (appKey: string) => ({ type: "app", app_key: appKey, app_surface: null })
+  const appRoute = (appKey: string) => ({ type: "app", app_key: appKey, app_surface: null, app_path: [] })
 
   it("renders a stable empty-state summary when no workspace is selected", () => {
     const wrapper = mountComponent(WorkspaceSidebar, {
@@ -79,6 +81,8 @@ describe("WorkspaceSidebar", () => {
             manageWorkspace: true,
             readFolio: true,
             manageFolio: true,
+            readChat: true,
+            manageChat: true,
           },
           apps: {
             folio: {
@@ -151,6 +155,8 @@ describe("WorkspaceSidebar", () => {
             manageWorkspace: true,
             readFolio: true,
             manageFolio: true,
+            readChat: true,
+            manageChat: true,
           },
           apps: {
             folio: {

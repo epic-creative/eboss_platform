@@ -43,3 +43,18 @@ export const folioSurfaceTestContracts = {
 export const folioProjectRowTestId = (projectId: string): string => `project-row-${projectId}`
 export const folioTaskRowTestId = (taskId: string): string => `task-row-${taskId}`
 export const folioActivityRowTestId = (eventId: string): string => `activity-row-${eventId}`
+
+export const chatSurfaceTestContracts = {
+  pageTestId: "workspace-page-chat",
+  pageRegionLabel: "Workspace chat page",
+  sessionsRegionLabel: "Chat sessions",
+  transcriptRegionLabel: "Chat transcript",
+  composerTestId: "chat-composer",
+  sendButtonTestId: "chat-send-button",
+  modelPickerTestId: "chat-model-picker",
+  pendingStateTestId: "chat-state-pending",
+  emptyStateTestId: "chat-state-empty",
+} as const
+
+export const chatSessionRowTestId = (sessionId: string): string => `chat-session-${sessionId}`
+export const chatMessageRowTestId = (messageId: string): string => `chat-message-${messageId}`

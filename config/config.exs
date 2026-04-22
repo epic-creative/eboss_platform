@@ -58,6 +58,28 @@ config :eboss_folio,
   ecto_repos: [EBoss.Repo],
   ash_domains: [EBossFolio]
 
+config :eboss_notify,
+  ecto_repos: [EBoss.Repo],
+  ash_domains: [EBossNotify]
+
+config :eboss_chat,
+  ecto_repos: [EBoss.Repo],
+  ash_domains: [EBossChat],
+  runtime_adapter: EBossChat.Runtime.JidoAdapter,
+  recent_history_limit: 40,
+  agent_idle_timeout_ms: :timer.minutes(15)
+
+config :eboss_chat, EBossChat.Jido,
+  max_tasks: 1000,
+  agent_pools: []
+
+config :jido_ai,
+  model_aliases: %{
+    workspace_chat_fast: "anthropic:claude-haiku-4-5-20251001",
+    workspace_chat_anthropic: "anthropic:claude-haiku-4-5-20251001",
+    workspace_chat_openai: "openai:gpt-4o-mini"
+  }
+
 # Configure the mailer
 #
 # By default it uses the "Local" adapter which stores the emails

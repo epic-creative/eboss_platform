@@ -45,6 +45,26 @@ defmodule EBossWeb.JsonApiTest do
              "/api/v1/{owner_slug}/workspaces/{slug}/apps/folio/activity"
            )
 
+    assert Map.has_key?(
+             spec["paths"],
+             "/api/v1/{owner_slug}/workspaces/{slug}/apps/chat/bootstrap"
+           )
+
+    assert Map.has_key?(
+             spec["paths"],
+             "/api/v1/{owner_slug}/workspaces/{slug}/apps/chat/sessions"
+           )
+
+    assert Map.has_key?(
+             spec["paths"],
+             "/api/v1/{owner_slug}/workspaces/{slug}/apps/chat/sessions/{session_id}"
+           )
+
+    assert Map.has_key?(
+             spec["paths"],
+             "/api/v1/{owner_slug}/workspaces/{slug}/apps/chat/sessions/{session_id}/messages/stream"
+           )
+
     assert get_in(spec, ["components", "schemas", "WorkspaceSummary", "properties", "full_path"]) ==
              %{
                "type" => "string",
@@ -187,6 +207,17 @@ defmodule EBossWeb.JsonApiTest do
              "enabled",
              "capabilities"
            ]
+
+    assert get_in(spec, ["components", "schemas", "ChatAppScope", "required"]) == [
+             "app_key",
+             "workspace",
+             "owner",
+             "app",
+             "capabilities",
+             "app_path"
+           ]
+
+    assert get_in(spec, ["components", "schemas", "ChatStreamRequest", "required"]) == ["body"]
   end
 
   test "swagger ui is exposed for the v1 json api", %{conn: conn} do
@@ -348,13 +379,22 @@ defmodule EBossWeb.JsonApiTest do
     assert payload["owner"]["slug"] == owner.owner_slug
 
     assert payload["capabilities"] == %{
+             "manage_chat" => true,
              "manage_folio" => true,
              "manage_workspace" => true,
+             "read_chat" => true,
              "read_folio" => true,
              "read_workspace" => true
            }
 
     assert payload["apps"] == %{
+             "chat" => %{
+               "capabilities" => %{"manage" => true, "read" => true},
+               "default_path" => "/#{owner.owner_slug}/#{current_workspace.slug}/apps/chat",
+               "enabled" => true,
+               "key" => "chat",
+               "label" => "Chat"
+             },
              "folio" => %{
                "capabilities" => %{"manage" => true, "read" => true},
                "default_path" => "/#{owner.owner_slug}/#{current_workspace.slug}/apps/folio",
@@ -420,6 +460,9 @@ defmodule EBossWeb.JsonApiTest do
 
     assert workspace_payload["apps"]["folio"]["capabilities"] ==
              folio_payload["scope"]["app"]["capabilities"]
+
+    assert workspace_payload["apps"]["chat"]["default_path"] ==
+             "/#{owner.owner_slug}/#{workspace.slug}/apps/chat"
   end
 
   test "authenticated clients can fetch a folio bootstrap payload", %{conn: conn} do
@@ -1806,14 +1849,18 @@ defmodule EBossWeb.JsonApiTest do
     assert payload["owner"]["slug"] == organization.owner_slug
 
     assert payload["capabilities"] == %{
+             "manage_chat" => true,
              "manage_folio" => false,
              "manage_workspace" => false,
+             "read_chat" => true,
              "read_folio" => false,
              "read_workspace" => true
            }
 
     assert payload["apps"]["folio"]["enabled"] == false
     assert payload["apps"]["folio"]["capabilities"] == %{"read" => false, "manage" => false}
+    assert payload["apps"]["chat"]["enabled"] == true
+    assert payload["apps"]["chat"]["capabilities"] == %{"read" => true, "manage" => true}
 
     assert [
              %{

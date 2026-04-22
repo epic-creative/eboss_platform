@@ -67,6 +67,7 @@ defmodule EBossWeb.Router do
       otp_app: :eboss_accounts,
       on_mount: {EBossWeb.LiveUserAuth, :live_user_required} do
       live "/dashboard", DashboardRedirectLive
+      live "/notifications", NotificationCenterLive
     end
   end
 
@@ -84,6 +85,25 @@ defmodule EBossWeb.Router do
 
     get "/:owner_slug/workspaces/:slug/bootstrap", WorkspaceBootstrapController, :show
     get "/:owner_slug/workspaces/:slug/apps/folio/bootstrap", FolioBootstrapController, :show
+    get "/notifications/bootstrap", NotificationController, :bootstrap
+    get "/notifications", NotificationController, :index
+    post "/notifications/read-all", NotificationController, :read_all
+    get "/notifications/preferences", NotificationController, :preferences
+    patch "/notifications/preferences", NotificationController, :update_preferences
+    get "/notifications/channels", NotificationController, :channels
+    patch "/notifications/channels/:endpoint_id", NotificationController, :update_channel
+    patch "/notifications/:recipient_id", NotificationController, :update
+
+    get "/:owner_slug/workspaces/:slug/apps/chat/bootstrap", ChatController, :bootstrap
+    get "/:owner_slug/workspaces/:slug/apps/chat/sessions", ChatController, :index
+    post "/:owner_slug/workspaces/:slug/apps/chat/sessions", ChatController, :create
+    get "/:owner_slug/workspaces/:slug/apps/chat/sessions/:session_id", ChatController, :show
+
+    post "/:owner_slug/workspaces/:slug/apps/chat/sessions/:session_id/messages/stream",
+         ChatController,
+         :stream
+
+    patch "/:owner_slug/workspaces/:slug/apps/chat/sessions/:session_id", ChatController, :update
 
     post "/:owner_slug/workspaces/:slug/apps/folio/projects",
          FolioBootstrapController,
@@ -138,10 +158,7 @@ defmodule EBossWeb.Router do
       on_mount: {EBossWeb.LiveUserAuth, :live_user_required} do
       live "/:owner_slug/:workspace_slug", DashboardLive, :workspace_root
       live "/:owner_slug/:workspace_slug/apps/:app_key", DashboardLive, :workspace_app
-
-      live "/:owner_slug/:workspace_slug/apps/:app_key/:app_surface",
-           DashboardLive,
-           :workspace_app
+      live "/:owner_slug/:workspace_slug/apps/:app_key/*app_path", DashboardLive, :workspace_app
 
       live "/:owner_slug/:workspace_slug/:workspace_surface", DashboardLive, :workspace_surface
     end

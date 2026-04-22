@@ -36,18 +36,36 @@ const scope = (overrides: Partial<WorkspaceScope> = {}): WorkspaceScope => ({
     manageWorkspace: true,
     readFolio: true,
     manageFolio: true,
+    readChat: true,
+    manageChat: true,
   },
   accessibleWorkspaces: [workspace()],
   ...overrides,
 })
 
 const workspaceRoute = (surface: WorkspaceSurface) => ({ type: "workspace", surface })
-const appRoute = (appKey: string, appSurface: string | null = null) => ({
+const appRoute = (appKey: string, appSurface: string | null = null, appPath: string[] = appSurface ? [appSurface] : []) => ({
   type: "app",
   app_key: appKey,
   app_surface: appSurface,
+  app_path: appPath,
 })
 const nextMacrotask = () => new Promise((resolve) => setTimeout(resolve, 0))
+const expectJsonRequest = (
+  request: RequestInit | undefined,
+  method: string,
+  body?: unknown,
+) => {
+  expect(request?.method).toBe(method)
+  expect(request?.credentials).toBe("same-origin")
+  expect(new Headers(request?.headers as HeadersInit | undefined).get("Content-Type")).toBe(
+    "application/json",
+  )
+
+  if (body !== undefined) {
+    expect(request?.body).toBe(JSON.stringify(body))
+  }
+}
 
 describe("ShellOperatorWorkspaceApp", () => {
   afterEach(() => {
@@ -76,7 +94,7 @@ describe("ShellOperatorWorkspaceApp", () => {
       },
     })
 
-    wrapper.getComponent(MembersPage).vm.$emit("update:selected-member", members[0])
+    wrapper.getComponent(MembersPage).vm.$emit("update:selectedMember", members[0])
     await nextTick()
 
     expect(wrapper.getComponent(MembersPage).props("selectedMember")).toMatchObject({
@@ -120,7 +138,7 @@ describe("ShellOperatorWorkspaceApp", () => {
       },
     })
 
-    wrapper.getComponent(MembersPage).vm.$emit("update:selected-member", members[4])
+    wrapper.getComponent(MembersPage).vm.$emit("update:selectedMember", members[4])
     await nextTick()
 
     expect(wrapper.getComponent(MembersPage).props("selectedMember")).toMatchObject({
@@ -535,14 +553,9 @@ describe("ShellOperatorWorkspaceApp", () => {
     expect(fetchMock).toHaveBeenNthCalledWith(
       2,
       "/api/v1/primary-owner/workspaces/primary-workspace/apps/folio/projects",
-      expect.objectContaining({
-        method: "POST",
-        body: JSON.stringify({ title: "Launch Console" }),
-        headers: expect.objectContaining({
-          "Content-Type": "application/json",
-        }),
-      }),
+      expect.any(Object),
     )
+    expectJsonRequest(fetchMock.mock.calls[1]?.[1], "POST", { title: "Launch Console" })
 
     expect(projectsView.text()).toContain("Launch Console")
     expect(projectsView.find('[data-testid="projects-create-form"]').exists()).toBe(false)
@@ -682,13 +695,9 @@ describe("ShellOperatorWorkspaceApp", () => {
     expect(fetchMock).toHaveBeenNthCalledWith(
       2,
       "/api/v1/primary-owner/workspaces/primary-workspace/apps/folio/projects/project-1",
-      expect.objectContaining({
-        method: "PATCH",
-        headers: expect.objectContaining({
-          "Content-Type": "application/json",
-        }),
-      }),
+      expect.any(Object),
     )
+    expectJsonRequest(patchCall[1], "PATCH")
     expect(JSON.parse(String(patchCall[1]?.body))).toEqual({
       title: "Atlas Service Revamp",
       description: "Refined project scope",
@@ -817,14 +826,9 @@ describe("ShellOperatorWorkspaceApp", () => {
     expect(fetchMock).toHaveBeenNthCalledWith(
       2,
       "/api/v1/primary-owner/workspaces/primary-workspace/apps/folio/projects/project-1",
-      expect.objectContaining({
-        method: "PATCH",
-        body: JSON.stringify({ status: "completed" }),
-        headers: expect.objectContaining({
-          "Content-Type": "application/json",
-        }),
-      }),
+      expect.any(Object),
     )
+    expectJsonRequest(fetchMock.mock.calls[1]?.[1], "PATCH", { status: "completed" })
 
     expect(projectsView.find('[data-testid="projects-state-empty-filtered"]').exists()).toBe(true)
     expect(projectsView.find('[data-testid="projects-transition-error"]').exists()).toBe(false)
@@ -939,6 +943,8 @@ describe("ShellOperatorWorkspaceApp", () => {
             manageWorkspace: false,
             readFolio: true,
             manageFolio: false,
+            readChat: true,
+            manageChat: false,
           },
           apps: {
             folio: {
@@ -1227,14 +1233,12 @@ describe("ShellOperatorWorkspaceApp", () => {
     expect(fetchMock).toHaveBeenNthCalledWith(
       3,
       "/api/v1/primary-owner/workspaces/primary-workspace/apps/folio/tasks",
-      expect.objectContaining({
-        method: "POST",
-        body: JSON.stringify({ title: "Draft rollout notes", project_id: "project-1" }),
-        headers: expect.objectContaining({
-          "Content-Type": "application/json",
-        }),
-      }),
+      expect.any(Object),
     )
+    expectJsonRequest(fetchMock.mock.calls[2]?.[1], "POST", {
+      title: "Draft rollout notes",
+      project_id: "project-1",
+    })
 
     expect(tasksView.text()).toContain("Draft rollout notes")
     expect(tasksView.find('[data-testid="tasks-create-form"]').exists()).toBe(false)
@@ -1359,14 +1363,9 @@ describe("ShellOperatorWorkspaceApp", () => {
     expect(fetchMock).toHaveBeenNthCalledWith(
       3,
       "/api/v1/primary-owner/workspaces/primary-workspace/apps/folio/tasks/task-1",
-      expect.objectContaining({
-        method: "PATCH",
-        body: JSON.stringify({ status: "done" }),
-        headers: expect.objectContaining({
-          "Content-Type": "application/json",
-        }),
-      }),
+      expect.any(Object),
     )
+    expectJsonRequest(fetchMock.mock.calls[2]?.[1], "PATCH", { status: "done" })
 
     expect(tasksView.text()).toContain("Done")
     expect(tasksView.find('[data-testid="tasks-transition-error"]').exists()).toBe(false)
@@ -1528,21 +1527,16 @@ describe("ShellOperatorWorkspaceApp", () => {
     expect(fetchMock).toHaveBeenNthCalledWith(
       3,
       "/api/v1/primary-owner/workspaces/primary-workspace/apps/folio/tasks/task-1",
-      expect.objectContaining({
-        method: "PATCH",
-        body: JSON.stringify({
-          intent: "delegate",
-          contact_name: "Avery Partner",
-          delegated_summary: "Send updated approval notes",
-          quality_expectations: "Include legal and billing caveats",
-          follow_up_at: "2026-05-01",
-          deadline_expectations_at: "2026-05-07",
-        }),
-        headers: expect.objectContaining({
-          "Content-Type": "application/json",
-        }),
-      }),
+      expect.any(Object),
     )
+    expectJsonRequest(fetchMock.mock.calls[2]?.[1], "PATCH", {
+      intent: "delegate",
+      contact_name: "Avery Partner",
+      delegated_summary: "Send updated approval notes",
+      quality_expectations: "Include legal and billing caveats",
+      follow_up_at: "2026-05-01",
+      deadline_expectations_at: "2026-05-07",
+    })
 
     expect(tasksView.text()).toContain("Waiting on Avery Partner")
     expect(tasksView.text()).toContain("Send updated approval notes")
@@ -1668,6 +1662,8 @@ describe("ShellOperatorWorkspaceApp", () => {
             manageWorkspace: false,
             readFolio: true,
             manageFolio: false,
+            readChat: true,
+            manageChat: false,
           },
           apps: {
             folio: {

@@ -257,7 +257,9 @@ defmodule EBossWeb.AppScope do
       read_workspace: true,
       manage_workspace: manages_workspace?,
       read_folio: manages_workspace?,
-      manage_folio: manages_workspace?
+      manage_folio: manages_workspace?,
+      read_chat: true,
+      manage_chat: true
     }
   end
 
@@ -273,13 +275,17 @@ defmodule EBossWeb.AppScope do
       read_workspace: true,
       manage_workspace: manages_workspace?,
       read_folio: manages_workspace?,
-      manage_folio: manages_workspace?
+      manage_folio: manages_workspace?,
+      read_chat: true,
+      manage_chat: true
     }
   end
 
   defp app_registry(%{dashboard_path: dashboard_path}, capabilities) do
     read_folio = Map.get(capabilities, :read_folio, false)
     manage_folio = Map.get(capabilities, :manage_folio, false)
+    read_chat = Map.get(capabilities, :read_chat, false)
+    manage_chat = Map.get(capabilities, :manage_chat, false)
 
     %{
       "folio" => %{
@@ -288,6 +294,13 @@ defmodule EBossWeb.AppScope do
         default_path: "#{dashboard_path}/apps/folio",
         enabled: read_folio,
         capabilities: %{read: read_folio, manage: manage_folio}
+      },
+      "chat" => %{
+        key: "chat",
+        label: "Chat",
+        default_path: "#{dashboard_path}/apps/chat",
+        enabled: read_chat,
+        capabilities: %{read: read_chat, manage: manage_chat}
       }
     }
   end
@@ -299,7 +312,9 @@ defmodule EBossWeb.AppScope do
       read_workspace: false,
       manage_workspace: false,
       read_folio: false,
-      manage_folio: false
+      manage_folio: false,
+      read_chat: false,
+      manage_chat: false
     }
   end
 

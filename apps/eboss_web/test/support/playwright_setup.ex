@@ -7,6 +7,7 @@ defmodule EBossWeb.PlaywrightSetup do
   alias EBoss.Accounts
   alias EBoss.Workspaces
   alias EBoss.Repo
+  alias EBossNotify
   alias EBossWeb.AppScope
   alias AshAuthentication.Info
 
@@ -30,6 +31,7 @@ defmodule EBossWeb.PlaywrightSetup do
 
     user = ensure_browser_test_user!(credentials)
     workspace = ensure_browser_test_workspace!(user)
+    ensure_browser_test_notification!(user, workspace)
     dashboard_path = AppScope.dashboard_path(user.owner_slug, workspace.slug)
 
     public_storage_state_path = Path.join(state_dir, "public.json")
@@ -162,6 +164,23 @@ defmodule EBossWeb.PlaywrightSetup do
       {:error, error} ->
         raise "failed to resolve Playwright workspace: #{Exception.message(error)}"
     end
+  end
+
+  defp ensure_browser_test_notification!(user, workspace) do
+    EBossNotify.notify!(
+      %{
+        scope_type: :workspace,
+        scope_id: workspace.id,
+        workspace_id: workspace.id,
+        notification_key: "playwright.setup",
+        title: "Playwright notification",
+        body: "This seeded notification verifies the in-app notification center.",
+        severity: :info,
+        action_url: AppScope.dashboard_path(user.owner_slug, workspace.slug),
+        idempotency_key: "playwright.setup:#{user.id}:#{System.unique_integer([:positive])}"
+      },
+      {:user, user}
+    )
   end
 
   defp authenticated_storage_state!(credentials, base_url) do

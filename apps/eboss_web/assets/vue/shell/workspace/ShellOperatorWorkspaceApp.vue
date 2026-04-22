@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue"
-import { Bell, Menu, Search } from "lucide-vue-next"
+import { Menu, Search } from "lucide-vue-next"
 
 import ThemeToggleButton from "../shared/ThemeToggleButton.vue"
+import NotificationBell from "../notifications/NotificationBell.vue"
 import WorkspaceSidebar from "./WorkspaceSidebar.vue"
 import {
   accessAudit,
@@ -20,6 +21,7 @@ import ActivityPage from "./pages/ActivityPage.vue"
 import ProjectsPage from "./pages/ProjectsPage.vue"
 import TasksPage from "./pages/TasksPage.vue"
 import SettingsPage from "./pages/SettingsPage.vue"
+import ChatPage from "./ChatPage.vue"
 import { workspaceAppTestContracts } from "./testContracts"
 import {
   createFolioTask,
@@ -59,15 +61,26 @@ import type {
   AppNavigation,
   WorkspaceScope,
 } from "./types"
+import type { NotificationBootstrap } from "../notifications"
 
 const props = defineProps<{
   currentUser: CurrentUser
   currentScope: WorkspaceScope
   currentPage: WorkspaceNavigationContext
   currentPath: string
+  notificationBootstrap?: NotificationBootstrap
   signOutPath: string
   csrfToken: string
 }>()
+
+const emptyNotificationBootstrap: NotificationBootstrap = {
+  unread_count: 0,
+  recent: [],
+  preferences: [],
+  channels: [],
+  supported_channels: ["in_app", "email", "sms", "telegram", "webhook", "push"],
+  inactive_external_channels: ["email", "sms", "telegram", "webhook", "push"],
+}
 
 const mobileNavOpen = ref(false)
 const activeAccessTab = ref<AccessTab>("roles")
@@ -124,6 +137,7 @@ const currentWorkspaceKey = computed(() =>
 const basePath = computed(() => props.currentScope.dashboardPath || props.currentPath)
 const dashboardHref = computed(() => props.currentScope.dashboardPath || "/dashboard")
 const avatarInitials = computed(() => props.currentUser.username.slice(0, 2).toUpperCase())
+const resolvedNotificationBootstrap = computed(() => props.notificationBootstrap ?? emptyNotificationBootstrap)
 const isAppNavigation = (page: WorkspaceNavigationContext): page is AppNavigation =>
   page.type === "app"
 const currentAppPage = computed<AppNavigation | null>(() =>
@@ -141,6 +155,7 @@ const isFolioTasksSurface = computed(
 const isFolioActivitySurface = computed(
   () => isFolioAppRoute.value && currentAppPage.value?.app_surface === "activity",
 )
+const isChatAppRoute = computed(() => isAppRoute.value && currentAppPage.value?.app_key === "chat")
 const folioWorkspaceScope = useFolioWorkspaceScope(props.currentScope)
 const shouldLoadFolioProjects = computed(
   () =>
@@ -482,10 +497,7 @@ watch(currentWorkspaceKey, () => {
 
           <ThemeToggleButton />
 
-            <button type="button" class="so-icon-button relative">
-              <Bell class="h-4 w-4" />
-              <span class="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-[hsl(var(--so-primary))]" />
-            </button>
+            <NotificationBell :bootstrap="resolvedNotificationBootstrap" />
 
             <details class="so-avatar-menu relative">
               <summary
@@ -624,6 +636,11 @@ watch(currentWorkspaceKey, () => {
               :error="folioActivityQuery.error.value"
               :refresh="folioActivityQuery.refresh"
               @update:selected-activity="selectedActivity = $event"
+            />
+            <ChatPage
+              v-else-if="isChatAppRoute && currentAppPage"
+              :current-scope="currentScope"
+              :current-page="currentAppPage"
             />
 
             <div

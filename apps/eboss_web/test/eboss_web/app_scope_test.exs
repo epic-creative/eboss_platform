@@ -34,9 +34,18 @@ defmodule EBossWeb.AppScopeTest do
           read_workspace: true,
           manage_workspace: true,
           read_folio: true,
-          manage_folio: false
+          manage_folio: false,
+          read_chat: true,
+          manage_chat: true
         },
         apps: %{
+          "chat" => %{
+            key: "chat",
+            label: "Chat",
+            default_path: "/owner/bootstrap-workspace/apps/chat",
+            enabled: true,
+            capabilities: %{read: true, manage: true}
+          },
           "folio" => %{
             key: "folio",
             label: "Folio",
@@ -59,9 +68,11 @@ defmodule EBossWeb.AppScopeTest do
 
     payload = AppScope.bootstrap_payload(scope)
 
+    assert payload.apps["chat"]["key"] == "chat"
     assert payload.apps["folio"]["key"] == "folio"
     assert payload.apps["insights"]["label"] == "Workspace Insights"
-    assert map_size(payload.apps) == 2
+    assert map_size(payload.apps) == 3
+    assert payload.apps["chat"]["capabilities"]["manage"] == true
     assert payload.apps["folio"]["capabilities"]["read"] == true
   end
 
@@ -82,6 +93,8 @@ defmodule EBossWeb.AppScopeTest do
 
     payload = AppScope.bootstrap_payload(scope)
 
+    assert payload.apps["chat"]["enabled"] == true
+    assert payload.apps["chat"]["capabilities"] == %{"read" => true, "manage" => true}
     assert payload.apps["folio"]["enabled"] == false
     assert payload.apps["folio"]["capabilities"] == %{"read" => false, "manage" => false}
 

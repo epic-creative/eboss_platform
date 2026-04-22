@@ -132,6 +132,7 @@ defmodule EBossWeb.DashboardScopeRoutingTest do
     assert workspace_shell.props["currentPage"]["type"] == "app"
     assert workspace_shell.props["currentPage"]["app_key"] == "folio"
     assert workspace_shell.props["currentPage"]["app_surface"] == nil
+    assert workspace_shell.props["currentPage"]["app_path"] == []
     assert workspace_shell.props["currentPath"] == app_base_path
     assert workspace_shell.props["currentScope"]["dashboardPath"] == base_path
     assert workspace_shell.props["currentScope"]["currentWorkspace"]["slug"] == workspace.slug
@@ -143,6 +144,7 @@ defmodule EBossWeb.DashboardScopeRoutingTest do
     assert workspace_shell_with_tasks.props["currentPage"]["type"] == "app"
     assert workspace_shell_with_tasks.props["currentPage"]["app_key"] == "folio"
     assert workspace_shell_with_tasks.props["currentPage"]["app_surface"] == "tasks"
+    assert workspace_shell_with_tasks.props["currentPage"]["app_path"] == ["tasks"]
     assert workspace_shell_with_tasks.props["currentPath"] == app_tasks_surface_path
 
     assert {:ok, view_with_surface, _html} = live(context.conn, app_files_surface_path)
@@ -152,7 +154,43 @@ defmodule EBossWeb.DashboardScopeRoutingTest do
     assert workspace_shell_with_surface.props["currentPage"]["type"] == "app"
     assert workspace_shell_with_surface.props["currentPage"]["app_key"] == "folio"
     assert workspace_shell_with_surface.props["currentPage"]["app_surface"] == "files"
+    assert workspace_shell_with_surface.props["currentPage"]["app_path"] == ["files"]
     assert workspace_shell_with_surface.props["currentPath"] == app_files_surface_path
+  end
+
+  test "chat app routes preserve nested app path context", %{conn: conn} do
+    context =
+      register_and_log_in_user(%{conn: conn}, %{
+        email: "chat-route-contract@example.com",
+        username: "chat-route-contract-user"
+      })
+
+    workspace =
+      create_user_workspace(context.current_user, %{name: "Chat Route Workspace"})
+
+    base_path = dashboard_path(context.current_user.owner_slug, workspace.slug)
+    chat_new_path = "#{base_path}/apps/chat/new"
+    chat_session_path = "#{base_path}/apps/chat/sessions/session-123"
+
+    assert {:ok, new_view, _html} = live(context.conn, chat_new_path)
+
+    new_shell = get_vue(new_view, name: "ShellOperatorWorkspaceApp")
+
+    assert new_shell.props["currentPage"]["type"] == "app"
+    assert new_shell.props["currentPage"]["app_key"] == "chat"
+    assert new_shell.props["currentPage"]["app_surface"] == "new"
+    assert new_shell.props["currentPage"]["app_path"] == ["new"]
+    assert new_shell.props["currentPath"] == chat_new_path
+
+    assert {:ok, session_view, _html} = live(context.conn, chat_session_path)
+
+    session_shell = get_vue(session_view, name: "ShellOperatorWorkspaceApp")
+
+    assert session_shell.props["currentPage"]["type"] == "app"
+    assert session_shell.props["currentPage"]["app_key"] == "chat"
+    assert session_shell.props["currentPage"]["app_surface"] == "sessions"
+    assert session_shell.props["currentPage"]["app_path"] == ["sessions", "session-123"]
+    assert session_shell.props["currentPath"] == chat_session_path
   end
 
   test "app routes without read capability fall back to workspace routing", %{conn: conn} do

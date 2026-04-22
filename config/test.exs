@@ -58,3 +58,6 @@ config :phoenix,
   sort_verified_routes_query_params: true
 
 config :eboss_web, dev_routes: true
+
+config :eboss_chat,
+  runtime_adapter: EBossChat.Runtime.FakeAdapter

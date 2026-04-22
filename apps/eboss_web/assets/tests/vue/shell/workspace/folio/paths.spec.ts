@@ -36,6 +36,8 @@ const workspaceScope = (): WorkspaceScope => ({
     manageWorkspace: true,
     readFolio: true,
     manageFolio: true,
+    readChat: true,
+    manageChat: true,
   },
   accessibleWorkspaces: [],
 })

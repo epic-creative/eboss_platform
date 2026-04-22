@@ -10,6 +10,7 @@ export interface AppNavigation {
   type: "app"
   app_key: string
   app_surface: string | null
+  app_path: string[]
 }
 
 export type WorkspaceNavigationContext = WorkspaceNavigation | AppNavigation
@@ -50,6 +51,8 @@ export interface WorkspaceCapabilities {
   manageWorkspace: boolean
   readFolio: boolean
   manageFolio: boolean
+  readChat: boolean
+  manageChat: boolean
 }
 
 export interface WorkspaceAppCapabilities {

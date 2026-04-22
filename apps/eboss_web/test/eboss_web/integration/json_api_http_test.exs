@@ -4,6 +4,7 @@ defmodule EBossWeb.JsonApiHttpTest do
   @moduletag :integration
 
   alias EBossFolio
+  alias EBossNotify
 
   test "open api is reachable over the external http surface", %{req: req} do
     response = Req.get!(json_req(req), url: "/api/v1/open_api")
@@ -46,6 +47,34 @@ defmodule EBossWeb.JsonApiHttpTest do
              response.body["paths"],
              "/api/v1/{owner_slug}/workspaces/{slug}/apps/folio/activity"
            )
+
+    assert Map.has_key?(
+             response.body["paths"],
+             "/api/v1/{owner_slug}/workspaces/{slug}/apps/chat/bootstrap"
+           )
+
+    assert Map.has_key?(
+             response.body["paths"],
+             "/api/v1/{owner_slug}/workspaces/{slug}/apps/chat/sessions"
+           )
+
+    assert Map.has_key?(
+             response.body["paths"],
+             "/api/v1/{owner_slug}/workspaces/{slug}/apps/chat/sessions/{session_id}"
+           )
+
+    assert Map.has_key?(
+             response.body["paths"],
+             "/api/v1/{owner_slug}/workspaces/{slug}/apps/chat/sessions/{session_id}/messages/stream"
+           )
+
+    assert Map.has_key?(response.body["paths"], "/api/v1/notifications/bootstrap")
+    assert Map.has_key?(response.body["paths"], "/api/v1/notifications")
+    assert Map.has_key?(response.body["paths"], "/api/v1/notifications/{recipient_id}")
+    assert Map.has_key?(response.body["paths"], "/api/v1/notifications/read-all")
+    assert Map.has_key?(response.body["paths"], "/api/v1/notifications/preferences")
+    assert Map.has_key?(response.body["paths"], "/api/v1/notifications/channels")
+    assert Map.has_key?(response.body["paths"], "/api/v1/notifications/channels/{endpoint_id}")
   end
 
   test "user-owned workspaces are reachable over http by id", %{req: req} do
@@ -157,7 +186,9 @@ defmodule EBossWeb.JsonApiHttpTest do
 
     assert user_response.status == 200
     assert user_response.body["workspace"]["slug"] == user_workspace.slug
+    assert user_response.body["capabilities"]["manage_chat"] == true
     assert user_response.body["capabilities"]["manage_folio"] == true
+    assert user_response.body["apps"]["chat"]["enabled"] == true
     assert user_response.body["apps"]["folio"]["enabled"] == true
     assert user_response.body["owner"]["slug"] == owner.owner_slug
 
@@ -172,7 +203,9 @@ defmodule EBossWeb.JsonApiHttpTest do
 
     assert org_response.status == 200
     assert org_response.body["workspace"]["slug"] == org_workspace.slug
+    assert org_response.body["capabilities"]["manage_chat"] == true
     assert org_response.body["capabilities"]["manage_folio"] == false
+    assert org_response.body["apps"]["chat"]["enabled"] == true
     assert org_response.body["apps"]["folio"]["enabled"] == false
     assert org_response.body["owner"]["slug"] == organization.owner_slug
   end
@@ -469,6 +502,315 @@ defmodule EBossWeb.JsonApiHttpTest do
     assert missing_response.body["error"]["code"] == "workspace_not_found"
   end
 
+  test "session-authenticated browsers can create, stream, and archive chat over http with csrf protection",
+       %{
+         req: req
+       } do
+    owner = register_user()
+    initial_cookie_header = browser_session_cookie_header(owner)
+
+    workspace =
+      Workspaces.create_workspace!(
+        %{
+          name: "HTTP Session Chat Workspace",
+          owner_type: :user,
+          owner_id: owner.id
+        },
+        actor: owner
+      )
+
+    chat_page_response =
+      req
+      |> Req.merge(headers: [{"cookie", initial_cookie_header}, {"accept", "text/html"}])
+      |> Req.get!(url: "/#{owner.owner_slug}/#{workspace.slug}/apps/chat/new")
+
+    csrf_token = extract_csrf_token(chat_page_response.body)
+    cookie_header = response_cookie_header(chat_page_response, initial_cookie_header)
+
+    create_response =
+      req
+      |> Req.merge(
+        headers: [
+          {"cookie", cookie_header},
+          {"x-csrf-token", csrf_token},
+          {"accept", "application/json"}
+        ]
+      )
+      |> Req.post!(
+        url: "/api/v1/#{owner.owner_slug}/workspaces/#{workspace.slug}/apps/chat/sessions",
+        json: %{title_seed: "HTTP chat session"}
+      )
+
+    assert create_response.status == 201
+    session_id = create_response.body["session"]["id"]
+    assert create_response.body["session"]["title"] == "HTTP chat session"
+
+    stream_response =
+      req
+      |> Req.merge(
+        headers: [
+          {"cookie", cookie_header},
+          {"x-csrf-token", csrf_token},
+          {"accept", "application/json"}
+        ]
+      )
+      |> Req.post!(
+        url:
+          "/api/v1/#{owner.owner_slug}/workspaces/#{workspace.slug}/apps/chat/sessions/#{session_id}/messages/stream",
+        json: %{body: "What did we ship?"}
+      )
+
+    assert stream_response.status == 200
+    assert get_header(stream_response, "content-type") =~ "text/event-stream"
+
+    event_names = parse_sse_event_names(stream_response.body)
+
+    assert Enum.take(event_names, 3) == [
+             "stream_ready",
+             "user_message_committed",
+             "assistant_started"
+           ]
+
+    assert List.last(event_names) == "assistant_completed"
+    assert Enum.any?(event_names, &(&1 == "assistant_delta"))
+    assert stream_response.body =~ "Haiku mock reply: What did we ship?"
+
+    show_response =
+      req
+      |> Req.merge(headers: [{"cookie", cookie_header}, {"accept", "application/json"}])
+      |> Req.get!(
+        url:
+          "/api/v1/#{owner.owner_slug}/workspaces/#{workspace.slug}/apps/chat/sessions/#{session_id}"
+      )
+
+    assert show_response.status == 200
+    assert Enum.map(show_response.body["messages"], & &1["role"]) == ["user", "assistant"]
+
+    archive_response =
+      req
+      |> Req.merge(
+        headers: [
+          {"cookie", cookie_header},
+          {"x-csrf-token", csrf_token},
+          {"accept", "application/json"}
+        ]
+      )
+      |> Req.patch!(
+        url:
+          "/api/v1/#{owner.owner_slug}/workspaces/#{workspace.slug}/apps/chat/sessions/#{session_id}",
+        json: %{status: "archived"}
+      )
+
+    assert archive_response.status == 200
+    assert archive_response.body["session"]["status"] == "archived"
+  end
+
+  test "session-authenticated chat mutations reject missing csrf tokens over http", %{req: req} do
+    owner = register_user()
+    initial_cookie_header = browser_session_cookie_header(owner)
+
+    workspace =
+      Workspaces.create_workspace!(
+        %{
+          name: "HTTP Session Chat CSRF Workspace",
+          owner_type: :user,
+          owner_id: owner.id
+        },
+        actor: owner
+      )
+
+    chat_page_response =
+      req
+      |> Req.merge(headers: [{"cookie", initial_cookie_header}, {"accept", "text/html"}])
+      |> Req.get!(url: "/#{owner.owner_slug}/#{workspace.slug}/apps/chat/new")
+
+    csrf_token = extract_csrf_token(chat_page_response.body)
+    cookie_header = response_cookie_header(chat_page_response, initial_cookie_header)
+
+    create_without_csrf =
+      req
+      |> Req.merge(headers: [{"cookie", cookie_header}, {"accept", "application/json"}])
+      |> Req.post!(
+        url: "/api/v1/#{owner.owner_slug}/workspaces/#{workspace.slug}/apps/chat/sessions",
+        json: %{title_seed: "Missing chat csrf"}
+      )
+
+    assert create_without_csrf.status == 403
+
+    create_with_csrf =
+      req
+      |> Req.merge(
+        headers: [
+          {"cookie", cookie_header},
+          {"x-csrf-token", csrf_token},
+          {"accept", "application/json"}
+        ]
+      )
+      |> Req.post!(
+        url: "/api/v1/#{owner.owner_slug}/workspaces/#{workspace.slug}/apps/chat/sessions",
+        json: %{title_seed: "Valid chat csrf"}
+      )
+
+    assert create_with_csrf.status == 201
+    session_id = create_with_csrf.body["session"]["id"]
+
+    stream_without_csrf =
+      req
+      |> Req.merge(headers: [{"cookie", cookie_header}, {"accept", "application/json"}])
+      |> Req.post!(
+        url:
+          "/api/v1/#{owner.owner_slug}/workspaces/#{workspace.slug}/apps/chat/sessions/#{session_id}/messages/stream",
+        json: %{body: "Missing token"}
+      )
+
+    assert stream_without_csrf.status == 403
+  end
+
+  test "session-authenticated browsers can use notification APIs over http with csrf protection",
+       %{req: req} do
+    owner = register_user()
+    initial_cookie_header = browser_session_cookie_header(owner)
+
+    {:ok, %{recipients: [recipient]}} =
+      EBossNotify.notify(
+        %{
+          scope_type: :system,
+          notification_key: "system.http",
+          title: "HTTP notification",
+          body: "This should be visible in the notification API.",
+          idempotency_key: "system.http:#{owner.id}"
+        },
+        {:user, owner}
+      )
+
+    notifications_page_response =
+      req
+      |> Req.merge(headers: [{"cookie", initial_cookie_header}, {"accept", "text/html"}])
+      |> Req.get!(url: "/notifications")
+
+    csrf_token = extract_csrf_token(notifications_page_response.body)
+    cookie_header = response_cookie_header(notifications_page_response, initial_cookie_header)
+
+    bootstrap_response =
+      req
+      |> Req.merge(headers: [{"cookie", cookie_header}, {"accept", "application/json"}])
+      |> Req.get!(url: "/api/v1/notifications/bootstrap")
+
+    assert bootstrap_response.status == 200
+    assert bootstrap_response.body["unread_count"] == 1
+    assert hd(bootstrap_response.body["recent"])["title"] == "HTTP notification"
+
+    mark_read_response =
+      req
+      |> Req.merge(
+        headers: [
+          {"cookie", cookie_header},
+          {"x-csrf-token", csrf_token},
+          {"accept", "application/json"}
+        ]
+      )
+      |> Req.patch!(
+        url: "/api/v1/notifications/#{recipient.id}",
+        json: %{status: "read"}
+      )
+
+    assert mark_read_response.status == 200
+    assert mark_read_response.body["notification"]["status"] == "read"
+
+    preferences_response =
+      req
+      |> Req.merge(
+        headers: [
+          {"cookie", cookie_header},
+          {"x-csrf-token", csrf_token},
+          {"accept", "application/json"}
+        ]
+      )
+      |> Req.patch!(
+        url: "/api/v1/notifications/preferences",
+        json: %{
+          preferences: [
+            %{
+              scope_type: "system",
+              channel: "telegram",
+              enabled: true,
+              cadence: "immediate"
+            }
+          ]
+        }
+      )
+
+    assert preferences_response.status == 200
+    assert hd(preferences_response.body["preferences"])["channel"] == "telegram"
+
+    read_all_response =
+      req
+      |> Req.merge(
+        headers: [
+          {"cookie", cookie_header},
+          {"x-csrf-token", csrf_token},
+          {"accept", "application/json"}
+        ]
+      )
+      |> Req.post!(url: "/api/v1/notifications/read-all", json: %{})
+
+    assert read_all_response.status == 200
+    assert read_all_response.body["unread_count"] == 0
+  end
+
+  test "session-authenticated notification mutations reject missing csrf tokens over http", %{
+    req: req
+  } do
+    owner = register_user()
+    initial_cookie_header = browser_session_cookie_header(owner)
+
+    {:ok, %{recipients: [recipient]}} =
+      EBossNotify.notify(
+        %{
+          scope_type: :system,
+          notification_key: "system.http_csrf",
+          title: "HTTP CSRF notification",
+          idempotency_key: "system.http_csrf:#{owner.id}"
+        },
+        {:user, owner}
+      )
+
+    notifications_page_response =
+      req
+      |> Req.merge(headers: [{"cookie", initial_cookie_header}, {"accept", "text/html"}])
+      |> Req.get!(url: "/notifications")
+
+    csrf_token = extract_csrf_token(notifications_page_response.body)
+    cookie_header = response_cookie_header(notifications_page_response, initial_cookie_header)
+
+    missing_csrf_response =
+      req
+      |> Req.merge(headers: [{"cookie", cookie_header}, {"accept", "application/json"}])
+      |> Req.patch!(
+        url: "/api/v1/notifications/#{recipient.id}",
+        json: %{status: "read"}
+      )
+
+    assert missing_csrf_response.status == 403
+
+    valid_csrf_response =
+      req
+      |> Req.merge(
+        headers: [
+          {"cookie", cookie_header},
+          {"x-csrf-token", csrf_token},
+          {"accept", "application/json"}
+        ]
+      )
+      |> Req.patch!(
+        url: "/api/v1/notifications/#{recipient.id}",
+        json: %{status: "read"}
+      )
+
+    assert valid_csrf_response.status == 200
+    assert valid_csrf_response.body["notification"]["status"] == "read"
+  end
+
   defp get_header(response, header) do
     response.headers
     |> Enum.filter(fn {key, _value} -> String.downcase(key) == String.downcase(header) end)
@@ -491,5 +833,10 @@ defmodule EBossWeb.JsonApiHttpTest do
       "" -> fallback_cookie_header
       header -> String.split(header, ";", parts: 2) |> hd()
     end
+  end
+
+  defp parse_sse_event_names(body) when is_binary(body) do
+    Regex.scan(~r/^event:\s*([^\n]+)$/m, body, capture: :all_but_first)
+    |> List.flatten()
   end
 end
