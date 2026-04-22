@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue"
+import { computed, nextTick, ref, watch } from "vue"
 import { Link, useEventReply, useLiveEvent, useLiveNavigation } from "live_vue"
 import { Archive, MessageSquarePlus, Sparkles } from "lucide-vue-next"
 
@@ -72,12 +72,18 @@ const archiving = ref(false)
 const error = ref<string | null>(null)
 const selectedSessionId = ref<string | null>(routeSessionId.value)
 const draftMode = ref(routeIsDraft.value || (!routeSessionId.value && props.currentPage.app_path.length === 0))
+const transcriptRef = ref<HTMLElement | null>(null)
+const lastModelStorageKey = ref("")
 
 const hasSessions = computed(() => sessions.value.length > 0)
 const selectedModel = computed(() =>
   modelOptions.value.find(model => model.key === selectedModelKey.value) || modelOptions.value[0] || null,
 )
 const selectedModelLabel = computed(() => selectedModel.value?.label || "Workspace chat")
+const modelStorageKey = computed(() => {
+  const workspaceId = props.currentScope.currentWorkspace?.id
+  return workspaceId ? `eboss.chat.selected_model.${workspaceId}` : null
+})
 const transcriptTitle = computed(() => {
   if (draftMode.value) return "New chat"
   if (currentSession.value) return currentSession.value.title
@@ -92,6 +98,26 @@ const transcriptSubtitle = computed(() => {
 })
 
 const composerDisabled = computed(() => sending.value || archiving.value || !scopeRef.value)
+
+const storedModelKey = (): string | null => {
+  if (typeof window === "undefined" || !modelStorageKey.value) return null
+
+  return window.localStorage.getItem(modelStorageKey.value)
+}
+
+const persistSelectedModelKey = (modelKey: string) => {
+  if (typeof window === "undefined" || !modelStorageKey.value || modelKey === "") return
+
+  window.localStorage.setItem(modelStorageKey.value, modelKey)
+}
+
+const scrollTranscriptToEnd = async () => {
+  await nextTick()
+
+  if (!transcriptRef.value) return
+
+  transcriptRef.value.scrollTop = transcriptRef.value.scrollHeight
+}
 
 const syncPath = (path: string, replace = false) => {
   patch(path, { replace })
@@ -262,9 +288,19 @@ const applyChatState = (state: ChatLiveState | undefined) => {
   loading.value = nextState.loading
   error.value = nextState.error
 
-  if (!selectedModelKey.value || !modelOptions.value.some(model => model.key === selectedModelKey.value)) {
-    selectedModelKey.value = nextState.default_model_key || modelOptions.value[0]?.key || ""
+  const storageKey = modelStorageKey.value || ""
+  const storageChanged = storageKey !== lastModelStorageKey.value
+  const currentModelIsAvailable = modelOptions.value.some(model => model.key === selectedModelKey.value)
+
+  if (storageChanged || !selectedModelKey.value || !currentModelIsAvailable) {
+    const persistedModelKey = storedModelKey()
+    const persistedModelIsAvailable = modelOptions.value.some(model => model.key === persistedModelKey)
+    selectedModelKey.value = persistedModelIsAvailable
+      ? persistedModelKey || ""
+      : nextState.default_model_key || modelOptions.value[0]?.key || ""
   }
+
+  lastModelStorageKey.value = storageKey
 }
 
 watch(
@@ -282,6 +318,21 @@ watch(routeSessionId, sessionId => {
     messages.value = []
   }
 }, { immediate: true })
+
+watch(
+  selectedModelKey,
+  modelKey => {
+    persistSelectedModelKey(modelKey)
+  },
+)
+
+watch(
+  () => messages.value.map(message => `${message.id}:${message.status}:${message.body.length}`).join("|"),
+  () => {
+    void scrollTranscriptToEnd()
+  },
+  { flush: "post" },
+)
 </script>
 
 <template>
@@ -381,6 +432,7 @@ watch(routeSessionId, sessionId => {
         </template>
 
         <section
+          ref="transcriptRef"
           class="ui-workspace-chat__transcript"
           role="region"
           :aria-label="chatSurfaceTestContracts.transcriptRegionLabel"

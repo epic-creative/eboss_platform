@@ -171,8 +171,23 @@ const emitLiveEvent = (eventName: string, payload: unknown) => {
   }
 }
 
+const installLocalStorage = () => {
+  const store = new Map<string, string>()
+
+  Object.defineProperty(window, "localStorage", {
+    configurable: true,
+    value: {
+      clear: () => store.clear(),
+      getItem: (key: string) => store.get(key) ?? null,
+      removeItem: (key: string) => store.delete(key),
+      setItem: (key: string, value: string) => store.set(key, value),
+    },
+  })
+}
+
 describe("ChatPage", () => {
   beforeEach(() => {
+    installLocalStorage()
     chatMocks.chatWorkspaceRef.mockReturnValue(workspaceRef)
     vi.spyOn(window.history, "pushState").mockImplementation(() => undefined)
     vi.spyOn(window.history, "replaceState").mockImplementation(() => undefined)
@@ -411,5 +426,30 @@ describe("ChatPage", () => {
       "/alpha-team/main-workspace/apps/chat/new",
     )
     expect(wrapper.find(`[data-testid="${chatSurfaceTestContracts.emptyStateTestId}"]`).exists()).toBe(true)
+  })
+
+  it("restores and persists the selected model per workspace", async () => {
+    window.localStorage.setItem("eboss.chat.selected_model.workspace-1", "openai_gpt_4o_mini")
+
+    const wrapper = mountComponent(ChatPage, {
+      props: {
+        currentScope: scope(),
+        currentPage: appRoute(["new"]),
+        chatState: chatState({
+          surface: "new",
+        }),
+      },
+    })
+
+    await flushPromises()
+
+    const modelPicker = wrapper.get(`[data-testid="${chatSurfaceTestContracts.modelPickerTestId}"] select`)
+    expect((modelPicker.element as HTMLSelectElement).value).toBe("openai_gpt_4o_mini")
+
+    await modelPicker.setValue("anthropic_haiku_4_5")
+
+    expect(window.localStorage.getItem("eboss.chat.selected_model.workspace-1")).toBe(
+      "anthropic_haiku_4_5",
+    )
   })
 })
