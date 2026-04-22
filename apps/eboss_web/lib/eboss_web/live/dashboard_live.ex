@@ -62,6 +62,45 @@ defmodule EBossWeb.DashboardLive do
   def handle_info({:notification_updated, _recipient}, socket), do: refresh_notifications(socket)
   def handle_info({:notifications_read_all, _user_id}, socket), do: refresh_notifications(socket)
 
+  def handle_info({:chat_stream_event, _session_id, :user_message_committed, payload}, socket) do
+    %{message: message} = ChatPayloads.serialize_stream_payload(payload)
+    {:noreply, stream_insert(socket, :chat_messages, message)}
+  end
+
+  def handle_info({:chat_stream_event, _session_id, :assistant_started, payload}, socket) do
+    %{message: message} = ChatPayloads.serialize_stream_payload(payload)
+    {:noreply, stream_insert(socket, :chat_messages, message)}
+  end
+
+  def handle_info({:chat_stream_event, _session_id, :assistant_delta, payload}, socket) do
+    {:noreply,
+     push_event(socket, "chat:assistant_delta", ChatPayloads.serialize_stream_payload(payload))}
+  end
+
+  def handle_info({:chat_stream_event, session_id, :assistant_completed, payload}, socket) do
+    %{message: message} = ChatPayloads.serialize_stream_payload(payload)
+
+    socket =
+      socket
+      |> stream_insert(:chat_messages, message)
+      |> push_event("chat:assistant_completed", %{session_id: session_id, message: message})
+      |> assign_workspace_context(socket.assigns.current_scope, socket.assigns.current_navigation)
+
+    {:noreply, socket}
+  end
+
+  def handle_info({:chat_stream_event, session_id, :assistant_failed, payload}, socket) do
+    %{message: message} = ChatPayloads.serialize_stream_payload(payload)
+
+    socket =
+      socket
+      |> stream_insert(:chat_messages, message)
+      |> push_event("chat:assistant_failed", %{session_id: session_id, message: message})
+      |> assign_workspace_context(socket.assigns.current_scope, socket.assigns.current_navigation)
+
+    {:noreply, socket}
+  end
+
   def handle_info({:notification_preferences_updated, _user_id}, socket),
     do: refresh_notifications(socket)
 
@@ -208,6 +247,84 @@ defmodule EBossWeb.DashboardLive do
         {:ok, %{task: FolioPayloads.task_summary(task)}}
       end
     end)
+  end
+
+  def handle_event("chat:send_message", params, socket) do
+    with {:ok, scope} <- current_chat_scope(socket),
+         {:ok, body} <- required_text(params, :body),
+         {:ok, chat_model} <- chat_model_from_params(params),
+         {:ok, session} <- resolve_chat_session(scope, socket.assigns.current_user, params, body),
+         :ok <- ensure_chat_session_available(session) do
+      session_summary = ChatPayloads.session_summary(session, scope)
+      parent = self()
+      current_user = socket.assigns.current_user
+
+      socket =
+        socket
+        |> stream_insert(:chat_sessions, session_summary, at: 0)
+        |> start_async({:chat_stream, session.id}, fn ->
+          EBossChat.Service.stream_session_reply(session, body,
+            actor: current_user,
+            chat_model: chat_model,
+            emit: fn event, payload ->
+              send(parent, {:chat_stream_event, session.id, event, payload})
+              :ok
+            end
+          )
+        end)
+
+      {:reply, %{ok: true, session: session_summary}, socket}
+    else
+      {:error, :session_busy} ->
+        {:reply, %{ok: false, error: "An assistant reply is already running."}, socket}
+
+      {:error, :session_archived} ->
+        {:reply, %{ok: false, error: "Archived chat sessions cannot be continued."}, socket}
+
+      {:error, :unsupported_chat_model} ->
+        {:reply, %{ok: false, error: "Requested chat model is not supported."}, socket}
+
+      {:error, reason} ->
+        {:reply, %{ok: false, error: chat_error(reason)}, socket}
+    end
+  end
+
+  def handle_event("chat:archive_session", params, socket) do
+    with {:ok, scope} <- current_chat_scope(socket),
+         {:ok, session_id} <- required_text(params, :session_id),
+         {:ok, session} <-
+           EBossChat.get_session_in_workspace(
+             session_id,
+             scope.current_workspace.id,
+             actor: socket.assigns.current_user,
+             load: ChatPayloads.session_load()
+           ),
+         {:ok, archived_session} <-
+           EBossChat.Service.archive_session(session, actor: socket.assigns.current_user) do
+      {:reply, %{ok: true, session: ChatPayloads.session_summary(archived_session, scope)},
+       stream_delete(socket, :chat_sessions, ChatPayloads.session_summary(session, scope))}
+    else
+      {:error, %Ash.Error.Forbidden{}} ->
+        {:reply, %{ok: false, error: "Workspace access is forbidden."}, socket}
+
+      {:error, reason} ->
+        {:reply, %{ok: false, error: chat_error(reason)}, socket}
+    end
+  end
+
+  @impl true
+  def handle_async({:chat_stream, _session_id}, {:ok, {:ok, _result}}, socket) do
+    {:noreply, socket}
+  end
+
+  def handle_async({:chat_stream, session_id}, {:ok, {:error, reason}}, socket) do
+    notify_chat_run_failed(socket, session_id, reason)
+    {:noreply, socket}
+  end
+
+  def handle_async({:chat_stream, session_id}, {:exit, reason}, socket) do
+    notify_chat_run_failed(socket, session_id, reason)
+    {:noreply, push_event(socket, "chat:assistant_failed", %{session_id: session_id})}
   end
 
   @impl true
@@ -515,6 +632,82 @@ defmodule EBossWeb.DashboardLive do
         socket.assigns.current_navigation
       )
     )
+  end
+
+  defp current_chat_scope(socket) do
+    case socket.assigns.current_scope do
+      %AppScope{current_workspace: %{id: workspace_id}} = scope when is_binary(workspace_id) ->
+        if Map.get(scope.capabilities, :read_chat, false) do
+          {:ok, scope}
+        else
+          {:error, :forbidden}
+        end
+
+      _scope ->
+        {:error, :not_found}
+    end
+  end
+
+  defp chat_model_from_params(params) do
+    case optional_text(params, :model_key) do
+      {:ok, :missing} -> EBossChat.resolve_chat_model(nil)
+      {:ok, model_key} -> EBossChat.resolve_chat_model(model_key)
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp resolve_chat_session(%AppScope{} = scope, current_user, params, title_seed) do
+    case optional_text(params, :session_id) do
+      {:ok, session_id} when session_id in [nil, :missing] ->
+        create_chat_session(scope, current_user, title_seed)
+
+      {:ok, session_id} ->
+        load_chat_session_for_send(scope, current_user, session_id)
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  defp create_chat_session(%AppScope{} = scope, current_user, title_seed) do
+    with {:ok, session} <-
+           EBossChat.Service.create_session(scope.current_workspace.id, title_seed,
+             actor: current_user
+           ),
+         {:ok, session} <-
+           EBossChat.get_session_in_workspace(
+             session.id,
+             scope.current_workspace.id,
+             actor: current_user,
+             load: ChatPayloads.session_load()
+           ) do
+      notify_chat_session_created(scope, session, current_user)
+      {:ok, session}
+    end
+  end
+
+  defp load_chat_session_for_send(%AppScope{} = scope, current_user, session_id) do
+    with {:ok, session} <-
+           EBossChat.get_session_in_workspace(
+             session_id,
+             scope.current_workspace.id,
+             actor: current_user,
+             load: ChatPayloads.session_load()
+           ),
+         :ok <- ensure_chat_session_active(session) do
+      {:ok, session}
+    end
+  end
+
+  defp ensure_chat_session_active(%{status: :archived}), do: {:error, :session_archived}
+  defp ensure_chat_session_active(_session), do: :ok
+
+  defp ensure_chat_session_available(session) do
+    case EBossChat.active_assistant_message(session.id, authorize?: false) do
+      {:ok, nil} -> :ok
+      {:ok, _message} -> {:error, :session_busy}
+      {:error, _reason} -> :ok
+    end
   end
 
   defp folio_state_props(
@@ -1007,6 +1200,70 @@ defmodule EBossWeb.DashboardLive do
   defp chat_error(:forbidden), do: "Workspace access is forbidden."
   defp chat_error(reason) when is_binary(reason), do: reason
   defp chat_error(reason), do: inspect(reason)
+
+  defp notify_chat_session_created(%AppScope{} = scope, session, actor) do
+    attrs = %{
+      scope_type: :app,
+      scope_id: scope.current_workspace.id,
+      workspace_id: scope.current_workspace.id,
+      app_key: "chat",
+      notification_key: "chat.session_created",
+      title: "New shared chat session",
+      body: "#{user_label(actor)} started #{session.title}.",
+      severity: :info,
+      actor_type: :user,
+      actor_id: actor.id,
+      subject_type: "chat_session",
+      subject_id: session.id,
+      subject_label: session.title,
+      action_url: "#{scope.dashboard_path}/apps/chat/sessions/#{session.id}",
+      idempotency_key: "chat.session_created:#{session.id}"
+    }
+
+    _ =
+      EBossNotify.notify(attrs, {:app, scope.current_workspace.id, "chat"},
+        exclude_user_ids: [actor.id]
+      )
+
+    :ok
+  end
+
+  defp notify_chat_run_failed(socket, session_id, reason) do
+    with {:ok, scope} <- current_chat_scope(socket),
+         {:ok, session} <-
+           EBossChat.get_session_in_workspace(
+             session_id,
+             scope.current_workspace.id,
+             actor: socket.assigns.current_user
+           ) do
+      attrs = %{
+        scope_type: :app,
+        scope_id: scope.current_workspace.id,
+        workspace_id: scope.current_workspace.id,
+        app_key: "chat",
+        notification_key: "chat.assistant_run_failed",
+        title: "Chat assistant failed",
+        body: chat_error(reason),
+        severity: :error,
+        actor_type: :agent,
+        subject_type: "chat_session",
+        subject_id: session.id,
+        subject_label: session.title,
+        action_url: "#{scope.dashboard_path}/apps/chat/sessions/#{session.id}",
+        idempotency_key:
+          "chat.assistant_run_failed:#{session.id}:#{System.unique_integer([:positive])}"
+      }
+
+      _ = EBossNotify.notify(attrs, {:user, socket.assigns.current_user})
+      :ok
+    else
+      _reason -> :ok
+    end
+  end
+
+  defp user_label(%{username: username}) when is_binary(username) and username != "", do: username
+  defp user_label(%{email: email}) when is_binary(email), do: email
+  defp user_label(_actor), do: "A workspace member"
 
   defp empty_notification_bootstrap do
     %{

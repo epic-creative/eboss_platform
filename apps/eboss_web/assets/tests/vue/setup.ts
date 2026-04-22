@@ -5,6 +5,7 @@ enableAutoUnmount(afterEach)
 
 afterEach(() => {
   delete (globalThis as typeof globalThis & { __liveVueEventReply?: unknown }).__liveVueEventReply
+  delete (globalThis as typeof globalThis & { __liveVueEventHandlers?: unknown }).__liveVueEventHandlers
 })
 
 vi.mock("live_vue", async () => {
@@ -79,7 +80,15 @@ vi.mock("live_vue", async () => {
       connectionState: ref("open"),
       isConnected: computed(() => true),
     }),
-    useLiveEvent: vi.fn(),
+    useLiveEvent: (eventName: string, callback: (payload: unknown) => void) => {
+      const global = globalThis as typeof globalThis & {
+        __liveVueEventHandlers?: Record<string, Array<(payload: unknown) => void>>
+      }
+
+      global.__liveVueEventHandlers ||= {}
+      global.__liveVueEventHandlers[eventName] ||= []
+      global.__liveVueEventHandlers[eventName].push(callback)
+    },
     useLiveForm: vi.fn(),
     useLiveNavigation: () => ({
       patch: vi.fn((href: string, opts: { replace?: boolean } = {}) => navigateTo(href, opts.replace)),

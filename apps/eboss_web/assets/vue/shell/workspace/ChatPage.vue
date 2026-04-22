@@ -1,20 +1,42 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue"
-import { Link, useLiveNavigation } from "live_vue"
+import { Link, useEventReply, useLiveEvent, useLiveNavigation } from "live_vue"
 import { Archive, MessageSquarePlus, Sparkles } from "lucide-vue-next"
 
 import WorkspaceEmptyState from "./WorkspaceEmptyState.vue"
 import WorkspacePageHeader from "./WorkspacePageHeader.vue"
 import WorkspacePanel from "./WorkspacePanel.vue"
 import { chatSessionRowTestId, chatMessageRowTestId, chatSurfaceTestContracts } from "./testContracts"
-import {
-  archiveChatSession,
-  chatWorkspaceRef,
-  createChatSession,
-  streamChatReply,
-} from "./chat"
+import { chatWorkspaceRef } from "./chat"
 import type { ChatLiveState, ChatMessageSummary, ChatModelOption, ChatSessionSummary } from "./chat"
 import type { AppNavigation, WorkspaceScope } from "./types"
+
+interface ChatSendReply {
+  ok: boolean
+  session?: ChatSessionSummary
+  error?: string
+}
+
+interface ChatArchiveReply {
+  ok: boolean
+  session?: ChatSessionSummary
+  error?: string
+}
+
+interface ChatAssistantDeltaEvent {
+  session_id: string
+  delta: string
+}
+
+interface ChatAssistantCompletedEvent {
+  session_id?: string
+  message?: ChatMessageSummary
+}
+
+interface ChatAssistantFailedEvent {
+  session_id?: string
+  message?: ChatMessageSummary
+}
 
 const props = defineProps<{
   currentScope: WorkspaceScope
@@ -25,6 +47,8 @@ const props = defineProps<{
 }>()
 
 const { patch } = useLiveNavigation()
+const sendMessageEvent = useEventReply<ChatSendReply, { session_id?: string; body: string; model_key?: string }>("chat:send_message")
+const archiveSessionEvent = useEventReply<ChatArchiveReply, { session_id: string }>("chat:archive_session")
 const scopeRef = computed(() => chatWorkspaceRef(props.currentScope))
 const appBasePath = computed(() => props.currentScope.apps?.chat?.defaultPath || `${props.currentScope.dashboardPath}/apps/chat`)
 const routeSessionId = computed(() =>
@@ -113,6 +137,38 @@ const appendAssistantDelta = (delta: string) => {
   messages.value = next
 }
 
+const isCurrentSessionEvent = (sessionId?: string | null) =>
+  !sessionId || sessionId === currentSession.value?.id || sessionId === selectedSessionId.value
+
+useLiveEvent<ChatAssistantDeltaEvent>("chat:assistant_delta", payload => {
+  if (!isCurrentSessionEvent(payload.session_id)) return
+
+  appendAssistantDelta(payload.delta)
+})
+
+useLiveEvent<ChatAssistantCompletedEvent>("chat:assistant_completed", payload => {
+  if (!isCurrentSessionEvent(payload.session_id)) return
+
+  if (payload.message) {
+    replaceMessage(payload.message)
+  }
+
+  sending.value = false
+})
+
+useLiveEvent<ChatAssistantFailedEvent>("chat:assistant_failed", payload => {
+  if (!isCurrentSessionEvent(payload.session_id)) return
+
+  if (payload.message) {
+    replaceMessage(payload.message)
+    error.value = payload.message.error_message || "The assistant reply failed."
+  } else {
+    error.value = "The assistant reply failed."
+  }
+
+  sending.value = false
+})
+
 const startNewChat = () => {
   draftMode.value = true
   selectedSessionId.value = null
@@ -129,7 +185,12 @@ const archiveCurrentSession = async () => {
   error.value = null
 
   try {
-    await archiveChatSession(scopeRef.value, currentSession.value.id, { status: "archived" })
+    const reply = await archiveSessionEvent.execute({ session_id: currentSession.value.id })
+
+    if (!reply.ok) {
+      throw new Error(reply.error || "Unexpected archive error")
+    }
+
     sessions.value = sessions.value.filter(session => session.id !== currentSession.value?.id)
     startNewChat()
   } catch (cause) {
@@ -149,42 +210,29 @@ const sendMessage = async () => {
   composer.value = ""
 
   try {
-    let session = currentSession.value
+    const reply = await sendMessageEvent.execute({
+      session_id: draftMode.value ? undefined : currentSession.value?.id,
+      body: messageBody,
+      model_key: selectedModelKey.value,
+    })
 
-    if (!session || draftMode.value) {
-      const created = await createChatSession(scopeRef.value, { title_seed: messageBody })
-      session = created.session
+    if (!reply.ok) {
+      throw new Error(reply.error || "Unexpected chat stream error")
+    }
+
+    if (reply.session) {
+      const session = reply.session
       currentSession.value = session
       selectedSessionId.value = session.id
       draftMode.value = false
-      messages.value = []
       upsertSession(session)
-      syncPath(session.path, true)
+
+      if (routeIsDraft.value || !routeSessionId.value) {
+        syncPath(session.path, true)
+      }
     }
-
-    await streamChatReply(scopeRef.value, session.id, { body: messageBody, model_key: selectedModelKey.value }, {
-      onEvent: (event, payload) => {
-        if (
-          (event === "user_message_committed" || event === "assistant_started" || event === "assistant_completed") &&
-          "message" in payload
-        ) {
-          replaceMessage(payload.message)
-        }
-
-        if (event === "assistant_delta" && "delta" in payload) {
-          appendAssistantDelta(payload.delta)
-        }
-
-        if (event === "assistant_failed" && "message" in payload) {
-          replaceMessage(payload.message)
-          error.value = payload.message.error_message || "The assistant reply failed."
-        }
-      },
-    })
-
   } catch (cause) {
     error.value = cause instanceof Error ? cause.message : "Unexpected chat stream error"
-  } finally {
     sending.value = false
   }
 }

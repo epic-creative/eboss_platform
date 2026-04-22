@@ -15,20 +15,10 @@ import type {
 import type { AppNavigation, WorkspaceScope } from "@/vue/shell/workspace/types"
 
 const chatMocks = vi.hoisted(() => ({
-  fetchChatBootstrap: vi.fn(),
-  fetchChatSession: vi.fn(),
-  createChatSession: vi.fn(),
-  archiveChatSession: vi.fn(),
-  streamChatReply: vi.fn(),
   chatWorkspaceRef: vi.fn(),
 }))
 
 vi.mock("@/vue/shell/workspace/chat", () => ({
-  fetchChatBootstrap: chatMocks.fetchChatBootstrap,
-  fetchChatSession: chatMocks.fetchChatSession,
-  createChatSession: chatMocks.createChatSession,
-  archiveChatSession: chatMocks.archiveChatSession,
-  streamChatReply: chatMocks.streamChatReply,
   chatWorkspaceRef: chatMocks.chatWorkspaceRef,
 }))
 
@@ -162,14 +152,28 @@ const chatState = (overrides: Partial<ChatLiveState> = {}): ChatLiveState => ({
   ...overrides,
 })
 
+const setLiveReply = (
+  handler: (eventName: string, params: Record<string, unknown>) => unknown,
+) => {
+  const liveReply = vi.fn(handler)
+  ;(globalThis as typeof globalThis & { __liveVueEventReply: typeof liveReply }).__liveVueEventReply = liveReply
+  return liveReply
+}
+
+const emitLiveEvent = (eventName: string, payload: unknown) => {
+  const handlers =
+    (globalThis as typeof globalThis & {
+      __liveVueEventHandlers?: Record<string, Array<(payload: unknown) => void>>
+    }).__liveVueEventHandlers?.[eventName] ?? []
+
+  for (const handler of handlers) {
+    handler(payload)
+  }
+}
+
 describe("ChatPage", () => {
   beforeEach(() => {
     chatMocks.chatWorkspaceRef.mockReturnValue(workspaceRef)
-    chatMocks.fetchChatBootstrap.mockReset()
-    chatMocks.fetchChatSession.mockReset()
-    chatMocks.createChatSession.mockReset()
-    chatMocks.archiveChatSession.mockReset()
-    chatMocks.streamChatReply.mockReset()
     vi.spyOn(window.history, "pushState").mockImplementation(() => undefined)
     vi.spyOn(window.history, "replaceState").mockImplementation(() => undefined)
   })
@@ -201,28 +205,15 @@ describe("ChatPage", () => {
       finish_reason: "stop",
     }
 
-    chatMocks.createChatSession.mockResolvedValue({ scope: {} as never, session: createdSession })
-    chatMocks.streamChatReply.mockImplementation(async (_scope, _sessionId, _payload, handlers) => {
-      handlers.onEvent("user_message_committed", {
-        session: { id: createdSession.id, workspace_id: "workspace-1" },
-        message: userMessage,
+    const liveReply = setLiveReply((eventName, params) => {
+      expect(eventName).toBe("chat:send_message")
+      expect(params).toEqual({
+        session_id: undefined,
+        body: "We need a launch plan",
+        model_key: "openai_gpt_4o_mini",
       })
-      handlers.onEvent("assistant_started", {
-        session: { id: createdSession.id, workspace_id: "workspace-1" },
-        message: assistantStarted,
-      })
-      handlers.onEvent("assistant_delta", {
-        session_id: createdSession.id,
-        delta: "Haiku mock reply: ",
-      })
-      handlers.onEvent("assistant_delta", {
-        session_id: createdSession.id,
-        delta: "We should tighten the launch checklist.",
-      })
-      handlers.onEvent("assistant_completed", {
-        session: { id: createdSession.id, workspace_id: "workspace-1" },
-        message: assistantCompleted,
-      })
+
+      return { ok: true, session: createdSession }
     })
 
     const wrapper = mountComponent(ChatPage, {
@@ -243,20 +234,37 @@ describe("ChatPage", () => {
     await flushPromises()
     await nextTick()
 
-    expect(chatMocks.createChatSession).toHaveBeenCalledWith(workspaceRef, { title_seed: "We need a launch plan" })
-    expect(chatMocks.fetchChatBootstrap).toHaveBeenCalledTimes(0)
-    expect(chatMocks.fetchChatSession).toHaveBeenCalledTimes(0)
-    expect(chatMocks.streamChatReply).toHaveBeenCalledWith(
-      workspaceRef,
-      createdSession.id,
-      { body: "We need a launch plan", model_key: "openai_gpt_4o_mini" },
-      expect.any(Object),
-    )
+    expect(liveReply).toHaveBeenCalledTimes(1)
     expect(window.history.replaceState).toHaveBeenCalledWith(
       {},
       "",
       createdSession.path,
     )
+
+    await wrapper.setProps({
+      currentPage: appRoute(["sessions", createdSession.id]),
+      chatState: chatState({
+        surface: "session",
+        current_session: createdSession,
+      }),
+      chatSessions: [createdSession],
+      chatMessages: [userMessage, assistantStarted],
+    })
+
+    emitLiveEvent("chat:assistant_delta", {
+      session_id: createdSession.id,
+      delta: "Haiku mock reply: ",
+    })
+    emitLiveEvent("chat:assistant_delta", {
+      session_id: createdSession.id,
+      delta: "We should tighten the launch checklist.",
+    })
+    emitLiveEvent("chat:assistant_completed", {
+      session_id: createdSession.id,
+      message: assistantCompleted,
+    })
+    await nextTick()
+
     expect(wrapper.text()).toContain("Haiku mock reply: We should tighten the launch checklist.")
     expect(wrapper.find(`[data-testid="${chatMessageRowTestId("message-2")}"]`).exists()).toBe(true)
     expect(wrapper.find(`[data-testid="${chatSurfaceTestContracts.pendingStateTestId}"]`).exists()).toBe(
@@ -287,8 +295,6 @@ describe("ChatPage", () => {
 
     await flushPromises()
 
-    expect(chatMocks.fetchChatBootstrap).toHaveBeenCalledTimes(0)
-    expect(chatMocks.fetchChatSession).toHaveBeenCalledTimes(0)
     expect(wrapper.text()).toContain("Ops check-in")
 
     await wrapper.get(`[data-testid="${chatSessionRowTestId(sessionOne.id)}"]`).trigger("click")
@@ -307,20 +313,17 @@ describe("ChatPage", () => {
     })
     await flushPromises()
 
-    expect(chatMocks.fetchChatSession).toHaveBeenCalledTimes(0)
     expect(wrapper.text()).toContain("Launch check-in")
   })
 
   it("locks the composer while a reply is in progress", async () => {
     const createdSession = session()
-    let resolveStream: (() => void) | undefined
+    let resolveReply: (() => void) | undefined
 
-    chatMocks.createChatSession.mockResolvedValue({ scope: {} as never, session: createdSession })
-    chatMocks.streamChatReply.mockImplementation(
-      () =>
-        new Promise<void>((resolve) => {
-          resolveStream = resolve
-        }),
+    setLiveReply(() =>
+      new Promise(resolve => {
+        resolveReply = () => resolve({ ok: true, session: createdSession })
+      }),
     )
 
     const wrapper = mountComponent(ChatPage, {
@@ -347,18 +350,39 @@ describe("ChatPage", () => {
       true,
     )
 
-    if (resolveStream) {
-      resolveStream()
+    if (resolveReply) {
+      resolveReply()
     }
+
     await flushPromises()
+
+    emitLiveEvent("chat:assistant_completed", {
+      session_id: createdSession.id,
+      message: message({
+        id: "message-2",
+        role: "assistant",
+        body: "Done.",
+        sequence: 2,
+      }),
+    })
+    await nextTick()
+
+    expect(wrapper.find(`[data-testid="${chatSurfaceTestContracts.pendingStateTestId}"]`).exists()).toBe(
+      false,
+    )
   })
 
   it("removes an archived session from the rail and returns to draft mode", async () => {
     const activeSession = session()
 
-    chatMocks.archiveChatSession.mockResolvedValue({
-      scope: {} as never,
-      session: { ...activeSession, status: "archived" },
+    const liveReply = setLiveReply((eventName, params) => {
+      expect(eventName).toBe("chat:archive_session")
+      expect(params).toEqual({ session_id: activeSession.id })
+
+      return {
+        ok: true,
+        session: { ...activeSession, status: "archived" },
+      }
     })
 
     const wrapper = mountComponent(ChatPage, {
@@ -379,9 +403,7 @@ describe("ChatPage", () => {
     await wrapper.get('button.so-button-ghost').trigger("click")
     await flushPromises()
 
-    expect(chatMocks.archiveChatSession).toHaveBeenCalledWith(workspaceRef, activeSession.id, {
-      status: "archived",
-    })
+    expect(liveReply).toHaveBeenCalledTimes(1)
     expect(wrapper.find(`[data-testid="${chatSessionRowTestId(activeSession.id)}"]`).exists()).toBe(false)
     expect(window.history.pushState).toHaveBeenCalledWith(
       {},
